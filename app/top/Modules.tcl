@@ -21,7 +21,10 @@ if {$ARCHGRP_ARR(APP_CORE_ENABLE)} {
     lappend MOD "$ENTITY_BASE/barrel_proc_debug_core.vhd"
     lappend MOD "$ENTITY_BASE/app_subcore.vhd"
     lappend MOD "$ENTITY_BASE/application_core.vhd"
-    
+
+    exec python3 "$ENTITY_BASE/floorplan_with_pci.py"
+    lappend SRCS(CONSTR_VIVADO) [list "$ENTITY_BASE/floorplan_with_pci.xdc"]
+
 } else {
     lappend MOD "$APP_CORE_UTILS_BASE/app_core_empty_arch.vhd"
 }
