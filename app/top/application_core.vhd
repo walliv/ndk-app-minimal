@@ -44,6 +44,8 @@ architecture FULL of APPLICATION_CORE is
     signal sync_mi_drd  : std_logic_vector(MI_DATA_WIDTH-1 downto 0);
     signal sync_mi_ardy : std_logic;
     signal sync_mi_drdy : std_logic;
+
+    signal proc_rst : std_logic;
 begin
 
     assert (ETH_STREAMS = 1 and DMA_STREAMS = 1)
@@ -102,7 +104,7 @@ begin
 
     barrel_proc_debug_core_i : entity work.BARREL_PROC_DEBUG_CORE
         generic map (
-            MI_WIDTH => MI_WIDTH)
+            MI_WIDTH => MI_ADDR_WIDTH)
         port map (
             CLK       => APP_CLK,
             RESET     => APP_RESET(0),
@@ -133,8 +135,6 @@ begin
             RESET => APP_RESET(1) or proc_rst,
 
             DMA_RX_MFB_META_PKT_SIZE => dma_rx_mfb_meta_pkt_size_ext,
-            DMA_RX_MFB_META_HDR_META => dma_rx_mfb_meta_hdr_meta_ext,
-            DMA_RX_MFB_META_CHAN     => dma_rx_mfb_meta_chan_ext,
 
             DMA_RX_MFB_DATA    => dma_rx_mfb_data_ext,
             DMA_RX_MFB_SOF     => dma_rx_mfb_sof_ext,
