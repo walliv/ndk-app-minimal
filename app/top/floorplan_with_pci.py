@@ -14,7 +14,6 @@ if exists(file_path):
 
 
 with open(file_path, mode='w', newline='\n', encoding='UTF-8') as f:
-    path_root = "fpga_common_i/app_i/subcore_i/"
     k = 0
 
     for j in range (15):
