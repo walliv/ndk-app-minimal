@@ -50,5 +50,12 @@ architecture FULL of APP_SUBCORE is
 
 begin
 
+    DMA_RX_MFB_META_PKT_SIZE <= (others => '0');
+    DMA_RX_MFB_DATA          <= (others => '0');
+    DMA_RX_MFB_SOF           <= (others => '0');
+    DMA_RX_MFB_EOF           <= (others => '0');
+    DMA_RX_MFB_SOF_POS       <= (others => '0');
+    DMA_RX_MFB_EOF_POS       <= (others => '0');
+    DMA_RX_MFB_SRC_RDY       <= '0';
 
 end architecture;
