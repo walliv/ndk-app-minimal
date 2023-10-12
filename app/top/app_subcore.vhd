@@ -22,7 +22,7 @@ entity APP_SUBCORE is
 
         -- Maximum size of a User packet (in bytes)
         -- Defines width of Packet length signals.
-        USR_PKT_SIZE_MAX : natural := 2**11
+        USR_PKT_SIZE_MAX : natural := 2**12
         );
     port (
         -- =========================================================================
@@ -34,7 +34,7 @@ entity APP_SUBCORE is
         -- =====================================================================
         -- RX DMA User-side MFB
         -- =====================================================================
-        DMA_RX_MFB_META_PKT_SIZE : out std_logic_vector(log2(USR_PKT_SIZE_MAX + 1) -1 downto 0);
+        DMA_RX_MFB_META_PKT_SIZE : out std_logic_vector(log2(USR_PKT_SIZE_MAX)  downto 0);
 
         DMA_RX_MFB_DATA    : out std_logic_vector(MFB_REGIONS*MFB_REGION_SIZE*MFB_BLOCK_SIZE*MFB_ITEM_WIDTH-1 downto 0);
         DMA_RX_MFB_SOF     : out std_logic_vector(MFB_REGIONS -1 downto 0);
@@ -49,13 +49,39 @@ end entity;
 architecture FULL of APP_SUBCORE is
 
 begin
-
-    DMA_RX_MFB_META_PKT_SIZE <= (others => '0');
-    DMA_RX_MFB_DATA          <= (others => '0');
-    DMA_RX_MFB_SOF           <= (others => '0');
-    DMA_RX_MFB_EOF           <= (others => '0');
+    DMA_RX_MFB_META_PKT_SIZE <= (log2(USR_PKT_SIZE_MAX) => '1', others=>'0');  --2**USR_PKT_SIZE_MAX
     DMA_RX_MFB_SOF_POS       <= (others => '0');
-    DMA_RX_MFB_EOF_POS       <= (others => '0');
-    DMA_RX_MFB_SRC_RDY       <= '0';
+    DMA_RX_MFB_EOF_POS       <= (others => '1');
+
+    --DMA_RX_MFB_DATA(255 downto 0) <= (others => '0');
+    --DMA_RX_MFB_SOF           <= (others => '0');
+    --DMA_RX_MFB_EOF           <= (others => '0');
+    --DMA_RX_MFB_SOF_POS       <= (others => '0');
+    --DMA_RX_MFB_EOF_POS       <= (others => '0');
+    --DMA_RX_MFB_SRC_RDY       <= '0';
+
+    uut: entity work.RISCV_manycore_wrapper 
+      generic map(
+        MI_WIDTH =>32,
+        MFB_REGIONS => MFB_REGIONS,    -- Number of regions in word
+        MFB_REGION_SIZE =>MFB_REGION_SIZE,   -- Number of blocks in region
+        MFB_BLOCK_SIZE  => MFB_BLOCK_SIZE,    -- Number of items in block
+        MFB_ITEM_WIDTH => MFB_ITEM_WIDTH,    -- Width of one item in bits
+        USR_PKT_SIZE_MAX => USR_PKT_SIZE_MAX
+        )
+      port map(
+        clk   => clk,
+        reset => reset,
+        --DMA_RX_MFB_META_PKT_SIZE => DMA_RX_MFB_META_PKT_SIZE,
+        --DMA_RX_MFB_DATA => DMA_RX_MFB_DATA(127 downto 0),
+        DMA_RX_MFB_DATA => DMA_RX_MFB_DATA,
+        DMA_RX_MFB_SOF => DMA_RX_MFB_SOF,
+        DMA_RX_MFB_EOF => DMA_RX_MFB_EOF,
+        --DMA_RX_MFB_SOF_POS => DMA_RX_MFB_SOF_POS,
+        --DMA_RX_MFB_EOF_POS => DMA_RX_MFB_EOF_POS,
+        DMA_RX_MFB_SRC_VLD => DMA_RX_MFB_SRC_RDY,
+        DMA_RX_MFB_DST_RDY => DMA_RX_MFB_DST_RDY
+        );
+    
 
 end architecture;
