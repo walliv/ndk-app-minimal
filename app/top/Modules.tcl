@@ -25,7 +25,7 @@ if {$ARCHGRP_ARR(APP_CORE_ENABLE)} {
     lappend MOD "$RISCV_SRCS_ROOT/alu_control.vhd"
     lappend MOD "$RISCV_SRCS_ROOT/Reg.vhd"
     lappend MOD "$RISCV_SRCS_ROOT/Reg_ce.vhd"
-    lappend MOD "$RISCV_SRCS_ROOT/pipe.vhd"
+    lappend MOD "$RISCV_SRCS_ROOT/pipe_sl.vhd"
     lappend MOD "$RISCV_SRCS_ROOT/pipe_vec.vhd"
     lappend MOD "$RISCV_SRCS_ROOT/Adder32.vhd"
     lappend MOD "$RISCV_SRCS_ROOT/branch_logic.vhd"
