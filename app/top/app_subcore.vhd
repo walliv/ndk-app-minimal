@@ -34,7 +34,7 @@ entity APP_SUBCORE is
         -- =====================================================================
         -- RX DMA User-side MFB
         -- =====================================================================
-        DMA_RX_MFB_META_PKT_SIZE : out std_logic_vector(log2(USR_PKT_SIZE_MAX)  downto 0);
+        DMA_RX_MFB_META_PKT_SIZE : out std_logic_vector(log2(USR_PKT_SIZE_MAX+1) -1 downto 0);
 
         DMA_RX_MFB_DATA    : out std_logic_vector(MFB_REGIONS*MFB_REGION_SIZE*MFB_BLOCK_SIZE*MFB_ITEM_WIDTH-1 downto 0);
         DMA_RX_MFB_SOF     : out std_logic_vector(MFB_REGIONS -1 downto 0);
