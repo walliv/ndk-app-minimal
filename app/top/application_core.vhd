@@ -57,14 +57,14 @@ begin
     -- =========================================================================
 
     MI_CLK     <= CLK_USER;
-    DMA_CLK    <= CLK_USER;
+    DMA_CLK    <= CLK_USER_X2;
     DMA_CLK_X2 <= CLK_USER_X4;
-    APP_CLK    <= CLK_USER;
+    APP_CLK    <= CLK_USER_X4;
 
     MI_RESET     <= RESET_USER;
-    DMA_RESET    <= RESET_USER;
+    DMA_RESET    <= RESET_USER_X2;
     DMA_RESET_X2 <= RESET_USER_X4;
-    APP_RESET    <= RESET_USER;
+    APP_RESET    <= RESET_USER_X4;
 
     -- =========================================================================
     --  MI32 LOGIC
