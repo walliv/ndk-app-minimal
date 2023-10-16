@@ -12,6 +12,9 @@ use IEEE.numeric_std.all;
 use work.math_pack.all;
 use work.type_pack.all;
 
+library unisim;
+use unisim.vcomponents.BUFG;
+
 entity BARREL_PROC_DEBUG_CORE is
     generic(
         -- Width of MI bus
@@ -52,6 +55,8 @@ architecture FULL of BARREL_PROC_DEBUG_CORE is
     signal rst_cntr_pst : unsigned(9 downto 0);
     signal rst_cntr_nst : unsigned(9 downto 0);
 
+    signal rst_int : std_logic;
+
     -- attribute mark_debug                           : string;
     -- attribute mark_debug of rst_fsm_trigg        : signal is "true";
     -- attribute mark_debug of rst_pst        : signal is "true";
@@ -89,7 +94,7 @@ begin
         rst_nst      <= rst_pst;
         rst_cntr_nst <= rst_cntr_pst;
 
-        RESET_OUT <= '0';
+        rst_int <= '0';
 
         case rst_pst is
             when IDLE =>
@@ -99,12 +104,18 @@ begin
                 end if;
 
             when RESET_COUNTING =>
-                RESET_OUT  <= '1';
+                rst_int  <= '1';
                 rst_cntr_nst <= rst_cntr_pst + 1;
 
-                if (rst_cntr_pst = 1023) then
+                if (rst_cntr_pst = 20) then
                     rst_nst <= IDLE;
                 end if;
         end case;
     end process;
+
+    mi_rst_buf_i : BUFG
+    port map (
+        O => RESET_OUT,
+        I => rst_int
+    );
 end architecture;
