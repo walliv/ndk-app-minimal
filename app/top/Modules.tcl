@@ -15,10 +15,10 @@ set RISCV_SRCS_ROOT "$ENTITY_BASE/../../../BarrelRISCV/runs"
 # Packages
 lappend PACKAGES "$OFM_PATH/comp/base/pkg/math_pack.vhd"
 lappend PACKAGES "$OFM_PATH/comp/base/pkg/type_pack.vhd"
-lappend PACKAGES "$RISCV_SRCS_ROOT/riscv_pack.vhd"
 
 if {$ARCHGRP_ARR(APP_CORE_ENABLE)} {
-    # Components
+
+    lappend PACKAGES "$RISCV_SRCS_ROOT/riscv_pack.vhd"
 
     # Files
     lappend MOD "$RISCV_SRCS_ROOT/alu.vhd"
