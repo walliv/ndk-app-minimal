@@ -72,7 +72,8 @@ if {$ARCHGRP_ARR(APP_CORE_ENABLE)} {
     lappend MOD "$ENTITY_BASE/application_core.vhd"
 
     exec python3 "$RISCV_SRCS_ROOT/../vivado/floorplan_with_pci.py"
-    lappend SRCS(CONSTR_VIVADO) [list "$RISCV_SRCS_ROOT/../vivado/floorplan_with_pci.xdc"]
+    lappend SRCS(CONSTR_VIVADO) "$RISCV_SRCS_ROOT/../vivado/floorplan_with_pci.xdc"
+    lappend SRCS(CONSTR_VIVADO) "$ENTITY_BASE/usr_constr.xdc"
 
 } else {
     lappend MOD "$APP_CORE_UTILS_BASE/app_core_empty_arch.vhd"
