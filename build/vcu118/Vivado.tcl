@@ -14,7 +14,29 @@ source $env(CARD_BASE)/src/Vivado.inc.tcl
 # Create only a Quartus project for further design flow driven from Quartus GUI
 # "0" ... full design flow in command line
 # "1" ... project composition only for further dedesign flow in GUI
-set SYNTH_FLAGS(PROJ_ONLY) "0"
+set SYNTH_FLAGS(SYNTH_ONLY) "0"
+
+# Specify custom build directives that will overwrite the card specific ones
+# The list of directives that can be changed:
+# Description:
+#   <NAME_OF_THE_DIRECTIVE_IN_SYNTH_FLAGS> -> <the property in Vivado>
+# Synthesis:
+#   SYNTH_DIRECTIVE       -> SYNTH_DESIGN
+#   SOPT_DIRECTIVE        -> opt_design command (Post-synthesis optimization)
+# Implementation:
+#   IOPT_DIRECTIVE        -> OPT_DESIGN
+#   PLACE_DIRECTIVE       -> PLACE_DESIGN
+#   POPT_DIRECTIVE        -> PHYS_OPT_DESIGN
+#   ROUTE_DIRECTIVE       -> ROUTE_DESIGN
+#   PROUTE_POPT_DIRECTIVE -> POST_ROUTE_PHYS_OPT_DESIGN
+#
+set SYNTH_FLAGS(RETIMING)              true
+set SYNTH_FLAGS(SYNTH_DIRECTIVE)       "PerformanceOptimized"
+set SYNTH_FLAGS(IOPT_DIRECTIVE)        "ExploreWithRemap"
+set SYNTH_FLAGS(PLACE_DIRECTIVE)       "EarlyBlockPlacement"
+set SYNTH_FLAGS(POPT_DIRECTIVE)        "AddRetime"
+set SYNTH_FLAGS(ROUTE_DIRECTIVE)       "AggressiveExplore"
+set SYNTH_FLAGS(PROUTE_POPT_DIRECTIVE) "AddRetime"
 
 # Associative array which is propagated to APPLICATION_CORE, add other
 # parameters if necessary.
