@@ -55,7 +55,8 @@ architecture FULL of BARREL_PROC_DEBUG_CORE is
     signal rst_cntr_pst : unsigned(4 downto 0);
     signal rst_cntr_nst : unsigned(4 downto 0);
 
-    signal rst_int : std_logic;
+    signal rst_int     : std_logic;
+    signal rst_int_reg : std_logic;
 
     -- attribute mark_debug                           : string;
     -- attribute mark_debug of rst_fsm_trigg        : signal is "true";
