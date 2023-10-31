@@ -132,7 +132,8 @@ begin
             USR_PKT_SIZE_MAX => DMA_RX_FRAME_SIZE_MAX)
         port map (
             CLK   => APP_CLK,
-            RESET => APP_RESET(1) or proc_rst,
+            -- RESET => APP_RESET(1) or proc_rst,
+            RESET => proc_rst,
 
             DMA_RX_MFB_META_PKT_SIZE => dma_rx_mfb_meta_pkt_size_ext,
 
