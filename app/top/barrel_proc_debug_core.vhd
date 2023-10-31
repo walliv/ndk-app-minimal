@@ -52,8 +52,8 @@ architecture FULL of BARREL_PROC_DEBUG_CORE is
     type rst_fsm_state_t is (IDLE, RESET_COUNTING);
     signal rst_pst  : rst_fsm_state_t := IDLE;
     signal rst_nst  : rst_fsm_state_t := IDLE;
-    signal rst_cntr_pst : unsigned(9 downto 0);
-    signal rst_cntr_nst : unsigned(9 downto 0);
+    signal rst_cntr_pst : unsigned(4 downto 0);
+    signal rst_cntr_nst : unsigned(4 downto 0);
 
     signal rst_int : std_logic;
 
@@ -76,15 +76,18 @@ begin
     -- Resetting FSM
     -- =============================================================================================
     rst_fsm_trigg <= '1' when (MI_WR = '1' and MI_ADDR(1 downto 0) = std_logic_vector(to_unsigned(16#00#,2)) and MI_DWR(0) = '1') else '0';
+
     reset_fsm_state_reg : process (CLK) is
     begin
         if (rising_edge(CLK)) then
             if (RESET = '1') then
                 rst_pst      <= IDLE;
                 rst_cntr_pst <= (others => '0');
+                rst_int_reg  <= '1';
             else
                 rst_pst      <= rst_nst;
                 rst_cntr_pst <= rst_cntr_nst;
+                rst_int_reg  <= rst_int;
             end if;
         end if;
     end process;
@@ -100,11 +103,12 @@ begin
             when IDLE =>
 
                 if (rst_fsm_trigg = '1') then
-                    rst_nst <= RESET_COUNTING;
+                    rst_cntr_nst <= (others => '0');
+                    rst_nst      <= RESET_COUNTING;
                 end if;
 
             when RESET_COUNTING =>
-                rst_int  <= '1';
+                rst_int      <= '1';
                 rst_cntr_nst <= rst_cntr_pst + 1;
 
                 if (rst_cntr_pst = 20) then
@@ -116,6 +120,6 @@ begin
     mi_rst_buf_i : BUFG
     port map (
         O => RESET_OUT,
-        I => rst_int
+        I => rst_int_reg
     );
 end architecture;
