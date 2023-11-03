@@ -14,28 +14,6 @@ use work.eth_hdr_pack.all;
 use work.combo_user_const.all;
 
 architecture FULL of APPLICATION_CORE is
-    signal dma_rx_mvb_data_all          : std_logic_vector(log2(DMA_RX_FRAME_SIZE_MAX + 1) + DMA_HDR_META_WIDTH + log2(DMA_RX_CHANNELS) -1 downto 0);
-    signal dma_rx_mfb_meta_pkt_size_ext : std_logic_vector(log2(DMA_RX_FRAME_SIZE_MAX + 1) -1 downto 0);
-    signal dma_rx_mfb_meta_hdr_meta_ext : std_logic_vector(DMA_HDR_META_WIDTH -1 downto 0);
-    signal dma_rx_mfb_meta_chan_ext     : std_logic_vector(log2(DMA_RX_CHANNELS) -1 downto 0);
-
-    signal dma_rx_mfb_data_ext    : std_logic_vector(MFB_REGIONS*MFB_REG_SIZE*MFB_BLOCK_SIZE*MFB_ITEM_WIDTH-1 downto 0);
-    signal dma_rx_mfb_sof_pos_ext : std_logic_vector(MFB_REGIONS*max(1, log2(MFB_REG_SIZE))-1 downto 0);
-    signal dma_rx_mfb_eof_pos_ext : std_logic_vector(MFB_REGIONS*max(1, log2(MFB_REG_SIZE*MFB_BLOCK_SIZE))-1 downto 0);
-    signal dma_rx_mfb_sof_ext     : std_logic_vector(MFB_REGIONS-1 downto 0);
-    signal dma_rx_mfb_eof_ext     : std_logic_vector(MFB_REGIONS-1 downto 0);
-    signal dma_rx_mfb_src_rdy_ext : std_logic;
-    signal dma_rx_mfb_dst_rdy_ext : std_logic;
-
-    signal dma_tx_mfb_data_ins    : std_logic_vector(MFB_REGIONS*MFB_REG_SIZE*MFB_BLOCK_SIZE*MFB_ITEM_WIDTH-1 downto 0);
-    signal dma_tx_mfb_meta_ins    : std_logic_vector(log2(DMA_TX_FRAME_SIZE_MAX + 1) + DMA_HDR_META_WIDTH + log2(DMA_TX_CHANNELS) -1 downto 0);
-    signal dma_tx_mfb_sof_pos_ins : std_logic_vector(MFB_REGIONS*max(1, log2(MFB_REG_SIZE))-1 downto 0);
-    signal dma_tx_mfb_eof_pos_ins : std_logic_vector(MFB_REGIONS*max(1, log2(MFB_REG_SIZE*MFB_BLOCK_SIZE))-1 downto 0);
-    signal dma_tx_mfb_sof_ins     : std_logic_vector(MFB_REGIONS-1 downto 0);
-    signal dma_tx_mfb_eof_ins     : std_logic_vector(MFB_REGIONS-1 downto 0);
-    signal dma_tx_mfb_src_rdy_ins : std_logic;
-    signal dma_tx_mfb_dst_rdy_ins : std_logic;
-
     signal sync_mi_dwr  : std_logic_vector(MI_DATA_WIDTH-1 downto 0);
     signal sync_mi_addr : std_logic_vector(MI_ADDR_WIDTH-1 downto 0);
     signal sync_mi_be   : std_logic_vector(MI_DATA_WIDTH/8-1 downto 0);
@@ -69,7 +47,6 @@ begin
     -- =========================================================================
     --  MI32 LOGIC
     -- =========================================================================
-
     mi_async_i : entity work.MI_ASYNC
         generic map(
             ADDR_WIDTH => MI_ADDR_WIDTH,
@@ -135,114 +112,33 @@ begin
             -- RESET => APP_RESET(1) or proc_rst,
             RESET => proc_rst,
 
-            DMA_RX_MFB_META_PKT_SIZE => dma_rx_mfb_meta_pkt_size_ext,
+            DMA_RX_MFB_META_PKT_SIZE => DMA_RX_MVB_LEN,
 
-            DMA_RX_MFB_DATA    => dma_rx_mfb_data_ext,
-            DMA_RX_MFB_SOF     => dma_rx_mfb_sof_ext,
-            DMA_RX_MFB_EOF     => dma_rx_mfb_eof_ext,
-            DMA_RX_MFB_SOF_POS => dma_rx_mfb_sof_pos_ext,
-            DMA_RX_MFB_EOF_POS => dma_rx_mfb_eof_pos_ext,
-            DMA_RX_MFB_SRC_RDY => dma_rx_mfb_src_rdy_ext,
-            DMA_RX_MFB_DST_RDY => dma_rx_mfb_dst_rdy_ext);
+            DMA_RX_MFB_DATA    => DMA_RX_MFB_DATA,
+            DMA_RX_MFB_SOF     => DMA_RX_MFB_SOF,
+            DMA_RX_MFB_EOF     => DMA_RX_MFB_EOF,
+            DMA_RX_MFB_SOF_POS => DMA_RX_MFB_SOF_POS,
+            DMA_RX_MFB_EOF_POS => DMA_RX_MFB_EOF_POS,
+            DMA_RX_MFB_SRC_RDY => DMA_RX_MFB_SRC_RDY(0),
+            DMA_RX_MFB_DST_RDY => DMA_RX_MFB_DST_RDY(0));
 
     -- =============================================================================================
-    -- Extranction and insertion of metadata
+    -- Connection of interfaces that can be OPTIONALLY used
     -- =============================================================================================
-    dma_tx_dma_meta_insert_i : entity work.METADATA_INSERTOR
-        generic map (
-            MVB_ITEMS => DMA_STREAMS*MFB_REGIONS,
-            MVB_ITEM_WIDTH => log2(DMA_TX_FRAME_SIZE_MAX + 1) + DMA_HDR_META_WIDTH + log2(DMA_TX_CHANNELS),
 
-            MFB_REGIONS     => MFB_REGIONS,
-            MFB_REGION_SIZE => MFB_REG_SIZE,
-            MFB_BLOCK_SIZE  => MFB_BLOCK_SIZE,
-            MFB_ITEM_WIDTH  => MFB_ITEM_WIDTH,
+    DMA_TX_MFB_DST_RDY <= (others => '1');
 
-            MFB_META_WIDTH => 0,
-            INSERT_MODE    => 0,
-            MVB_FIFO_SIZE  => 0,
-            DEVICE         => DEVICE)
-        port map (
-            CLK   => APP_CLK,
-            RESET => APP_RESET(1),
+    DMA_RX_MVB_HDR_META <= (others => '0');
+    DMA_RX_MVB_CHANNEL  <= (others => '0');
 
-            RX_MVB_DATA    => DMA_TX_MVB_LEN & DMA_TX_MVB_HDR_META & DMA_TX_MVB_CHANNEL,
-            RX_MVB_VLD     => DMA_TX_MVB_VLD,
-            RX_MVB_SRC_RDY => DMA_TX_MVB_SRC_RDY(0),
-            RX_MVB_DST_RDY => DMA_TX_MVB_DST_RDY(0),
+    -- =============================================================================================
+    -- Connection of interfaces that will NEVER be used
+    -- =============================================================================================
+    DMA_TX_MVB_DST_RDY <= (others => '1');
 
-            RX_MFB_DATA    => DMA_TX_MFB_DATA,
-            RX_MFB_META    => (others => '0'),
-            RX_MFB_SOF     => DMA_TX_MFB_SOF,
-            RX_MFB_EOF     => DMA_TX_MFB_EOF,
-            RX_MFB_SOF_POS => DMA_TX_MFB_SOF_POS,
-            RX_MFB_EOF_POS => DMA_TX_MFB_EOF_POS,
-            RX_MFB_SRC_RDY => DMA_TX_MFB_SRC_RDY(0),
-            RX_MFB_DST_RDY => DMA_TX_MFB_DST_RDY(0),
-
-            TX_MFB_DATA     => dma_tx_mfb_data_ins,
-            TX_MFB_META     => open,
-            TX_MFB_META_NEW => dma_tx_mfb_meta_ins,
-            TX_MFB_SOF      => dma_tx_mfb_sof_ins,
-            TX_MFB_EOF      => dma_tx_mfb_eof_ins,
-            TX_MFB_SOF_POS  => dma_tx_mfb_sof_pos_ins,
-            TX_MFB_EOF_POS  => dma_tx_mfb_eof_pos_ins,
-            TX_MFB_SRC_RDY  => dma_tx_mfb_src_rdy_ins,
-            TX_MFB_DST_RDY  => dma_tx_mfb_dst_rdy_ins);
-
-    dma_rx_dma_meta_ext_i : entity work.METADATA_EXTRACTOR
-        generic map (
-            MVB_ITEMS => DMA_STREAMS*MFB_REGIONS,
-
-            MFB_REGIONS     => MFB_REGIONS,
-            MFB_REGION_SIZE => MFB_REG_SIZE,
-            MFB_BLOCK_SIZE  => MFB_BLOCK_SIZE,
-            MFB_ITEM_WIDTH  => MFB_ITEM_WIDTH,
-
-            MFB_META_WIDTH  => log2(DMA_RX_FRAME_SIZE_MAX + 1) + DMA_HDR_META_WIDTH + log2(DMA_RX_CHANNELS),
-            EXTRACT_MODE    => 0,
-            OUT_MVB_PIPE_EN => FALSE,
-            OUT_MFB_PIPE_EN => FALSE,
-            DEVICE          => DEVICE)
-        port map (
-            CLK   => APP_CLK,
-            RESET => APP_RESET(1),
-
-            RX_MFB_DATA    => dma_rx_mfb_data_ext,
-            RX_MFB_META    => dma_rx_mfb_meta_pkt_size_ext & dma_rx_mfb_meta_hdr_meta_ext & dma_rx_mfb_meta_chan_ext,
-            RX_MFB_SOF     => dma_rx_mfb_sof_ext,
-            RX_MFB_EOF     => dma_rx_mfb_eof_ext,
-            RX_MFB_SOF_POS => dma_rx_mfb_sof_pos_ext,
-            RX_MFB_EOF_POS => dma_rx_mfb_eof_pos_ext,
-            RX_MFB_SRC_RDY => dma_rx_mfb_src_rdy_ext,
-            RX_MFB_DST_RDY => dma_rx_mfb_dst_rdy_ext,
-
-            TX_MVB_DATA    => dma_rx_mvb_data_all,
-            TX_MVB_VLD     => DMA_RX_MVB_VLD,
-            TX_MVB_SRC_RDY => DMA_RX_MVB_SRC_RDY(0),
-            TX_MVB_DST_RDY => DMA_RX_MVB_DST_RDY(0),
-
-            TX_MFB_DATA    => DMA_RX_MFB_DATA,
-            TX_MFB_META    => open,
-            TX_MFB_SOF     => DMA_RX_MFB_SOF,
-            TX_MFB_EOF     => DMA_RX_MFB_EOF,
-            TX_MFB_SOF_POS => DMA_RX_MFB_SOF_POS,
-            TX_MFB_EOF_POS => DMA_RX_MFB_EOF_POS,
-            TX_MFB_SRC_RDY => DMA_RX_MFB_SRC_RDY(0),
-            TX_MFB_DST_RDY => DMA_RX_MFB_DST_RDY(0));
-
-    DMA_RX_MVB_LEN      <= dma_rx_mvb_data_all(log2(DMA_RX_FRAME_SIZE_MAX+1) + DMA_HDR_META_WIDTH + log2(DMA_RX_CHANNELS) -1 downto DMA_HDR_META_WIDTH + log2(DMA_RX_CHANNELS));
-    DMA_RX_MVB_HDR_META <= dma_rx_mvb_data_all(DMA_HDR_META_WIDTH + log2(DMA_RX_CHANNELS) -1 downto log2(DMA_RX_CHANNELS));
-    DMA_RX_MVB_CHANNEL  <= dma_rx_mvb_data_all(log2(DMA_RX_CHANNELS) -1 downto 0);
     DMA_RX_MVB_DISCARD  <= (others => '0');
-
-    -- =============================================================================================
-    -- Connection of unused interfaces
-    -- =============================================================================================
-    dma_tx_mfb_dst_rdy_ins <= '1';
-
-    dma_rx_mfb_meta_hdr_meta_ext <= (others => '0');
-    dma_rx_mfb_meta_chan_ext     <= (others => '0');
+    DMA_RX_MVB_VLD      <= (others => '0');
+    DMA_RX_MVB_SRC_RDY  <= (others => '0');
 
     ETH_TX_MFB_DATA    <= (others => '0');
     ETH_TX_MFB_HDR     <= (others => '0');
