@@ -23,6 +23,7 @@ set DMA_TX_FRAME_SIZE_MAX 8191
 set DMA_TX_DATA_PTR_W 13
 
 set DMA_MVB_EN false
+set DMA_GEN_LOOP_EN false
 
 # Optimizes the MFB bus from user logic so upper bits are cut away and only lower
 # 128b are used for data.
