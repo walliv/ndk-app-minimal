@@ -64,6 +64,7 @@ if {$ARCHGRP_ARR(APP_CORE_ENABLE)} {
     lappend MOD "$RISCV_SRCS_ROOT/RISCV_row_cluster.vhd"
     lappend MOD "$RISCV_SRCS_ROOT/RISCV_rows_collection_cluster.vhd"
     lappend MOD "$RISCV_SRCS_ROOT/handshake_pipe.vhd"
+    #lappend MOD "$RISCV_SRCS_ROOT/handshake_fifo.vhd"
     lappend MOD "$RISCV_SRCS_ROOT/uram_read_to_stream.vhd"
     lappend MOD "$RISCV_SRCS_ROOT/RISCV_manycore_wrapper.vhd"
 
@@ -71,8 +72,8 @@ if {$ARCHGRP_ARR(APP_CORE_ENABLE)} {
     lappend MOD "$ENTITY_BASE/app_subcore.vhd"
     lappend MOD "$ENTITY_BASE/application_core.vhd"
 
-    exec python3 "$RISCV_SRCS_ROOT/../vivado/floorplan_with_pci.py"
-    lappend SRCS(CONSTR_VIVADO) "$RISCV_SRCS_ROOT/../vivado/floorplan_with_pci.xdc"
+    exec python3 "$RISCV_SRCS_ROOT/../vivado/floorplan_with_pci_overconstrained.py"
+    lappend SRCS(CONSTR_VIVADO) "$RISCV_SRCS_ROOT/../vivado/floorplan_with_pci_overconstrained.xdc"
     lappend SRCS(CONSTR_VIVADO) "$ENTITY_BASE/usr_constr.xdc"
 
 } else {

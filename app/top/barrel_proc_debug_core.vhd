@@ -55,9 +55,21 @@ architecture FULL of BARREL_PROC_DEBUG_CORE is
     signal rst_cntr_pst : unsigned(4 downto 0);
     signal rst_cntr_nst : unsigned(4 downto 0);
 
-    signal rst_int     : std_logic;
+    signal rst_int : std_logic;
     signal rst_int_reg : std_logic;
+    signal rst_int_reg_1 : std_logic;
+    signal rst_int_reg_2 : std_logic;
+    signal rst_int_reg_3 : std_logic;
+    --signal rst_int_reg_4 : std_logic;
+    --signal rst_int_reg_5 : std_logic;
 
+    attribute DONT_TOUCH                    : boolean;
+    attribute DONT_TOUCH of rst_int_reg     : signal is true;
+    attribute DONT_TOUCH of rst_int_reg_1   : signal is true;
+    attribute DONT_TOUCH of rst_int_reg_2   : signal is true;
+    attribute DONT_TOUCH of rst_int_reg_3   : signal is true;
+    --attribute KEEP of rst_int_reg_4   : signal is true;
+    --attribute KEEP of rst_int_reg_5   : signal is true;
     -- attribute mark_debug                           : string;
     -- attribute mark_debug of rst_fsm_trigg        : signal is "true";
     -- attribute mark_debug of rst_pst        : signal is "true";
@@ -117,10 +129,22 @@ begin
                 end if;
         end case;
     end process;
+    
+    process (CLK) is
+    begin
+        if (rising_edge(CLK)) then
+                rst_int_reg_1  <= rst_int_reg;
+                rst_int_reg_2  <= rst_int_reg_1;
+                rst_int_reg_3  <= rst_int_reg_2;
+                --rst_int_reg_4  <= rst_int_reg_3;
+                --rst_int_reg_5  <= rst_int_reg_4;
+        end if;
+    end process;
+    RESET_OUT <= rst_int_reg_3;
 
-    mi_rst_buf_i : BUFG
-    port map (
-        O => RESET_OUT,
-        I => rst_int_reg
-    );
+    --mi_rst_buf_i : BUFG
+    --port map (
+    --    O => RESET_OUT,
+    --    I => rst_int_reg_5
+    --);
 end architecture;

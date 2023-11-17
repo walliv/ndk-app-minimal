@@ -24,6 +24,17 @@ architecture FULL of APPLICATION_CORE is
     signal sync_mi_drdy : std_logic;
 
     signal proc_rst : std_logic;
+    signal proc_rst_buffered : std_logic;
+    signal proc_rst_reg_1 : std_logic;
+    signal proc_rst_reg_2 : std_logic;
+    signal proc_rst_reg_3 : std_logic;
+
+    attribute DONT_TOUCH                    : boolean;
+    attribute DONT_TOUCH of proc_rst          : signal is true;
+    attribute DONT_TOUCH of proc_rst_buffered : signal is true;
+    attribute DONT_TOUCH of proc_rst_reg_1    : signal is true;
+    attribute DONT_TOUCH of proc_rst_reg_2    : signal is true;
+    attribute DONT_TOUCH of proc_rst_reg_3    : signal is true;
 begin
 
     assert (ETH_STREAMS = 1 and DMA_STREAMS = 1)
@@ -96,6 +107,20 @@ begin
             MI_ARDY   => sync_mi_ardy,
             MI_DRDY   => sync_mi_drdy);
 
+    prebufg_rst_regs:process (APP_CLK) is
+    begin
+        if (rising_edge(APP_CLK)) then
+                proc_rst_reg_1  <= proc_rst;
+                proc_rst_reg_2  <= proc_rst_reg_1;
+                proc_rst_reg_3  <= proc_rst_reg_2;
+        end if;
+    end process;
+
+    mi_rst_buf_i : BUFG
+    port map (
+        O => proc_rst_buffered,
+        I => proc_rst_reg_3
+    );
     -- =========================================================================
     --  APPLICATION SUBCORE(s)
     -- =========================================================================
@@ -110,7 +135,7 @@ begin
         port map (
             CLK   => APP_CLK,
             -- RESET => APP_RESET(1) or proc_rst,
-            RESET => proc_rst,
+            RESET => proc_rst_buffered,
 
             DMA_RX_MFB_META_PKT_SIZE => DMA_RX_MVB_LEN,
 

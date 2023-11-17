@@ -30,14 +30,20 @@ set SYNTH_FLAGS(SYNTH_ONLY) "0"
 #   ROUTE_DIRECTIVE       -> ROUTE_DESIGN
 #   PROUTE_POPT_DIRECTIVE -> POST_ROUTE_PHYS_OPT_DESIGN
 #
-set SYNTH_FLAGS(FLATTEN_HIERARCHY)     none
+set SYNTH_FLAGS(FLATTEN_HIERARCHY)     rebuilt
 set SYNTH_FLAGS(RETIMING)              true
-set SYNTH_FLAGS(SYNTH_DIRECTIVE)       "PerformanceOptimized"
+#set SYNTH_FLAGS(SYNTH_DIRECTIVE)      "PerformanceOptimized"
+set SYNTH_FLAGS(SYNTH_DIRECTIVE)       "AreaOptimized_high"
 set SYNTH_FLAGS(IOPT_DIRECTIVE)        "ExploreWithRemap"
-set SYNTH_FLAGS(PLACE_DIRECTIVE)       "EarlyBlockPlacement"
+#set SYNTH_FLAGS(PLACE_DIRECTIVE)       "Explore"
+set SYNTH_FLAGS(PLACE_DIRECTIVE)       "ExtraPostPlacementOpt"
+#set SYNTH_FLAGS(PLACE_DIRECTIVE)       "ExtraTimingOpt"
 set SYNTH_FLAGS(POPT_DIRECTIVE)        "AddRetime"
+#set SYNTH_FLAGS(POPT_DIRECTIVE)        "Explore"
 set SYNTH_FLAGS(ROUTE_DIRECTIVE)       "AggressiveExplore"
 set SYNTH_FLAGS(PROUTE_POPT_DIRECTIVE) "AddRetime"
+#set SYNTH_FLAGS(PROUTE_POPT_DIRECTIVE) "Explore"
+#set SYNTH_FLAGS(PROUTE_POPT_DIRECTIVE) "AggressiveExplore"
 
 # Associative array which is propagated to APPLICATION_CORE, add other
 # parameters if necessary.
