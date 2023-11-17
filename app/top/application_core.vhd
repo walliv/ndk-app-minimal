@@ -138,6 +138,7 @@ begin
             RESET => proc_rst_buffered,
 
             DMA_RX_MFB_META_PKT_SIZE => DMA_RX_MVB_LEN,
+            -- <put_your_nice_channel_output_here> => DMA_RX_MVB_CHANNEL
 
             DMA_RX_MFB_DATA    => DMA_RX_MFB_DATA,
             DMA_RX_MFB_SOF     => DMA_RX_MFB_SOF,
@@ -154,7 +155,6 @@ begin
     DMA_TX_MFB_DST_RDY <= (others => '1');
 
     DMA_RX_MVB_HDR_META <= (others => '0');
-    DMA_RX_MVB_CHANNEL  <= (others => '0');
 
     -- =============================================================================================
     -- Connection of interfaces that will NEVER be used
