@@ -49,7 +49,7 @@ end entity;
 architecture FULL of APP_SUBCORE is
 
 begin
-    DMA_RX_MFB_META_PKT_SIZE <= std_logic_vector(to_unsigned(2048, DMA_RX_MFB_META_PKT_SIZE'length));  --2**USR_PKT_SIZE_MAX
+    DMA_RX_MFB_META_PKT_SIZE <= std_logic_vector(to_unsigned(4096, DMA_RX_MFB_META_PKT_SIZE'length));  --2**USR_PKT_SIZE_MAX
     DMA_RX_MFB_SOF_POS       <= (others => '0');
     DMA_RX_MFB_EOF_POS       <= (others => '1');
 

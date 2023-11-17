@@ -139,6 +139,7 @@ begin
 
             DMA_RX_MFB_META_PKT_SIZE => DMA_RX_MVB_LEN,
             -- <put_your_nice_channel_output_here> => DMA_RX_MVB_CHANNEL
+            channel             => DMA_RX_MVB_CHANNEL
 
             DMA_RX_MFB_DATA    => DMA_RX_MFB_DATA,
             DMA_RX_MFB_SOF     => DMA_RX_MFB_SOF,
