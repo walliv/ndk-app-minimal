@@ -29,12 +29,13 @@ entity APP_SUBCORE is
         -- Clock and Resets inputs
         -- =========================================================================
         CLK   : in std_logic;
+        --RESET : in std_logic_vector(0 to 2);
         RESET : in std_logic;
-
         -- =====================================================================
         -- RX DMA User-side MFB
         -- =====================================================================
         DMA_RX_MFB_META_PKT_SIZE : out std_logic_vector(log2(USR_PKT_SIZE_MAX+1) -1 downto 0);
+        channel : out std_logic_vector(3 downto 0);
 
         DMA_RX_MFB_DATA    : out std_logic_vector(MFB_REGIONS*MFB_REGION_SIZE*MFB_BLOCK_SIZE*MFB_ITEM_WIDTH-1 downto 0);
         DMA_RX_MFB_SOF     : out std_logic_vector(MFB_REGIONS -1 downto 0);
@@ -71,9 +72,10 @@ begin
         )
       port map(
         clk   => clk,
-        reset => reset,
+        reset => RESET,
         --DMA_RX_MFB_META_PKT_SIZE => DMA_RX_MFB_META_PKT_SIZE,
         --DMA_RX_MFB_DATA => DMA_RX_MFB_DATA(127 downto 0),
+	channel => channel,
         DMA_RX_MFB_DATA => DMA_RX_MFB_DATA,
         DMA_RX_MFB_SOF => DMA_RX_MFB_SOF,
         DMA_RX_MFB_EOF => DMA_RX_MFB_EOF,

@@ -24,17 +24,72 @@ architecture FULL of APPLICATION_CORE is
     signal sync_mi_drdy : std_logic;
 
     signal proc_rst : std_logic;
+
     signal proc_rst_buffered : std_logic;
+    --signal proc_rst0_buffered : std_logic;
+    --signal proc_rst1_buffered : std_logic;
+    --signal proc_rst2_buffered : std_logic;
+
     signal proc_rst_reg_1 : std_logic;
     signal proc_rst_reg_2 : std_logic;
     signal proc_rst_reg_3 : std_logic;
+    signal proc_rst_reg_4 : std_logic;
+    signal proc_rst_reg_5 : std_logic;
+    signal proc_rst_reg_6 : std_logic;
+
+    --signal proc_rst_reg_7 : std_logic;
+    --signal proc_rst_reg_8 : std_logic;
+    --signal proc_rst_reg_9 : std_logic;
+
+    --attribute max_fanout : integer;
+    --attribute max_fanout of proc_rst  : signal is 15;
+    --attribute max_fanout of proc_rst_reg_1  : signal is 10;
+    --attribute max_fanout of proc_rst_reg_2  : signal is 10;
+    --attribute max_fanout of proc_rst_reg_3  : signal is 10;
+    --attribute max_fanout of proc_rst_reg_4  : signal is 10;
+    --attribute max_fanout of proc_rst_reg_5  : signal is 10;
+    --attribute max_fanout of proc_rst_reg_6  : signal is 10;
+    --attribute max_fanout of proc_rst_reg_7  : signal is 10;
+    --attribute max_fanout of proc_rst_reg_8  : signal is 10;
+    --attribute max_fanout of proc_rst_reg_9  : signal is 10;
+    --signal proc_rst0_reg_4 : std_logic;
+    --signal proc_rst0_reg_5 : std_logic;
+    --signal proc_rst0_reg_6 : std_logic;
+
+    --signal proc_rst1_reg_4 : std_logic;
+    --signal proc_rst1_reg_5 : std_logic;
+    --signal proc_rst1_reg_6 : std_logic;
+
+    --signal proc_rst2_reg_4 : std_logic;
+    --signal proc_rst2_reg_5 : std_logic;
+    --signal proc_rst2_reg_6 : std_logic;
 
     attribute DONT_TOUCH                    : boolean;
     attribute DONT_TOUCH of proc_rst          : signal is true;
-    attribute DONT_TOUCH of proc_rst_buffered : signal is true;
+
+    --attribute DONT_TOUCH of proc_rst0_buffered : signal is true;
+    --attribute DONT_TOUCH of proc_rst1_buffered : signal is true;
+    --attribute DONT_TOUCH of proc_rst2_buffered : signal is true;
+
     attribute DONT_TOUCH of proc_rst_reg_1    : signal is true;
     attribute DONT_TOUCH of proc_rst_reg_2    : signal is true;
     attribute DONT_TOUCH of proc_rst_reg_3    : signal is true;
+
+    attribute DONT_TOUCH of proc_rst_reg_4    : signal is true;
+    attribute DONT_TOUCH of proc_rst_reg_5    : signal is true;
+    attribute DONT_TOUCH of proc_rst_reg_6    : signal is true;
+
+    --attribute DONT_TOUCH of proc_rst0_reg_4    : signal is true;
+    --attribute DONT_TOUCH of proc_rst0_reg_5    : signal is true;
+    --attribute DONT_TOUCH of proc_rst0_reg_6    : signal is true;
+
+    --attribute DONT_TOUCH of proc_rst1_reg_4    : signal is true;
+    --attribute DONT_TOUCH of proc_rst1_reg_5    : signal is true;
+    --attribute DONT_TOUCH of proc_rst1_reg_6    : signal is true;
+
+    --attribute DONT_TOUCH of proc_rst2_reg_4    : signal is true;
+    --attribute DONT_TOUCH of proc_rst2_reg_5    : signal is true;
+    --attribute DONT_TOUCH of proc_rst2_reg_6    : signal is true;
 begin
 
     assert (ETH_STREAMS = 1 and DMA_STREAMS = 1)
@@ -113,14 +168,73 @@ begin
                 proc_rst_reg_1  <= proc_rst;
                 proc_rst_reg_2  <= proc_rst_reg_1;
                 proc_rst_reg_3  <= proc_rst_reg_2;
+
+                proc_rst_reg_4  <= proc_rst_reg_3;
+                proc_rst_reg_5  <= proc_rst_reg_4;
+                proc_rst_reg_6  <= proc_rst_reg_5;
+                --proc_rst_reg_7  <= proc_rst_reg_6;
+                --proc_rst_reg_8  <= proc_rst_reg_7;
+                --proc_rst_reg_9  <= proc_rst_reg_8;
+		--proc_rst_buffered <= proc_rst_reg_9;
         end if;
     end process;
+
+    --mi_rst0_buf_i : BUFG
+    --port map (
+    --    O => proc_rst0_buffered,
+    --    I => proc_rst_reg_6
+    --);
 
     mi_rst_buf_i : BUFG
     port map (
         O => proc_rst_buffered,
-        I => proc_rst_reg_3
+        I => proc_rst_reg_6
     );
+    --prebufg_rst0_regs:process (APP_CLK) is
+    --begin
+    --    if (rising_edge(APP_CLK)) then
+    --            proc_rst0_reg_4  <= proc_rst_reg_3;
+    --            proc_rst0_reg_5  <= proc_rst0_reg_4;
+    --            proc_rst0_reg_6  <= proc_rst0_reg_5;
+    --    end if;
+    --end process;
+
+    --mi_rst0_buf_i : BUFG
+    --port map (
+    --    O => proc_rst0_buffered,
+    --    I => proc_rst0_reg_6
+    --);
+
+    --prebufg_rst1_regs:process (APP_CLK) is
+    --begin
+    --    if (rising_edge(APP_CLK)) then
+    --            proc_rst1_reg_4  <= proc_rst_reg_3;
+    --            proc_rst1_reg_5  <= proc_rst1_reg_4;
+    --            proc_rst1_reg_6  <= proc_rst1_reg_5;
+    --    end if;
+    --end process;
+
+    --mi_rst1_buf_i : BUFG
+    --port map (
+    --    O => proc_rst1_buffered,
+    --    I => proc_rst1_reg_6
+    --);
+
+    --prebufg_rst2_regs:process (APP_CLK) is
+    --begin
+    --    if (rising_edge(APP_CLK)) then
+    --            proc_rst2_reg_4  <= proc_rst_reg_3;
+    --            proc_rst2_reg_5  <= proc_rst2_reg_4;
+    --            proc_rst2_reg_6  <= proc_rst2_reg_5;
+    --    end if;
+    --end process;
+
+    --mi_rst2_buf_i : BUFG
+    --port map (
+    --    O => proc_rst2_buffered,
+    --    I => proc_rst2_reg_6
+    --);
+
     -- =========================================================================
     --  APPLICATION SUBCORE(s)
     -- =========================================================================
@@ -135,11 +249,15 @@ begin
         port map (
             CLK   => APP_CLK,
             -- RESET => APP_RESET(1) or proc_rst,
+            -- RESET => APP_RESET(1) or proc_rst,
             RESET => proc_rst_buffered,
+            --RESET(0) => proc_rst0_buffered,
+            --RESET(1) => proc_rst1_buffered,
+            --RESET(2) => proc_rst2_buffered,
 
             DMA_RX_MFB_META_PKT_SIZE => DMA_RX_MVB_LEN,
             -- <put_your_nice_channel_output_here> => DMA_RX_MVB_CHANNEL
-            channel             => DMA_RX_MVB_CHANNEL
+            channel             => DMA_RX_MVB_CHANNEL,
 
             DMA_RX_MFB_DATA    => DMA_RX_MFB_DATA,
             DMA_RX_MFB_SOF     => DMA_RX_MFB_SOF,
