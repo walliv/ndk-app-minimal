@@ -12,7 +12,7 @@ set TSU_ENABLE false
 # ------------------------------------------------------------------------------
 # DMA parameters:
 # ------------------------------------------------------------------------------
-set DMA_RX_CHANNELS      4
+set DMA_RX_CHANNELS      16
 set DMA_TX_CHANNELS      0
 # In blocking mode, packets are dropped only when the RX DMA channel is off.
 # In non-blocking mode, packets are dropped whenever they cannot be sent.
