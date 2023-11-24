@@ -19,31 +19,34 @@ set SYNTH_FLAGS(SYNTH_ONLY) "0"
 # Specify custom build directives that will overwrite the card specific ones
 # The list of directives that can be changed:
 # Description:
-#   <NAME_OF_THE_DIRECTIVE_IN_SYNTH_FLAGS> -> <the property in Vivado>
+#   <NAME_OF_THE_FIELD_IN_SYNTH_FLAGS> -> <allowed value(s)>
 # Synthesis:
-#   SYNTH_DIRECTIVE       -> SYNTH_DESIGN
-#   SOPT_DIRECTIVE        -> opt_design command (Post-synthesis optimization)
+#   SYNTH_DIRECTIVE           -> predefined directive OR the string of switches
 # Implementation:
-#   IOPT_DIRECTIVE        -> OPT_DESIGN
-#   PLACE_DIRECTIVE       -> PLACE_DESIGN
-#   POPT_DIRECTIVE        -> PHYS_OPT_DESIGN
-#   ROUTE_DIRECTIVE       -> ROUTE_DESIGN
-#   PROUTE_POPT_DIRECTIVE -> POST_ROUTE_PHYS_OPT_DESIGN
+#   SOPT_DIRECTIVE            -> predefined directive OR the string of switches
+#   POWER_OPT_EN              -> true/false for running power_opt_design after Synthesis
+#   PLACE_DIRECTIVE           -> predefined directive OR the string of switches
+#   PPLACE_POWER_OPT_EN       -> true/false for running power_opt_design after Placement
+#   PPLACE_PHYS_OPT_DIRECTIVE -> predefined directive OR the string of switches (leave empty to disable)
+#   ROUTE_DIRECTIVE           -> predefined directive OR the string of switches
+#   PROUTE_PHYS_OPT_DIRECTIVE -> predefined directive OR the string of switches (leave empty to disable)
 #
-set SYNTH_FLAGS(FLATTEN_HIERARCHY)     rebuilt
-set SYNTH_FLAGS(RETIMING)              true
-#set SYNTH_FLAGS(SYNTH_DIRECTIVE)      "PerformanceOptimized"
-set SYNTH_FLAGS(SYNTH_DIRECTIVE)       "AreaOptimized_high"
-set SYNTH_FLAGS(IOPT_DIRECTIVE)        "ExploreWithRemap"
-#set SYNTH_FLAGS(PLACE_DIRECTIVE)       "Explore"
-set SYNTH_FLAGS(PLACE_DIRECTIVE)       "ExtraPostPlacementOpt"
-#set SYNTH_FLAGS(PLACE_DIRECTIVE)       "ExtraTimingOpt"
-set SYNTH_FLAGS(POPT_DIRECTIVE)        "AddRetime"
-#set SYNTH_FLAGS(POPT_DIRECTIVE)        "Explore"
-set SYNTH_FLAGS(ROUTE_DIRECTIVE)       "AggressiveExplore"
-set SYNTH_FLAGS(PROUTE_POPT_DIRECTIVE) "AddRetime"
-#set SYNTH_FLAGS(PROUTE_POPT_DIRECTIVE) "Explore"
-#set SYNTH_FLAGS(PROUTE_POPT_DIRECTIVE) "AggressiveExplore"
+set SYNTH_FLAGS(FLATTEN_HIERARCHY)         rebuilt
+set SYNTH_FLAGS(RETIMING)                  true
+#set SYNTH_FLAGS(SYNTH_DIRECTIVE)          "PerformanceOptimized"
+set SYNTH_FLAGS(SYNTH_DIRECTIVE)           "AreaOptimized_high"
+set SYNTH_FLAGS(SOPT_DIRECTIVE)            "ExploreWithRemap"
+#set SYNTH_FLAGS(PLACE_DIRECTIVE)          "Explore"
+set SYNTH_FLAGS(PLACE_DIRECTIVE)           "ExtraPostPlacementOpt"
+#set SYNTH_FLAGS(PLACE_DIRECTIVE)          "ExtraTimingOpt"
+set SYNTH_FLAGS(PPLACE_PHYS_OPT_DIRECTIVE) "AddRetime"
+#set SYNTH_FLAGS(POPT_DIRECTIVE)           "Explore"
+set SYNTH_FLAGS(ROUTE_DIRECTIVE)           "AggressiveExplore"
+set SYNTH_FLAGS(PROUTE_PHYS_OPT_DIRECTIVE) "AddRetime"
+#set SYNTH_FLAGS(PROUTE_POPT_DIRECTIVE)    "Explore"
+#set SYNTH_FLAGS(PROUTE_POPT_DIRECTIVE)    "AggressiveExplore"
+
+set SYNTH_FLAGS(WRITE_SOPT_DCP) true
 
 # Associative array which is propagated to APPLICATION_CORE, add other
 # parameters if necessary.
