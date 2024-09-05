@@ -1,0 +1,295 @@
+# signals.fdo : Include file with signals
+# Copyright (C) 2022 CESNET z. s. p. o.
+# Author: Lukas Nevrkla <xnevrk03@stud.fit.vutbr.cz>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+proc all {NAME PATH} {
+    add_wave "-noupdate -hex"           $PATH/CLK
+    add_wave "-noupdate -hex"           $PATH/RST
+
+    add wave -divider "Main interface"
+    add_wave "-noupdate -hex"           $PATH/RDY
+    add_wave "-noupdate -hex"           $PATH/req_delayed
+    add_wave "-noupdate -hex"           $PATH/is_modify_reg
+    add_wave "-noupdate -hex"           $PATH/symbol_reg
+    add_wave "-noupdate -hex "          $PATH/new_item_*_reg
+    add_wave "-noupdate -hex"           $PATH/VLD
+    add_wave "-noupdate -hex "          $PATH/RESP_*
+
+    add wave -divider "Memory interface"
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/MEM_RDY
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/MEM_READ
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/MEM_WRITE
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/MEM_ADDR
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/MEM_BURST
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/MEM_WRITE_DATA
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/MEM_READ_DATA_VLD
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/MEM_READ_DATA
+
+    add wave -divider "FAULTS"
+    add_wave "-noupdate -hex "          $PATH/FAULT_SORT_ERR
+
+    add wave -divider "FSMs"
+    add_wave "-noupdate -hex -label ROOT_MANAGER"   $PATH/root_manager_i/curr_state
+    add_wave "-noupdate -hex -label LEAF_EDITOR"    $PATH/leaf_manager_i/leaf_editor_i/leaf_editor_core_i/curr_state
+    add_wave "-noupdate -hex -label MEM_CMD_GEN"    $PATH/mem_manager_i/mem_cmd_gen_i/curr_state
+    add_wave "-noupdate -hex -label MEM_DRIVER"     $PATH/mem_manager_i/mem_driver_i/curr_state
+
+    add wave -divider "Root_manager interface"
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/MAIN_VLD
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/EXTRA_VLD
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/POSSIBLE_ACTION
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/TREE_EMPTY
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/MEM_OFFSET
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/ITEM_CNT
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/IS_UPDATE_VLD
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/IS_UPDATE
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/IS_SPLIT_PRICE
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/IS_ROOT_PRICE
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/EXTRA_PRICE
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/DEBUG_NEW_ROOT_VLD
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/DEBUG_NEW_ROOT
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/new_root
+    add_wave "-noupdate -hex " 	        $PATH/root_manager_i/old_root
+
+    add wave -divider "Leaf_manager interface"
+    add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/REQ
+    add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/VLD
+    add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/IS_LAST_OUT
+    add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/RESULT_ITEMS
+    add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/FOUND_ITEM
+    add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/EXTRA_VLD
+    add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/IS_UPDATE
+
+    add wave -divider "Root_manager"
+    add wave -divider ""
+    add_wave "-group { root_manager } -noupdate -hex"   $PATH/root_manager_i/*
+
+    add wave -divider ""
+    add_wave "-group { root_loader } -noupdate -hex"   $PATH/root_manager_i/root_loader_i/*
+
+    add wave -divider ""
+    add_wave "-group { range_select } -noupdate -hex"   $PATH/root_manager_i/root_loader_i/range_select_i/*
+
+    add wave -divider ""
+    add_wave "-group { ctx_loader } -noupdate -hex"   $PATH/root_manager_i/ctx_loader_i/*
+
+    add wave -divider ""
+    add_wave "-group { ctx_transformer } -noupdate -hex"   $PATH/root_manager_i/ctx_transformer_i/*
+
+    add wave -divider ""
+    add_wave "-group { ctx_processor } -noupdate -hex"   $PATH/root_manager_i/ctx_processor_i/*
+
+    add wave -divider ""
+    add_wave "-group { root_editor } -noupdate -hex"   $PATH/root_manager_i/ctx_processor_i/root_editor_i/*
+
+    add wave -divider ""
+    add_wave "-group { redistribute_check } -noupdate -hex"   $PATH/root_manager_i/ctx_loader_i/redistribute_check_i/*
+
+
+    add wave -divider "Leaf_manager output"
+    add wave -divider ""
+    add_wave "-group { leaf_manager } -noupdate -hex"   $PATH/leaf_manager_i/*
+
+    add_wave "-group { editor } -noupdate -hex"   $PATH/leaf_manager_i/editor_i/*
+
+    add wave -divider ""
+    add_wave "-group { item_cnt_decoder } -noupdate -hex"   $PATH/leaf_manager_i/item_cnt_decoder_i/*
+
+    add wave -divider ""
+    add_wave "-group { range_select_leaf } -noupdate -hex"   $PATH/leaf_manager_i/range_select_i/*
+
+    add wave -divider ""
+    add_wave "-group { burst_editor } -noupdate -hex"   $PATH/leaf_manager_i/burst_editor_i/*
+
+    add wave -divider ""
+    add_wave "-group { list_editor } -noupdate -hex"   $PATH/leaf_manager_i/burst_editor_i/list_editor_i/*
+
+    add wave -divider ""
+    add_wave "-group { list_check } -noupdate -hex"   $PATH/leaf_manager_i/list_check_i/*
+
+
+    add wave -divider "Mem_manager"
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/RDY
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/MAIN_REQ
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/EXTRA_REQ
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/POSSIBLE_ACTION
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/TREE_EMPTY
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/MEM_OFFSET
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/ITEM_CNT
+    # add wave -divider "Mem_manager root output"
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/ROOT_IS_UPDATE_VLD
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/ROOT_IS_UPDATE
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/IS_SPLIT_PRICE
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/IS_ROOT_PRICE
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/ROOT_PRICE
+    # add wave -divider "Mem_manager leaf interface"
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/ITEM_FOUND
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/IS_UPDATE
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/EDITED_DATA_VLD
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/EDITED_DATA_IS_LAST
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/EDITED_DATA
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/NEW_DATA_VLD
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/NEW_DATA
+    add wave -divider "Mem_manager mem_cmd_gen"
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_cmd_gen_i/RDY
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_cmd_gen_i/IS_SPLIT_PRICE
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_cmd_gen_i/IS_ROOT_PRICE
+    # add wave -divider "Mem_manager mem_cmd_gen leaf interface"
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_cmd_gen_i/ITEM_FOUND
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_cmd_gen_i/IS_UPDATE
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_cmd_gen_i/EDITED_DATA_VLD
+
+    add wave -divider "Mem_manager mem_driver"
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/RDY
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/REQ
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/IS_WRITE
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/MEM_OFFSET
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/ITEM_CNT
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/ADDR_OFFSET
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/ITEMS_OFFSET
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/BURST_DECR
+    add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/ROOT_ADDR
+
+    # add wave -divider "Mem_manager mem_driver leaf interface"
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/INPUT_DATA_VLD
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/INPUT_DATA
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/OUTPUT_DATA_VLD
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/OUTPUT_DATA
+    #
+    # add wave -divider "Mem_manager mem_driver mem interface"
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/MEM_READ
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/MEM_WRITE
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/MEM_WRITE_DATA
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/MEM_ADDR
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/MEM_BURST
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/MEM_RDY
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/MEM_READ_DATA_VLD
+    # add_wave "-noupdate -hex "          $PATH/mem_manager_i/mem_driver_i/MEM_READ_DATA
+
+    add wave -divider ""
+    add_wave "-group { mem_manager } -noupdate -hex"   $PATH/mem_manager_i/*
+    add wave -divider ""
+    add_wave "-group { mem_cmd_gen } -noupdate -hex"   $PATH/mem_manager_i/mem_cmd_gen_i/*
+    add wave -divider ""
+    add_wave "-group { mem_driver } -noupdate -hex"   $PATH/mem_manager_i/mem_driver_i/*
+    add wave -divider ""
+    add_wave "-group { drop_fifo } -noupdate -hex"   $PATH/mem_manager_i/mem_driver_i/drop_fifo_i/*
+
+
+
+
+
+
+    ## add wave -divider "$NAME"
+    ## add_wave "-noupdate  -hex"       $PATH/*
+    #
+    #add_wave "-noupdate -hex"           $PATH/CLK
+    #add_wave "-noupdate -hex"           $PATH/RST
+    #
+    #add wave -divider "Main interface"
+    #add_wave "-noupdate -hex"           $PATH/RDY
+    #add_wave "-noupdate -hex"           $PATH/REQ
+    #add_wave "-noupdate -hex"           $PATH/VLD
+    #add_wave "-noupdate -hex"           $PATH/IS_MODIFY
+    #add_wave "-noupdate -hex"           $PATH/ROOT_ADDR
+    #add_wave "-noupdate -hex "          $PATH/NEW_ITEM_*
+    #add_wave "-noupdate -hex "          $PATH/FOUND_ITEM_*
+    #
+    #add wave -divider "Memory interface"
+    ## add_wave "-noupdate -hex "	        $PATH/MEM_*
+    #add_wave "-noupdate -hex "	        $PATH/MEM_READ*
+    #add_wave "-noupdate -hex "	        $PATH/../MEM_*
+    #
+    #
+    #add wave -divider "Root_manager output"
+    #add_wave "-noupdate -hex " 	        $PATH/root_manager_i/MAIN_VLD
+    #add_wave "-noupdate -hex " 	        $PATH/root_manager_i/EXTRA_VLD
+    #add_wave "-noupdate -hex " 	        $PATH/root_manager_i/POSSIBLE_ACTION
+    #add_wave "-noupdate -hex " 	        $PATH/root_manager_i/TREE_EMPTY
+    #add_wave "-noupdate -hex " 	        $PATH/root_manager_i/MEM_OFFSET
+    #add_wave "-noupdate -hex " 	        $PATH/root_manager_i/ITEM_CNT
+    #add_wave "-noupdate -hex " 	        $PATH/root_manager_i/curr_state
+    #add_wave "-noupdate -hex " 	        $PATH/root_manager_i/new_root
+    #add_wave "-noupdate -hex " 	        $PATH/root_manager_i/old_root
+    #
+    #add wave -divider ""
+    #add_wave "-group { root_manager } -noupdate -hex"   $PATH/root_manager_i/*
+    #
+    #add wave -divider ""
+    #add_wave "-group { root_editor } -noupdate -hex"   $PATH/root_manager_i/root_editor_i/*
+    #
+    #add wave -divider ""
+    #add_wave "-group { redistribute_check } -noupdate -hex"   $PATH/root_manager_i/redistribute_check_i/*
+    #
+    #
+    #
+    #add wave -divider "Leaf_manager output"
+    #add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/EXTRA_VLD
+    #add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/IS_UPDATE
+    #add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/FOUND_ITEM
+    #add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/ITEMS
+    #add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/RESULT_ITEMS
+    #add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/VLD
+    #add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/IS_LAST_OUT
+    #add_wave "-noupdate -hex " 	        $PATH/leaf_manager_i/leaf_editor_i/curr_state
+    #
+    #add wave -divider ""
+    #add_wave "-group { leaf_manager } -noupdate -hex"   $PATH/leaf_manager_i/*
+    #
+    #add wave -divider ""
+    #add_wave "-group { leaf_editor } -noupdate -hex"   $PATH/leaf_manager_i/leaf_editor_i/*
+    #
+    #add wave -divider ""
+    #add_wave "-group { item_cnt_decoder } -noupdate -hex"   $PATH/leaf_manager_i/item_cnt_decoder_i/*
+    #
+    #
+    #
+    #add wave -divider "Mem_manager output"
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/LEAF_PROCESSED
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/ROOT_IS_UPDATE
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/EXTRA_PRICE
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/fifo_empty
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/fifo_wr
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/fifo_block_wr
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/fifo_rd
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/EDITED_DATA_VLD
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/ITEM_FOUND
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/IS_UPDATE
+    #
+    #add wave -divider "Mem_manager main fsm"
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/cmd_gen_i/curr_state
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/cmd_done
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/cmd_activate
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/cmd_mem_offset
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/cmd_item_cnt
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/is_write
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/wait_for_found
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/can_update
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/addr_from_sum
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/just_load
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/only_update
+    #
+    #add wave -divider "Mem_manager second layer"
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/curr_state
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/save_addr
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/skip_word
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/cmd_running
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/cmd_en
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/update_running
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/burst_zero
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/addr_reg
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/burst_reg
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/req_burst_done
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/req_burst_cnt
+    #add_wave "-noupdate -hex " 	        $PATH/mem_manager_i/possible_action_reg
+    #
+    #add wave -divider ""
+    #add_wave "-group { mem_manager } -noupdate -hex"   $PATH/mem_manager_i/*
+    #
+    #add wave -divider ""
+    #add_wave "-group { uut } -noupdate -hex"   $PATH/*
+
+}
+
