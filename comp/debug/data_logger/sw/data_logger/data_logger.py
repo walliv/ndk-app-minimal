@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # Copyright (C) 2022 CESNET z. s. p. o.
 # Author(s): Lukas Nevrkla <xnevrk03@stud.fit.vutbr.cz>
+#
+# Data_logger package for accessing data_logger component in FPGA
+
 
 import nfb
 import math
@@ -54,13 +57,30 @@ class DataLogger(nfb.BaseComp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self._rst_selection()
+        self.load_config()
+
+    def _select(self, stat=None, index=None, slice=None, hist_addr=None):
+        if stat is not None and self.last_stat != stat:
+            self._comp.write32(self._REG_STATS, stat)
+            self.last_stat = stat
+        if index is not None and self.last_index != index:
+            self._comp.write32(self._REG_INDEX, index)
+            self.last_index = index
+        if slice is not None and self.last_slice != slice:
+            self._comp.write32(self._REG_SLICE, slice)
+            self.last_slice = slice
+        if hist_addr is not None and self.last_hist_addr != hist_addr:
+            self._comp.write32(self._REG_HIST, hist_addr)
+            self.last_hist_addr = hist_addr
+
+    def _rst_selection(self):
         self.last_stat  = None
         self.last_index = None
         self.last_slice = None
         self.last_hist_addr = None
 
-        self.config = self.load_config()
-        self.mi_width = self.config["MI_DATA_WIDTH"]
+        self.load_config()
 
     def main_ctrl_read(self):
         return {
@@ -74,36 +94,23 @@ class DataLogger(nfb.BaseComp):
         if not self._comp.wait_for_bit(self._REG_CTRL, self._BIT_RST_DONE, level=True):
             print("Err: Could not reset data_logger!", file=sys.stderr)
 
-        self.last_stat  = None
-        self.last_index = None
-        self.last_slice = None
-        self.last_hist_addr = None
+        self._rst_selection()
 
-    def load_slices(self, width):
+    def _load_slices(self, width):
         slices = math.ceil(width / self.config["MI_DATA_WIDTH"])
         value = 0
 
         for i in range(0, slices):
-            if self.last_slice != i:
-                self._comp.write32(self._REG_SLICE, i)
-                self.last_slice = i
-
+            self._select(slice=i)
             value += self._comp.read32(self._REG_VALUE) << (i * self.config["MI_DATA_WIDTH"])
 
         return value
 
     def stat_read(self, stat, index=0, en_slices=True):
-        if self.last_stat != stat:
-            self._comp.write32(self._REG_STATS, stat)
-            self.last_stat = stat
-        if self.last_index != index:
-            self._comp.write32(self._REG_INDEX, index)
-            self.last_index = index
+        self._select(stat=stat, index=index)
 
         if not en_slices:
-            if self.last_slice != 0:
-                self._comp.write32(self._REG_SLICE, 0)
-                self.last_slice = 0
+            self._select(slice=0)
             return self._comp.read32(self._REG_VALUE)
 
         if stat == self._ID_CTRLO:
@@ -121,21 +128,13 @@ class DataLogger(nfb.BaseComp):
         else:
             width = self.config["MI_DATA_WIDTH"]
 
-        return self.load_slices(width)
+        return self._load_slices(width)
 
     def hist_read(self, index, addr):
-        if self.last_stat != self._ID_VALUE_HIST:
-            self._comp.write32(self._REG_STATS, self._ID_VALUE_HIST)
-            self.last_stat = self._ID_VALUE_HIST
-        if self.last_index != index:
-            self._comp.write32(self._REG_INDEX, index)
-            self.last_index = index
-        if self.last_hist_addr != addr:
-            self._comp.write32(self._REG_HIST, addr)
-            self.last_hist_addr = addr
-
+        self._select(stat=self._ID_VALUE_HIST, index=index, hist_addr=addr)
         width = self.config["HIST_BOX_WIDTH"][index]
-        return self.load_slices(width)
+
+        return self._load_slices(width)
 
     def load_config(self):
         config = {}
@@ -168,28 +167,29 @@ class DataLogger(nfb.BaseComp):
             config["HIST_BOX_WIDTH"] .append(self.stat_read(self._ID_HIST_BOX_WIDTH,  i, en_slices=False))
 
             hist_max  = 2 ** config["VALUE_WIDTH"][i]
-            hist_step = hist_max / config["HIST_BOX_CNT"][i]
+            hist_box_cnt = config["HIST_BOX_CNT"][i]
+            hist_step = hist_max / hist_box_cnt if hist_box_cnt != 0 else 0
             config["HIST_STEP"].append(hist_step)
 
-        return config
+        self.mi_width = config["MI_DATA_WIDTH"]
+        self.config = config
 
     def load_ctrl(self, out):
         id    = self._ID_CTRLO if out else self._ID_CTRLI
         return self.stat_read(id, 0)
 
+    def load_ctrlo(self):
+        return self.stat_read(self._ID_CTRLO, 0)
+
+    def load_ctrli(self):
+        return self.stat_read(self._ID_CTRLI, 0)
+
     def set_ctrlo(self, val):
-        if self.last_stat != self._ID_CTRLO:
-            self._comp.write32(self._REG_STATS, self._ID_CTRLO)
-            self.last_stat = self._ID_CTRLO
-        if self.last_index != 0:
-            self._comp.write32(self._REG_INDEX, 0)
-            self.last_index = 0
+        self._select(stat=self._ID_CTRLO, index=0)
 
         slices = math.ceil(self.config["CTRLO_WIDTH"] / self.mi_width)
         for i in range(0, slices):
-            if self.last_slice != i:
-                self._comp.write32(self._REG_SLICE, i)
-                self.last_slice = i
+            self._select(slice=i)
 
             slice = self.get_bits(val, self.mi_width, i * self.mi_width)
             self._comp.write32(self._REG_VALUE, slice)
@@ -246,7 +246,7 @@ class DataLogger(nfb.BaseComp):
             stats['cnter_' + str(i)] = self.load_cnter(i)
         for i in range(0, self.config['VALUE_CNT']):
             val = self.load_value(i)
-            if not hist:
+            if not hist and 'hist' in val:
                 del val['hist']
             stats['value_' + str(i)] = val
         return json.dumps(stats, indent=4)
@@ -259,14 +259,19 @@ def parseParams():
 
     access = parser.add_argument_group('card access arguments')
     access.add_argument(
-        '-d', '--device', default=nfb.libnfb.Nfb.default_device,
-        metavar='device', help="device with target FPGA card")
+        '-d', '--device', default=nfb.libnfb.Nfb.default_dev_path,
+        metavar='device', help="""device with target FPGA card"""
+    )
     access.add_argument(
-        '-i', '--index', type=int, metavar='index', default=0, help="index inside DevTree")
+        '-i', '--index', type=int, metavar='index', default=0,
+        help="""index inside DevTree"""
+    )
 
     common = parser.add_argument_group('common arguments')
-    #common.add_argument('-p', '--print', action='store_true', help = """print registers""")
-    common.add_argument('--rst', action='store_true', help="reset mem_tester and mem_logger")
+    common.add_argument(
+        '--rst', action='store_true',
+        help="reset mem_tester and mem_logger"
+    )
     args = parser.parse_args()
     return args
 
