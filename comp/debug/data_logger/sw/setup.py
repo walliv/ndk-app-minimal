@@ -1,29 +1,24 @@
 #!/usr/bin/env python3
-# Copyright (C) 2022 CESNET z. s. p. o.
+# Copyright (C) 2024 CESNET z. s. p. o.
 # Author(s): Lukas Nevrkla <xnevrk03@stud.fit.vutbr.cz>
 
-from setuptools import setup
-
-# Install:
-# python3 setup.py install --user
-# Must be in package directory
+from setuptools import setup, find_packages
 
 setup(
     name='logger_tools',
-    version='0.1.1',
-    description='Package with data_logger tools',
-    author='Lukáš Nevrkla',
+    version='1.0.0',
+    author='Lukas Nevrkla',
     author_email='xnevrk03@stud.fit.vutbr.cz',
-    packages=[
-        'data_logger',
-        'mem_logger',
-        "graph_gen",
-        "logger_tools",
-        "pdf_gen",
-    ],
+    description='SW tools for data_logger FPGA component',
+    packages=find_packages(),
     install_requires=[
-        'nfb',
+        'numpy',
+        'pandas',
         'matplotlib',
-        'numpy'
+        'seaborn',
+        'Pillow'
     ],
+    #extras_require={
+    #    'nfb': ['nfb']
+    #},
 )
