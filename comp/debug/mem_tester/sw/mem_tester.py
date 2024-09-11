@@ -62,7 +62,7 @@ class MemTester(nfb.BaseComp):
         self.last_test_config = None
 
     @staticmethod
-    def compatible_cnt(dev=nfb.libnfb.Nfb.default_device, comp=None):
+    def compatible_cnt(dev=nfb.libnfb.Nfb.default_dev_path, comp=None):
         dev = nfb.open(dev)
         nodes = dev.fdt_get_compatible(comp if comp is not None else MemTester.DT_COMPATIBLE)
         return len(nodes)
@@ -163,7 +163,7 @@ class MemTester(nfb.BaseComp):
         auto_precharge=False,
         refresh_period=None,
     ):
-        if burst_cnt > 2 ** self.mem_logger.config["MEM_BURST_WIDTH"] - 1:
+        if burst_cnt > 2 ** self.mem_logger.stats['Constants']["MEM_BURST_WIDTH"] - 1:
             print(f"Burst count {burst_cnt} is too large", file=sys.stderr)
             return
 
@@ -181,7 +181,7 @@ class MemTester(nfb.BaseComp):
         self._comp.write32(self._REG_CTRL_IN, ctrli)
 
         addr_lim = 0
-        max_addr = 2 ** self.mem_logger.config["MEM_ADDR_WIDTH"] * addr_lim_scale
+        max_addr = 2 ** self.mem_logger.stats['Constants']["MEM_ADDR_WIDTH"] * addr_lim_scale
         if addr_lim_scale >= 1.0:
             max_addr -= 2 * burst_cnt
         addr_lim = int((max_addr // burst_cnt) * burst_cnt)
@@ -210,8 +210,8 @@ class MemTester(nfb.BaseComp):
             errs += f"{status['err_cnt']} words were wrong\n"
         if status["ecc_err_occ"]:
             errs += "ECC error occurred\n"
-        if stats["rd_req_words"] != stats["rd_resp_words"]:
-            errs += f"{stats['rd_req_words'] - stats['rd_resp_words']} words were not received\n"
+        if stats['Requests']["rd req words"] != stats['Requests']["rd resp words"]:
+            errs += f"{stats['Requests']['rd req words'] - stats['Requests']['rd resp words']} words were not received\n"
         if not status["test_succ"] and errs == "" and not config["rand_addr"]:
             errs += "Unknown error occurred\n"
         return errs
@@ -219,7 +219,8 @@ class MemTester(nfb.BaseComp):
     def get_test_result(self):
         config = self.last_test_config
         status = self.load_status()
-        stats = self.mem_logger.load_stats()
+        self.mem_logger.stats.load()
+        stats = self.mem_logger.stats.data()
         errs = self.check_test_result(config, status, stats)
         return config, status, stats, errs
 
@@ -236,13 +237,13 @@ class MemTester(nfb.BaseComp):
             res += "\nErrors:\n"
             res += errs
         res += "\n"
-        res += self.mem_logger.stats_to_str(stats)
+        res += self.mem_logger.stats.to_str()
         return res
 
     def amm_gen_set_buff(self, burst, data):
         prev_addr = self._comp.read32(self._REG_AMM_GEN_ADDR)
-        mi_width  = self.mem_logger.config["MI_DATA_WIDTH"]
-        slices    = math.ceil(self.mem_logger.config["MEM_DATA_WIDTH"] / mi_width)
+        mi_width  = self.mem_logger.stats['Constants']["MI_DATA_WIDTH"]
+        slices    = math.ceil(self.mem_logger.stats['Constants']["MEM_DATA_WIDTH"] / mi_width)
 
         for s in range(0, slices):
             slice = self.mem_logger.get_bits(data, mi_width, mi_width * s)
@@ -253,8 +254,8 @@ class MemTester(nfb.BaseComp):
         self._comp.write32(self._REG_AMM_GEN_ADDR, prev_addr)
 
     def amm_gen_get_buff(self):
-        mi_width  = self.mem_logger.config["MI_DATA_WIDTH"]
-        slices    = math.ceil(self.mem_logger.config["MEM_DATA_WIDTH"] / mi_width)
+        mi_width  = self.mem_logger.stats['Constants']["MI_DATA_WIDTH"]
+        slices    = math.ceil(self.mem_logger.stats['Constants']["MEM_DATA_WIDTH"] / mi_width)
         prev_addr = self._comp.read32(self._REG_AMM_GEN_ADDR)
         burst     = self._comp.read32(self._REG_AMM_GEN_BURST)
 
@@ -314,34 +315,92 @@ def parseParams():
     )
 
     access = parser.add_argument_group('card access arguments')
-    access.add_argument('-d', '--device', default=nfb.libnfb.Nfb.default_device,
-                        metavar='device', help="""device with target FPGA card.""")
-    access.add_argument('-i', '--index',        type=int, metavar='index', default=0, help="""mem_tester index inside DevTree.""")
-    access.add_argument('-I', '--logger-index', type=int, metavar='index', default=None, help="""mem_logger index inside DevTree.""")
+    access.add_argument(
+        '-d', '--device', default=nfb.libnfb.Nfb.default_dev_path,
+        metavar='device', help="""device with target FPGA card."""
+    )
+    access.add_argument(
+        '-i', '--index', type=int, metavar='index', default=0,
+        help="""mem_tester index inside DevTree."""
+    )
+    access.add_argument(
+        '-I', '--logger-index', type=int, metavar='index', default=None,
+        help="""mem_logger index inside DevTree."""
+    )
 
     common = parser.add_argument_group('common arguments')
-    common.add_argument('-p', '--print', action='store_true', help="""print registers""")
-    common.add_argument('--rst', action='store_true', help="""reset mem_tester and mem_logger""")
-    common.add_argument('--rst-tester', action='store_true', help="""reset mem_tester""")
-    common.add_argument('--rst-logger', action='store_true', help="""reset mem_logger""")
-    common.add_argument('--rst-emif',   action='store_true', help="""reset memory driver""")
+    common.add_argument(
+        '-p', '--print', action='store_true',
+        help="""print registers"""
+    )
+    common.add_argument(
+        '--rst', action='store_true',
+        help="""reset mem_tester and mem_logger"""
+    )
+    common.add_argument(
+        '--rst-tester', action='store_true',
+        help="""reset mem_tester"""
+    )
+    common.add_argument(
+        '--rst-logger', action='store_true',
+        help="""reset mem_logger"""
+    )
+    common.add_argument(
+        '--rst-emif', action='store_true',
+        help="""reset memory driver"""
+    )
 
     test = parser.add_argument_group('test related arguments')
-    #test.add_argument('-t', '--test', action='store_true', help = """run test""")
-    test.add_argument('-r', '--rand', action='store_true', help="""use random indexing during test""")
-    test.add_argument('-b', '--burst', default=4, type=int, help="""burst count during test""")
-    test.add_argument('-s', '--scale', default=1.0, type=float, help="""tested address space (1.0 = whole)""")
-    test.add_argument('-o', '--one-simult', action='store_true', help="""use only one simultaneous read during test""")
-    test.add_argument('-f', '--to-first', action='store_true', help="""measure latency to the first received word""")
-    test.add_argument('--auto-precharge',  action='store_true', help="""use auto precharge during test""")
-    test.add_argument('--refresh', default=None, type=int, help="""set refresh period in ticks""")
+    test.add_argument(
+        '-r', '--rand', action='store_true',
+        help="""use random indexing during test"""
+    )
+    test.add_argument(
+        '-b', '--burst', default=4, type=int,
+        help="""burst count during test"""
+    )
+    test.add_argument(
+        '-s', '--scale', default=1.0, type=float,
+        help="""tested address space (1.0 = whole)"""
+    )
+    test.add_argument(
+        '-o', '--one-simult', action='store_true',
+        help="""use only one simultaneous read during test"""
+    )
+    test.add_argument(
+        '-f', '--to-first', action='store_true',
+        help="""measure latency to the first received word"""
+    )
+    test.add_argument(
+        '--auto-precharge',  action='store_true',
+        help="""use auto precharge during test"""
+    )
+    test.add_argument(
+        '--refresh', default=None, type=int,
+        help="""set refresh period in ticks"""
+    )
 
     other = parser.add_argument_group('amm_gen control arguments')
-    other.add_argument('--set-buff', metavar=('burst', 'data'), type=int, nargs=2, help="""set specific burst data in amm_gen buffer""")
-    other.add_argument('--get-buff', action='store_true', help="""print amm_gen buffer""")
-    other.add_argument('--gen-wr', metavar='addr', type=int, help="""writes amm_gen buffer to specific address""")
-    other.add_argument('--gen-rd', metavar='addr', type=int, help="""reads memory data to amm_gen buffer""")
-    other.add_argument('--gen-burst', type=int, help="""sets burst count for amm_gen""")
+    other.add_argument(
+        '--set-buff', metavar=('burst', 'data'), type=int, nargs=2,
+        help="""set specific burst data in amm_gen buffer"""
+    )
+    other.add_argument(
+        '--get-buff', action='store_true',
+        help="""print amm_gen buffer"""
+    )
+    other.add_argument(
+        '--gen-wr', metavar='addr', type=int,
+        help="""writes amm_gen buffer to specific address"""
+    )
+    other.add_argument(
+        '--gen-rd', metavar='addr', type=int,
+        help="""reads memory data to amm_gen buffer"""
+    )
+    other.add_argument(
+        '--gen-burst', type=int,
+        help="""sets burst count for amm_gen"""
+    )
 
     args = parser.parse_args()
     return args
@@ -359,9 +418,8 @@ if __name__ == '__main__':
     if args.print:
         status = tester.load_status()
         print(tester.status_to_str(status))
-        print(tester.mem_logger.config_to_str())
-        stats = tester.mem_logger.load_stats()
-        print(tester.mem_logger.stats_to_str(stats))
+        tester.mem_logger.stats.load()
+        print(tester.mem_logger.stats.to_str())
         print(tester.amm_gen_to_str())
 
     elif args.rst or args.rst_tester:
