@@ -88,12 +88,12 @@ begin
     port map (
         CLK         => CLK,
         RESET       => RST,
-    
+
         DI          => (tick_cnt, START_EVENT_META),
         WR          => START_EVENT,
         FULL        => FIFO_FULL,
         STATUS      => FIFO_ITEMS,
-    
+
         DO          => fifo_out,
         RD          => fin_out.end_event,
         EMPTY       => fifo_empty
@@ -108,8 +108,8 @@ begin
     tick_limit  <= '1' when (tick_cnt = DATA_MAX) else
                    '0';
 
-    tick_ovf    <= '1' when (fin_out.tick_cnt < start_ticks) else 
-                   '0'; 
+    tick_ovf    <= '1' when (fin_out.tick_cnt < start_ticks) else
+                   '0';
 
     zero_delay  <= fin_out.start_event and fin_out.end_event and fifo_empty;
 
@@ -132,7 +132,7 @@ begin
         output_p : process (CLK)
         begin
             if (rising_edge(CLK)) then
-                if (RST = '1') then 
+                if (RST = '1') then
                     output_out(i).start_event   <= '0';
                     output_out(i).end_event     <= '0';
                 else
@@ -148,20 +148,20 @@ begin
 
     output_in(0).start_event    <= START_EVENT;
     output_in(0).start_meta     <= start_meta_i;
-    
+
     output_in(0).end_event      <= END_EVENT;
     output_in(0).end_meta       <= END_EVENT_META;
 
     output_in(0).tick_cnt       <= tick_cnt;
 
     fin_out                     <= output_out(OUTPUT_STAGES - 1);
-    
+
     latency_vld_p : process(CLK)
-    begin 
-        if (rising_edge(CLK)) then 
+    begin
+        if (rising_edge(CLK)) then
             LATENCY_VLD         <= fin_out.end_event;
-            LATENCY             <= (others => '0')                                          when (zero_delay = '1') else 
-                       std_logic_vector(unsigned(fin_out.tick_cnt) - unsigned(start_ticks)) when (tick_ovf = '0')   else 
+            LATENCY             <= (others => '0')                                          when (zero_delay = '1') else
+                       std_logic_vector(unsigned(fin_out.tick_cnt) - unsigned(start_ticks)) when (tick_ovf = '0')   else
                        std_logic_vector(unsigned(fin_out.tick_cnt) + unsigned(DATA_MAX) - unsigned(start_ticks) + 1);
 
             LATENCY_START_META  <= fin_out.start_meta;
