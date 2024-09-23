@@ -15,9 +15,9 @@ import numpy as np
 import nfb
 from mem_tester import MemTester
 from mem_logger.mem_logger import MemLogger
-from logger_tools.logger_tools import LoggerTools
-from graph_gen.graph_gen import GraphGen
-from pdf_gen.pdf_gen import PDFGen
+from logger_tools import LoggerTools
+from graph_gen import GraphGen
+from pdf_gen import PDFGen
 
 
 class ReportGen:
