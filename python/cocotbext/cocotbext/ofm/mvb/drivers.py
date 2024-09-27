@@ -11,6 +11,8 @@ from cocotbext.ofm.base.drivers import BusDriver
 from cocotbext.ofm.mvb.utils import random_delays_config
 from cocotbext.ofm.utils.signals import await_signal_sync
 
+from typing import Any
+
 from ..base.generators import ItemRateLimiter
 from ..base.transaction import IdleTransaction
 from .transaction import MvbTrClassic
@@ -110,17 +112,10 @@ class MVBDriver(BusDriver):
 
         self._clear_control_signals()
 
-    async def _send_data(self, data) -> None:
-        """Prepares and sends transaction to the MVB bus.
+    async def _driver_send(self, transaction: Any, sync: bool = True, **kwargs: Any) -> None:
+        """Prepares and sends transaction to the MVB bus."""
 
-            Args:
-                data: Data to be sent to the MVB bus.
-                      Can be of type "bytes" or an object of a class
-                      that inherits from the BaseTransaction class.
-
-        """
-
-        self.log.debug(f"Recieved item: {data}")
+        self.log.debug(f"Recieved item: {transaction}")
 
         if isinstance(data, bytes):
             mvb_tr = MvbTrClassic.from_bytes(data)
@@ -149,7 +144,7 @@ class MVBDriver(BusDriver):
 
             while self._sendQ:
                 transaction, callback, event, kwargs = self._sendQ.popleft()
-                await self._send_data(transaction)
+                await self._send(transaction, callback=None, event=event, sync=False, **kwargs)
                 if event:
                     event.set()
                 if callback:
