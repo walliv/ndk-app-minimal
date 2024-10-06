@@ -15,6 +15,7 @@ from cocotbext.ofm.ver.generators import random_packets
 from cocotb_bus.drivers import BitDriver
 from cocotb_bus.scoreboard import Scoreboard
 from cocotbext.ofm.utils.throughput_probe import ThroughputProbe, ThroughputProbeMvbInterface
+from cocotbext.ofm.base.generators import ItemRateLimiter
 
 
 class testbench():
@@ -55,6 +56,11 @@ async def run_test(dut, pkt_count=10000, item_width=1):
     # Start clock generator
     cocotb.start_soon(Clock(dut.CLK, 5, units="ns").start())
     tb = testbench(dut, debug=False)
+    # Change MVB drivers IdleGenerator to ItemRateLimiter
+    # Note: the RateLimiter's rate is affected by backpressure (DST_RDY).
+    # Eventhough it takes into account cycles with DST_RDY=0, the desired rate might not be achievable.
+    idle_gen_conf = dict(random_idles=True, max_idles=5, zero_idles_chance=50)
+    tb.stream_in.set_idle_generator(ItemRateLimiter(rate_percentage=30, **idle_gen_conf))
     await tb.reset()
     tb.backpressure.start((1, i % 5) for i in itertools.count())
 
