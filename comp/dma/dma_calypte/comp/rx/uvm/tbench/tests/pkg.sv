@@ -30,7 +30,6 @@ package test;
     parameter SW_ADDR_WIDTH  = 64;
     parameter CNTRS_WIDTH    = 64;
     parameter PKT_SIZE_MAX   = 2**12;
-    parameter OPT_BUFF       = 1'b0;
     parameter TRBUF_REG_EN   = 1'b1;
 
     parameter DEVICE = "ULTRASCALE";

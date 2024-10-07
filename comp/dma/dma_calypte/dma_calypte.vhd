@@ -266,7 +266,6 @@ begin
                 CNTRS_WIDTH    => DSP_CNT_WIDTH,
                 HDR_META_WIDTH => HDR_META_WIDTH,
                 PKT_SIZE_MAX   => USR_RX_PKT_SIZE_MAX,
-                TRBUF_FIFO_EN  => FALSE,
                 TRBUF_REG_EN   => TRBUF_REG_EN)
 
             port map (

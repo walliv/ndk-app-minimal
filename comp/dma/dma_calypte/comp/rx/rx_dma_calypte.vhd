@@ -54,7 +54,6 @@ entity RX_DMA_CALYPTE is
         -- * Maximum allowed value is 2**16 - 1
         PKT_SIZE_MAX : natural := 2**16 - 1;
 
-        TRBUF_FIFO_EN           : boolean := FALSE;
         TRBUF_REG_EN            : boolean := FALSE
         );
 
@@ -169,21 +168,13 @@ architecture FULL of RX_DMA_CALYPTE is
     signal hdrm_pkt_disc_inc   : std_logic;
     signal hdrm_pkt_sent_bytes : std_logic_vector((log2(PKT_SIZE_MAX+1)-1) downto 0);
 
-    signal trbuf_fifo_tx_data    : std_logic_vector(MFB_REGION_SIZE_TRBUF2INS*MFB_BLOCK_SIZE_TRBUF2INS*MFB_ITEM_WIDTH_TRBUF2INS-1 downto 0);
-    signal trbuf_fifo_tx_sof_pos : std_logic_vector (max(1, log2(MFB_REGION_SIZE_TRBUF2INS))-1 downto 0);
-    signal trbuf_fifo_tx_eof_pos : std_logic_vector (max(1, log2(MFB_REGION_SIZE_TRBUF2INS*MFB_BLOCK_SIZE_TRBUF2INS))-1 downto 0);
-    signal trbuf_fifo_tx_sof     : std_logic;
-    signal trbuf_fifo_tx_eof     : std_logic;
-    signal trbuf_fifo_tx_src_rdy : std_logic;
-    signal trbuf_fifo_tx_dst_rdy : std_logic;
-
-    signal trbuf_fifo_rx_data    : std_logic_vector(MFB_REGION_SIZE_TRBUF2INS*MFB_BLOCK_SIZE_TRBUF2INS*MFB_ITEM_WIDTH_TRBUF2INS-1 downto 0);
-    signal trbuf_fifo_rx_sof_pos : std_logic_vector (max(1, log2(MFB_REGION_SIZE_TRBUF2INS))-1 downto 0);
-    signal trbuf_fifo_rx_eof_pos : std_logic_vector (max(1, log2(MFB_REGION_SIZE_TRBUF2INS*MFB_BLOCK_SIZE_TRBUF2INS))-1 downto 0);
-    signal trbuf_fifo_rx_sof     : std_logic;
-    signal trbuf_fifo_rx_eof     : std_logic;
-    signal trbuf_fifo_rx_src_rdy : std_logic;
-    signal trbuf_fifo_rx_dst_rdy : std_logic;
+    signal mfb_data_trbuf    : std_logic_vector(MFB_REGION_SIZE_TRBUF2INS*MFB_BLOCK_SIZE_TRBUF2INS*MFB_ITEM_WIDTH_TRBUF2INS-1 downto 0);
+    signal mfb_sof_pos_trbuf : std_logic_vector (max(1, log2(MFB_REGION_SIZE_TRBUF2INS))-1 downto 0);
+    signal mfb_eof_pos_trbuf : std_logic_vector (max(1, log2(MFB_REGION_SIZE_TRBUF2INS*MFB_BLOCK_SIZE_TRBUF2INS))-1 downto 0);
+    signal mfb_sof_trbuf     : std_logic;
+    signal mfb_eof_trbuf     : std_logic;
+    signal mfb_src_rdy_trbuf : std_logic;
+    signal mfb_dst_rdy_trbuf : std_logic;
 
     -- =============================================================================================
     -- Frame length checker ---> Transaction buffer
@@ -258,13 +249,13 @@ architecture FULL of RX_DMA_CALYPTE is
     -- attribute mark_debug of hdrm_dma_hdr_src_rdy : signal is "true";
     -- attribute mark_debug of hdrm_dma_hdr_dst_rdy : signal is "true";
 
-    -- attribute mark_debug of trbuf_fifo_tx_data    : signal is "true";
-    -- attribute mark_debug of trbuf_fifo_tx_sof     : signal is "true";
-    -- attribute mark_debug of trbuf_fifo_tx_eof     : signal is "true";
-    -- attribute mark_debug of trbuf_fifo_tx_sof_pos : signal is "true";
-    -- attribute mark_debug of trbuf_fifo_tx_eof_pos : signal is "true";
-    -- attribute mark_debug of trbuf_fifo_tx_src_rdy : signal is "true";
-    -- attribute mark_debug of trbuf_fifo_tx_dst_rdy : signal is "true";
+    -- attribute mark_debug of mfb_data_trbuf    : signal is "true";
+    -- attribute mark_debug of mfb_sof_trbuf     : signal is "true";
+    -- attribute mark_debug of mfb_eof_trbuf     : signal is "true";
+    -- attribute mark_debug of mfb_sof_pos_trbuf : signal is "true";
+    -- attribute mark_debug of mfb_eof_pos_trbuf : signal is "true";
+    -- attribute mark_debug of mfb_src_rdy_trbuf : signal is "true";
+    -- attribute mark_debug of mfb_dst_rdy_trbuf : signal is "true";
 
     -- attribute mark_debug of mfb_src_rdy_inbuf : signal is "true";
     -- attribute mark_debug of mfb_dst_rdy_inbuf : signal is "true";
@@ -443,11 +434,11 @@ begin
             CLK => CLK,
             RST => RESET,
 
-            RX_MFB_DATA    => trbuf_fifo_tx_data,
-            RX_MFB_SOF     => trbuf_fifo_tx_sof,
-            RX_MFB_EOF     => trbuf_fifo_tx_eof,
-            RX_MFB_SRC_RDY => trbuf_fifo_tx_src_rdy,
-            RX_MFB_DST_RDY => trbuf_fifo_tx_dst_rdy,
+            RX_MFB_DATA    => mfb_data_trbuf,
+            RX_MFB_SOF     => mfb_sof_trbuf,
+            RX_MFB_EOF     => mfb_eof_trbuf,
+            RX_MFB_SRC_RDY => mfb_src_rdy_trbuf,
+            RX_MFB_DST_RDY => mfb_dst_rdy_trbuf,
 
             TX_MFB_DATA    => PCIE_UP_MFB_DATA,
             TX_MFB_META    => PCIE_UP_MFB_META,
@@ -473,66 +464,13 @@ begin
             HDRM_DMA_HDR_SRC_RDY => hdrm_dma_hdr_src_rdy,
             HDRM_DMA_HDR_DST_RDY => hdrm_dma_hdr_dst_rdy);
 
-    tr_buf_fifo_g: if (TRBUF_FIFO_EN) generate
-
-        trbuf_fifo_i : entity work.MFB_FIFOX
-            generic map (
-                REGIONS             => 1,
-                REGION_SIZE         => MFB_REGION_SIZE_TRBUF2INS,
-                BLOCK_SIZE          => MFB_BLOCK_SIZE_TRBUF2INS,
-                ITEM_WIDTH          => MFB_ITEM_WIDTH_TRBUF2INS,
-                META_WIDTH          => 0,
-                FIFO_DEPTH          => 32,
-                RAM_TYPE            => "AUTO",
-                DEVICE              => DEVICE,
-                ALMOST_FULL_OFFSET  => 2,
-                ALMOST_EMPTY_OFFSET => 2)
-            port map (
-                CLK         => CLK,
-                RST         => RESET,
-
-                RX_DATA     => trbuf_fifo_rx_data,
-                RX_META     => (others => '0'),
-                RX_SOF_POS  => trbuf_fifo_rx_sof_pos,
-                RX_EOF_POS  => trbuf_fifo_rx_eof_pos,
-                RX_SOF(0)   => trbuf_fifo_rx_sof,
-                RX_EOF(0)   => trbuf_fifo_rx_eof,
-                RX_SRC_RDY  => trbuf_fifo_rx_src_rdy,
-                RX_DST_RDY  => trbuf_fifo_rx_dst_rdy,
-
-                TX_DATA     => trbuf_fifo_tx_data,
-                TX_META     => open,
-                TX_SOF_POS  => trbuf_fifo_tx_sof_pos,
-                TX_EOF_POS  => trbuf_fifo_tx_eof_pos,
-                TX_SOF(0)   => trbuf_fifo_tx_sof,
-                TX_EOF(0)   => trbuf_fifo_tx_eof,
-                TX_SRC_RDY  => trbuf_fifo_tx_src_rdy,
-                TX_DST_RDY  => trbuf_fifo_tx_dst_rdy,
-
-                FIFO_STATUS => open,
-
-                FIFO_AFULL  => open,
-                FIFO_AEMPTY => open);
-
-    else generate
-
-        trbuf_fifo_tx_data    <= trbuf_fifo_rx_data;
-        trbuf_fifo_tx_sof_pos <= trbuf_fifo_rx_sof_pos;
-        trbuf_fifo_tx_eof_pos <= trbuf_fifo_rx_eof_pos;
-        trbuf_fifo_tx_sof     <= trbuf_fifo_rx_sof;
-        trbuf_fifo_tx_eof     <= trbuf_fifo_rx_eof;
-        trbuf_fifo_tx_src_rdy <= trbuf_fifo_rx_src_rdy;
-        trbuf_fifo_rx_dst_rdy <= trbuf_fifo_tx_dst_rdy;
-
-    end generate;
-
     tr_buff_g : if (BUFFERED_DATA_SIZE = MFB_REGION_SIZE_INBUF2TRBUF*MFB_BLOCK_SIZE_INBUF2TRBUF) generate
 
-        trbuf_fifo_rx_data      <= mfb_data_inbuf;
-        trbuf_fifo_rx_sof       <= mfb_sof_inbuf;
-        trbuf_fifo_rx_eof       <= mfb_eof_inbuf;
-        trbuf_fifo_rx_src_rdy   <= mfb_src_rdy_inbuf;
-        mfb_dst_rdy_inbuf <= trbuf_fifo_rx_dst_rdy;
+        mfb_data_trbuf    <= mfb_data_inbuf;
+        mfb_sof_trbuf     <= mfb_sof_inbuf;
+        mfb_eof_trbuf     <= mfb_eof_inbuf;
+        mfb_src_rdy_trbuf <= mfb_src_rdy_inbuf;
+        mfb_dst_rdy_inbuf <= mfb_dst_rdy_trbuf;
 
     else generate
 
@@ -555,13 +493,13 @@ begin
                 RX_MFB_SRC_RDY => mfb_src_rdy_lng_check,
                 RX_MFB_DST_RDY => mfb_dst_rdy_lng_check,
 
-                TX_MFB_DATA    => trbuf_fifo_rx_data,
-                TX_MFB_SOF_POS => trbuf_fifo_rx_sof_pos,
-                TX_MFB_EOF_POS => trbuf_fifo_rx_eof_pos,
-                TX_MFB_SOF     => trbuf_fifo_rx_sof,
-                TX_MFB_EOF     => trbuf_fifo_rx_eof,
-                TX_MFB_SRC_RDY => trbuf_fifo_rx_src_rdy,
-                TX_MFB_DST_RDY => trbuf_fifo_rx_dst_rdy);
+                TX_MFB_DATA    => mfb_data_trbuf,
+                TX_MFB_SOF_POS => mfb_sof_pos_trbuf,
+                TX_MFB_EOF_POS => mfb_eof_pos_trbuf,
+                TX_MFB_SOF     => mfb_sof_trbuf,
+                TX_MFB_EOF     => mfb_eof_trbuf,
+                TX_MFB_SRC_RDY => mfb_src_rdy_trbuf,
+                TX_MFB_DST_RDY => mfb_dst_rdy_trbuf);
 
     end generate;
 
