@@ -31,6 +31,7 @@ package test;
     parameter CNTRS_WIDTH    = 64;
     parameter PKT_SIZE_MAX   = 2**12;
     parameter TRBUF_REG_EN   = 1'b1;
+    parameter PERF_CNTR_EN   = 1'b0;
 
     parameter DEVICE = "ULTRASCALE";
 

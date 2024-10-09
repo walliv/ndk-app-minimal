@@ -137,7 +137,15 @@ entity RX_DMA_CALYPTE_HDR_MANAGER is
         PKT_CNTR_CHAN     : out std_logic_vector(log2(CHANNELS) -1 downto 0);
         PKT_CNTR_SENT_INC : out std_logic;
         PKT_CNTR_DISC_INC : out std_logic;
-        PKT_CNTR_PKT_SIZE : out std_logic_vector(log2(PKT_MTU+1) -1 downto 0)
+        PKT_CNTR_PKT_SIZE : out std_logic_vector(log2(PKT_MTU+1) -1 downto 0);
+
+        -- =========================================================================================
+        -- Performance counter outputs
+        -- =========================================================================================
+        DATA_ADDR_REQ_CNTR_INC    : out std_logic;
+        DMA_HDR_ADDR_REQ_CNTR_INC : out std_logic;
+        DATA_ADDR_STALL_INC       : out std_logic;
+        DMA_HDR_ADDR_STALL_INC    : out std_logic
         );
 end entity;
 
@@ -310,6 +318,12 @@ architecture FULL of RX_DMA_CALYPTE_HDR_MANAGER is
     signal ptr_fifo_do    : std_logic_vector(POINTER_WIDTH -1 downto 0);
     signal ptr_fifo_rd    : std_logic;
     signal ptr_fifo_empty : std_logic;
+
+    -- =============================================================================================
+    -- Perfofmance counter logic
+    -- =============================================================================================
+    signal data_addr_next_reg    : std_logic;
+    signal dma_hdr_addr_next_reg : std_logic;
 
     -- =============================================================================================
     -- Debug signals and probes (either for verification or ILA/SignalTap)
@@ -1025,4 +1039,24 @@ begin
     -- signal is valid and set to 1.
     DMA_HDR_SRC_RDY <= ((not hdr_meta_fifo_empty) and (not ptr_fifo_empty) and (not pkt_size_fifo_empty) and (not discard_fifo_empty) and (not discard_fifo_do(0)))
                        or ((not discard_fifo_empty) and discard_fifo_do(0));
+
+    -- =============================================================================================
+    -- Performance counter logic
+    -- =============================================================================================
+    addr_next_reg_p: process (CLK) is
+    begin
+        if (rising_edge(CLK)) then
+            data_addr_next_reg    <= data_addr_next;
+            dma_hdr_addr_next_reg <= dma_hdr_addr_next;
+        end if;
+    end process;
+
+    -- the response for an address request comes usually one clock period delayed. If that is not a
+    -- case, the stalling occurs.
+    DATA_ADDR_STALL_INC    <= data_addr_next_reg    and (not data_pcie_addr_vld);
+    DMA_HDR_ADDR_STALL_INC <= dma_hdr_addr_next_reg and (not dma_hdr_pcie_addr_vld);
+
+    -- Counters of requests for PCIe addresses (should be equal to the overall amount of packets)
+    DATA_ADDR_REQ_CNTR_INC    <= data_pcie_addr_vld;
+    DMA_HDR_ADDR_REQ_CNTR_INC <= dma_hdr_pcie_addr_vld;
 end architecture;

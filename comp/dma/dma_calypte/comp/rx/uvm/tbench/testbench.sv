@@ -80,7 +80,8 @@ module testbench;
         .SW_ADDR_WIDTH       (test::SW_ADDR_WIDTH),
         .POINTER_WIDTH       (test::POINTER_WIDTH),
         .CNTRS_WIDTH         (test::CNTRS_WIDTH),
-        .TRBUF_REG_EN        (test::TRBUF_REG_EN)
+        .TRBUF_REG_EN        (test::TRBUF_REG_EN),
+        .PERF_CNTR_EN        (test::PERF_CNTR_EN)
     )
     DUT_U (
         .CLK        (CLK),

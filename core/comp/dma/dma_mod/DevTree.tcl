@@ -44,6 +44,10 @@ proc dts_dmamod_open {base type rxn txn pcie rx_frame_size_max tx_frame_size_max
         }
     }
 
+    if {$type == 4 && $DMA_DEBUG_ENABLE} {
+        dts_dma_perf_cntrs ret [expr $base + 0x3000]
+    }
+
     # TX DMA channels
     for {set i 0} {$i < $txn} {incr i} {
         if {$type == 3} {

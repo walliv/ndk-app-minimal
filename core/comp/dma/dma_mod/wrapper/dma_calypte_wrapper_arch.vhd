@@ -693,6 +693,7 @@ begin
                 RX_PTR_WIDTH        => RX_DP_WIDTH,
                 USR_RX_PKT_SIZE_MAX => USR_RX_PKT_SIZE_MAX,
                 TRBUF_REG_EN        => TRUE,
+                PERF_CNTR_EN        => DBG_CNTR_EN,
 
                 TX_CHANNELS         => TX_CHANNELS,
                 TX_PTR_WIDTH        => TX_DP_WIDTH,

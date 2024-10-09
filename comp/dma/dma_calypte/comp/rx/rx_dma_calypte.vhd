@@ -54,7 +54,10 @@ entity RX_DMA_CALYPTE is
         -- * Maximum allowed value is 2**16 - 1
         PKT_SIZE_MAX : natural := 2**16 - 1;
 
-        TRBUF_REG_EN            : boolean := FALSE
+        -- Enables a register in the transaction buffer that improves throughput (but increases latency).
+        TRBUF_REG_EN : boolean := FALSE;
+        -- Enables performance counters in the design for metrics.
+        PERF_CNTR_EN : boolean := FALSE
         );
 
     port (
@@ -123,6 +126,22 @@ architecture FULL of RX_DMA_CALYPTE is
     -- the lengh of the PCIe transaction
     constant BUFFERED_DATA_SIZE : natural := 128;
     --=============================================================================================================
+
+    constant MI_SPLIT_PORTS : natural := 2;
+    constant MI_SPLIT_BASES : slv_array_t(MI_SPLIT_PORTS -1 downto 0)(MI_WIDTH-1 downto 0) := (
+        0 => x"00000000",
+        1 => x"00003000");
+
+    constant MI_SPLIT_ADDR_MASK : std_logic_vector(MI_WIDTH-1 downto 0) := x"00003000";
+
+    signal mi_split_dwr  : slv_array_t(MI_SPLIT_PORTS -1 downto 0)(MI_WIDTH -1 downto 0);
+    signal mi_split_addr : slv_array_t(MI_SPLIT_PORTS -1 downto 0)(MI_WIDTH -1 downto 0);
+    signal mi_split_be   : slv_array_t(MI_SPLIT_PORTS -1 downto 0)(MI_WIDTH/8 -1 downto 0);
+    signal mi_split_rd   : std_logic_vector(MI_SPLIT_PORTS -1 downto 0);
+    signal mi_split_wr   : std_logic_vector(MI_SPLIT_PORTS -1 downto 0);
+    signal mi_split_drd  : slv_array_t(MI_SPLIT_PORTS -1 downto 0)(MI_WIDTH -1 downto 0);
+    signal mi_split_ardy : std_logic_vector(MI_SPLIT_PORTS -1 downto 0);
+    signal mi_split_drdy : std_logic_vector(MI_SPLIT_PORTS -1 downto 0);
 
     signal start_req_chan : std_logic_vector((log2(CHANNELS)-1) downto 0);
     signal start_req_vld  : std_logic;
@@ -208,6 +227,27 @@ architecture FULL of RX_DMA_CALYPTE is
     signal data_path_dst_rdy : std_logic;
     signal hdr_log_dst_rdy   : std_logic;
 
+    -- =============================================================================================
+    -- Performance counters' increment signals
+    -- =============================================================================================
+    constant PERF_CNTR_NUM   : positive := 6;
+    constant PERF_CNTR_WIDTH : positive := 64;
+
+    signal perf_cntr_diff_packed : slv_array_t(PERF_CNTR_NUM -1 downto 0)(PERF_CNTR_WIDTH -1 downto 0);
+    signal perf_cntr_incr_packed : std_logic_vector(PERF_CNTR_NUM -1 downto 0);
+
+    signal data_addr_req_cntr_incr    : std_logic;
+    signal dma_hdr_addr_req_cntr_incr : std_logic;
+    signal data_addr_stall_incr       : std_logic;
+    signal dma_hdr_addr_stall_incr    : std_logic;
+    signal pcie_mfb_stall_incr        : std_logic;
+    signal pcie_mfb_beats_incr        : std_logic;
+
+    signal data_buff_full_chan         : std_logic_vector(log2(CHANNELS) -1 downto 0);
+    signal data_buff_full_cntr_incr    : std_logic;
+    signal dma_hdr_buff_full_chan      : std_logic_vector(log2(CHANNELS) -1 downto 0);
+    signal dma_hdr_buff_full_cntr_incr : std_logic;
+
     --==============================================================================================
     -- Debug signals for the RX DMA
     --==============================================================================================
@@ -279,6 +319,118 @@ begin
         report "RX_LL_DMA: The design is not set for such PCIe MFB configuration, the valid are: MFB#(1,1,8,32), MFB#(2,1,8,32)."
         severity FAILURE;
 
+    perf_cntr_g: if (PERF_CNTR_EN) generate
+
+        mi_splitter_i : entity work.MI_SPLITTER_PLUS_GEN
+            generic map (
+                ADDR_WIDTH => MI_WIDTH,
+                DATA_WIDTH => MI_WIDTH,
+                META_WIDTH => 0,
+                PORTS      => MI_SPLIT_PORTS,
+                PIPE_OUT   => (others => FALSE),
+
+                ADDR_BASES => MI_SPLIT_PORTS,
+                ADDR_BASE  => MI_SPLIT_BASES,
+                ADDR_MASK  => MI_SPLIT_ADDR_MASK,
+
+                DEVICE => DEVICE)
+            port map (
+                CLK   => CLK,
+                RESET => RESET,
+
+                RX_DWR  => MI_DWR,
+                RX_MWR  => (others => '0'),
+                RX_ADDR => MI_ADDR,
+                RX_BE   => MI_BE,
+                RX_RD   => MI_RD,
+                RX_WR   => MI_WR,
+                RX_ARDY => MI_ARDY,
+                RX_DRD  => MI_DRD,
+                RX_DRDY => MI_DRDY,
+
+                TX_DWR  => mi_split_dwr,
+                TX_MWR  => open,
+                TX_ADDR => mi_split_addr,
+                TX_BE   => mi_split_be,
+                TX_RD   => mi_split_rd,
+                TX_WR   => mi_split_wr,
+                TX_ARDY => mi_split_ardy,
+                TX_DRD  => mi_split_drd,
+                TX_DRDY => mi_split_drdy);
+
+        perf_counters_p: entity work.DATA_LOGGER
+            generic map (
+                MI_DATA_WIDTH   => MI_WIDTH,
+                MI_ADDR_WIDTH   => MI_WIDTH,
+
+                CNTER_CNT       => PERF_CNTR_NUM,
+                VALUE_CNT       => 2,
+
+                CTRLO_WIDTH     => 0,
+                CTRLI_WIDTH     => 0,
+
+                CNTER_WIDTH     => PERF_CNTR_WIDTH,
+                VALUE_WIDTH     => (others => log2(CHANNELS)),
+
+                MIN_EN          => (others => FALSE),
+                MAX_EN          => (others => FALSE),
+                SUM_EN          => (others => TRUE),
+                HIST_EN         => (others => TRUE),
+
+                SUM_EXTRA_WIDTH => (others => 16),
+                HIST_BOX_CNT    => (others => CHANNELS),
+                HIST_BOX_WIDTH  => (others => PERF_CNTR_WIDTH),
+                CTRLO_DEFAULT   => (others => '0'))
+            port map (
+                CLK           => CLK,
+                RST           => RESET,
+
+                RST_DONE      => open,
+                SW_RST        => open,
+
+                CTRLO         => open,
+                CTRLI         => (others => '0'),
+
+                CNTERS_INCR   => perf_cntr_incr_packed,
+                CNTERS_SUBMIT => perf_cntr_incr_packed,
+                CNTERS_DIFF   => perf_cntr_diff_packed,
+
+                VALUES_VLD    => data_buff_full_cntr_incr & dma_hdr_buff_full_cntr_incr,
+                VALUES        => data_buff_full_chan & dma_hdr_buff_full_chan,
+
+                MI_DWR        => mi_split_dwr(1),
+                MI_ADDR       => mi_split_addr(1),
+                MI_BE         => mi_split_be(1),
+                MI_RD         => mi_split_rd(1),
+                MI_WR         => mi_split_wr(1),
+                MI_ARDY       => mi_split_ardy(1),
+                MI_DRD        => mi_split_drd(1),
+                MI_DRDY       => mi_split_drdy(1));
+
+        perf_cntr_diff_packed <= (others => std_logic_vector(to_unsigned(1, PERF_CNTR_WIDTH)));
+        perf_cntr_incr_packed <= pcie_mfb_beats_incr
+                                 & data_addr_req_cntr_incr
+                                 & dma_hdr_addr_req_cntr_incr
+                                 & data_addr_stall_incr
+                                 & dma_hdr_addr_stall_incr
+                                 & pcie_mfb_stall_incr;
+
+        -- Counts the amount of beats where a transaction is ready but the PCIE interface is not
+        pcie_mfb_stall_incr <= (not PCIE_UP_MFB_DST_RDY) and PCIE_UP_MFB_SRC_RDY and (not RESET);
+        -- Counts an overall amount of beats in which packets are sent
+        pcie_mfb_beats_incr <= PCIE_UP_MFB_DST_RDY and PCIE_UP_MFB_SRC_RDY and (not RESET);
+    else generate
+        mi_split_dwr(0)  <= MI_DWR;
+        mi_split_addr(0) <= MI_ADDR;
+        mi_split_be(0)   <= MI_BE;
+        mi_split_rd(0)   <= MI_RD;
+        mi_split_wr(0)   <= MI_WR;
+
+        MI_ARDY <= mi_split_ardy(0);
+        MI_DRD  <= mi_split_drd(0);
+        MI_DRDY <= mi_split_drdy(0);
+    end generate;
+
     rx_dma_sw_manager_i : entity work.RX_DMA_CALYPTE_SW_MANAGER
         generic map (
             DEVICE             => DEVICE,
@@ -295,14 +447,14 @@ begin
             CLK   => CLK,
             RESET => RESET,
 
-            MI_ADDR => MI_ADDR,
-            MI_DWR  => MI_DWR,
-            MI_BE   => MI_BE,
-            MI_RD   => MI_RD,
-            MI_WR   => MI_WR,
-            MI_DRD  => MI_DRD,
-            MI_ARDY => MI_ARDY,
-            MI_DRDY => MI_DRDY,
+            MI_ADDR => mi_split_addr(0),
+            MI_DWR  => mi_split_dwr(0),
+            MI_BE   => mi_split_be(0),
+            MI_RD   => mi_split_rd(0),
+            MI_WR   => mi_split_wr(0),
+            MI_DRD  => mi_split_drd(0),
+            MI_ARDY => mi_split_ardy(0),
+            MI_DRDY => mi_split_drdy(0),
 
             PKT_SENT_CHAN     => hdrm_pkt_sent_chan,
             PKT_SENT_INC      => hdrm_pkt_sent_inc,
@@ -344,7 +496,12 @@ begin
             DPM_RD_CHAN => hdrm_data_rd_chan,
             DPM_RD_DATA => hdrm_dpm_rd_data,
             HPM_RD_CHAN => hdrm_hdr_rd_chan,
-            HPM_RD_DATA => hdrm_hpm_rd_data);
+            HPM_RD_DATA => hdrm_hpm_rd_data,
+
+            DATA_BUFF_FULL_CHAN         => data_buff_full_chan,
+            DATA_BUFF_FULL_CNTR_INCR    => data_buff_full_cntr_incr,
+            DMA_HDR_BUFF_FULL_CHAN      => dma_hdr_buff_full_chan,
+            DMA_HDR_BUFF_FULL_CNTR_INCR => dma_hdr_buff_full_cntr_incr);
 
 
     USER_RX_MFB_DST_RDY <= hdr_log_dst_rdy and data_path_dst_rdy;
@@ -415,7 +572,13 @@ begin
             PKT_CNTR_CHAN     => hdrm_pkt_sent_chan,
             PKT_CNTR_SENT_INC => hdrm_pkt_sent_inc,
             PKT_CNTR_DISC_INC => hdrm_pkt_disc_inc,
-            PKT_CNTR_PKT_SIZE => hdrm_pkt_sent_bytes);
+            PKT_CNTR_PKT_SIZE => hdrm_pkt_sent_bytes,
+
+            DATA_ADDR_REQ_CNTR_INC    => data_addr_req_cntr_incr,
+            DMA_HDR_ADDR_REQ_CNTR_INC => dma_hdr_addr_req_cntr_incr,
+            DATA_ADDR_STALL_INC       => data_addr_stall_incr,
+            DMA_HDR_ADDR_STALL_INC    => dma_hdr_addr_stall_incr);
+
 
     rx_dma_hdr_insertor_i : entity work.RX_DMA_CALYPTE_HDR_INSERTOR
         generic map (

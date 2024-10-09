@@ -118,7 +118,13 @@ port (
     DPM_RD_CHAN     : in  std_logic_vector(log2(CHANNELS)-1 downto 0);
     DPM_RD_DATA     : out std_logic_vector(POINTER_WIDTH-1 downto 0);
     HPM_RD_CHAN     : in  std_logic_vector(log2(CHANNELS)-1 downto 0);
-    HPM_RD_DATA     : out std_logic_vector(POINTER_WIDTH-1 downto 0)
+    HPM_RD_DATA     : out std_logic_vector(POINTER_WIDTH-1 downto 0);
+
+    -- Performance counters
+    DATA_BUFF_FULL_CHAN         : out std_logic_vector(log2(CHANNELS) -1 downto 0);
+    DATA_BUFF_FULL_CNTR_INCR    : out std_logic;
+    DMA_HDR_BUFF_FULL_CHAN      : out std_logic_vector(log2(CHANNELS) -1 downto 0);
+    DMA_HDR_BUFF_FULL_CNTR_INCR : out std_logic
 );
 end entity;
 
@@ -350,8 +356,8 @@ architecture FULL of RX_DMA_CALYPTE_SW_MANAGER is
         RSV_3             => 1 + 0,
         R_SDP             => 1 + 2,     -- Channel Stop indication (comparator) + Header manager
         R_SHP             => 1 + 2,     -- Channel Stop indication (comparator) + Header manager
-        R_HDP             => 1 + 1,     -- Comparator
-        R_HHP             => 1 + 1,     -- Comparator
+        R_HDP             => 1 + 2,     -- Comparator + Perf. counters
+        R_HHP             => 1 + 2,     -- Comparator + Perf. counters
         RSV_8             => 1 + 0,
         RSV_9             => 1 + 0,
         RSV_10            => 1 + 0,
@@ -583,6 +589,16 @@ architecture FULL of RX_DMA_CALYPTE_SW_MANAGER is
     signal stop_hhp_ok_reg   : std_logic;
     -- =====================================================================
 
+    -- =============================================================================================
+    -- Performance counter connections
+    -- =============================================================================================
+    signal buff_full_shp_compare : std_logic_vector(POINTER_WIDTH -1 downto 0);
+    signal buff_full_sdp_compare : std_logic_vector(POINTER_WIDTH -1 downto 0);
+    signal buff_full_hhp_compare : std_logic_vector(POINTER_WIDTH -1 downto 0);
+    signal buff_full_hdp_compare : std_logic_vector(POINTER_WIDTH -1 downto 0);
+
+    signal buff_full_hhp_compare_reg : std_logic_vector(POINTER_WIDTH -1 downto 0);
+    signal buff_full_hdp_compare_reg : std_logic_vector(POINTER_WIDTH -1 downto 0);
     -- attribute mark_debug                           : string;
     -- attribute mark_debug of active_chan_reg        : signal is "true";
     -- attribute mark_debug of start_pending_reg_chan : signal is "true";
@@ -1247,4 +1263,34 @@ begin
     stop_hhp_ok_reg <= '1' when (comp_hpp_res = "00") else '0';
     -- =====================================================================
 
+    -- =============================================================================================
+    -- Connections to performance counters
+    -- =============================================================================================
+
+    reg_addrb(R_HHP)(2)    <= SHP_RD_CHAN;
+    reg_addrb(R_HDP)(2)    <= SDP_RD_CHAN;
+
+    inc_reg_p: process (CLK) is
+    begin
+        if (rising_edge(CLK)) then
+            DMA_HDR_BUFF_FULL_CHAN    <= SHP_RD_CHAN;
+            DATA_BUFF_FULL_CHAN       <= SDP_RD_CHAN;
+            buff_full_shp_compare     <= reg_dob_opt(R_SHP)(2)(POINTER_WIDTH-1 downto 0);
+            buff_full_sdp_compare     <= reg_dob_opt(R_SDP)(2)(POINTER_WIDTH-1 downto 0);
+            buff_full_hhp_compare     <= reg_dob_opt(R_HHP)(2)(POINTER_WIDTH-1 downto 0);
+            buff_full_hdp_compare     <= reg_dob_opt(R_HDP)(2)(POINTER_WIDTH-1 downto 0);
+            buff_full_hhp_compare_reg <= buff_full_hhp_compare;
+            buff_full_hdp_compare_reg <= buff_full_hdp_compare;
+        end if;
+    end process;
+
+    DATA_BUFF_FULL_CNTR_INCR    <= '1' when
+            (unsigned(buff_full_sdp_compare) -1) = unsigned(buff_full_hdp_compare)
+            and (buff_full_hdp_compare /= buff_full_hdp_compare_reg)
+        else '0';
+
+    DMA_HDR_BUFF_FULL_CNTR_INCR <= '1' when
+            (unsigned(buff_full_shp_compare) -1) = unsigned(buff_full_hhp_compare)
+            and (buff_full_hhp_compare /= buff_full_hhp_compare_reg)
+        else '0';
 end architecture;
