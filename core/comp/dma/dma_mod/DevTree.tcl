@@ -40,7 +40,7 @@ proc dts_dmamod_open {base type rxn txn pcie rx_frame_size_max tx_frame_size_max
             }
         } elseif {$type == 4} {
             set    var_base [expr $base + $i * 0x80]
-            append ret [dts_dma_calypte_ctrl "rx" $i $var_base $pcie]
+            dts_dma_calypte_ctrl ret "rx" $i $var_base $pcie
         }
     }
 
@@ -51,7 +51,7 @@ proc dts_dmamod_open {base type rxn txn pcie rx_frame_size_max tx_frame_size_max
             append ret [dts_dma_medusa_ctrl "ndp" $type "tx" $i $var_base $pcie "dma_params_tx$pcie"]
         } elseif {$type == 4} {
             set    var_base [expr $base + $i * 0x80 + $offset]
-            append ret [dts_dma_calypte_ctrl "tx" $i $var_base $pcie]
+            dts_dma_calypte_ctrl ret "tx" $i $var_base $pcie
         }
     }
 
