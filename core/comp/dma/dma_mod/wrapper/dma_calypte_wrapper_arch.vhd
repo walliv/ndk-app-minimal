@@ -25,7 +25,6 @@ architecture CALYPTE of DMA_WRAPPER is
     constant MFB_LOOPBACK_EN      : boolean := TRUE;
     constant LATENCY_METER_EN     : boolean := DBG_CNTR_EN;
     constant TX_DMA_DBG_CORE_EN   : boolean := DBG_CNTR_EN;
-    constant RX_DMA_DBG_CORE_EN   : boolean := FALSE;
 
     constant ST_SP_DBG_META_WIDTH : natural := 4;
 
@@ -599,7 +598,6 @@ begin
                 MFB_LOOPBACK_EN    => MFB_LOOPBACK_EN,
                 LATENCY_METER_EN   => LATENCY_METER_EN,
                 TX_DMA_DBG_CORE_EN => TX_DMA_DBG_CORE_EN,
-                RX_DMA_DBG_CORE_EN => RX_DMA_DBG_CORE_EN,
 
                 ST_SP_DBG_SIGNAL_W => ST_SP_DBG_META_WIDTH,
                 MI_WIDTH           => MI_WIDTH
