@@ -50,7 +50,7 @@ async def run_test(dut, pkt_count=1000, item_width_min=1, item_width_max=32):
         cocotb.log.debug(f"generated transaction: {transaction.hex()}")
         await tb.stream_in.write32(int.from_bytes(transaction, 'little'), transaction)
         output = await tb.stream_in.read32(int.from_bytes(transaction, 'little'))
-        cocotb.log.debug(f"recieved transaction: {output.hex()}")
+        cocotb.log.debug(f"received transaction: {output.hex()}")
 
         assert output == transaction
 
@@ -62,7 +62,7 @@ async def run_test(dut, pkt_count=1000, item_width_min=1, item_width_max=32):
         cocotb.log.debug(f"generated transaction: {transaction.hex()}")
         await tb.stream_in.write(int.from_bytes(transaction[0:4], 'little'), transaction)
         output = await tb.stream_in.read(int.from_bytes(transaction[0:4], 'little'), len(transaction))
-        cocotb.log.debug(f"recieved transaction: {output.hex()}")
+        cocotb.log.debug(f"received transaction: {output.hex()}")
 
         assert output == transaction
 
@@ -74,7 +74,7 @@ async def run_test(dut, pkt_count=1000, item_width_min=1, item_width_max=32):
         cocotb.log.debug(f"generated transaction: {transaction.hex()}")
         await tb.stream_in.write64(int.from_bytes(transaction[0:4], 'little'), transaction)
         output = await tb.stream_in.read64(int.from_bytes(transaction[0:4], 'little'))
-        cocotb.log.debug(f"recieved transaction: {output.hex()}")
+        cocotb.log.debug(f"received transaction: {output.hex()}")
 
         assert output == transaction
 
