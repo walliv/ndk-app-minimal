@@ -7,7 +7,7 @@
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, ClockCycles
-from cocotbext.ofm.mi.drivers import MIMasterDriver as MIDriver
+from cocotbext.ofm.mi.drivers import MIRequestDriver as MIDriver
 from cocotbext.ofm.ver.generators import random_packets
 from cocotb_bus.scoreboard import Scoreboard
 
