@@ -18,10 +18,10 @@ git_sha_short = git_repo.git.rev_parse(git_sha, short=8)
 
 # -- Project information -----------------------------------------------------
 
-project = 'NDK-FPGA Docs'
+project = 'NDK-FPGA'
 copyright = str(current_year) + ', CESNET z.s.p.o.'
 author = 'CESNET TMC'
-version = 'Git branch: ' + str(git_branch) + ', <br> Git hash: ' + str(git_sha_short)
+version = 'Git branch: ' + str(git_branch) + '<br>Git hash: ' + str(git_sha_short)
 
 # -- General configuration ---------------------------------------------------
 
@@ -30,8 +30,9 @@ version = 'Git branch: ' + str(git_branch) + ', <br> Git hash: ' + str(git_sha_s
 # ones.
 extensions = [
     "ndk-fpga",
-    "sphinx_rtd_theme",
-    "sphinxvhdl.vhdl"
+    "piccolo_theme",
+    "sphinxvhdl.vhdl",
+    "sphinx.ext.autosectionlabel"
 ]
 
 vhdl_autodoc_source_path = (Path(__file__).parent.parent.parent).resolve()
@@ -50,18 +51,16 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = 'piccolo_theme'
 html_theme_options = {
-    'collapse_navigation': True,
-    'sticky_navigation': True,
-    'navigation_depth': 4,
-    'includehidden': True,
-    'display_version': True,
+    "globaltoc_maxdepth": 4,
+    "banner_hiding": "permanent",
+    "show_theme_credit": False,
 }
+
+html_logo = "img/ndk_fpga_logo_simple.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-
-html_style = 'css/theme_overrides.css'
