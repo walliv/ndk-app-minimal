@@ -28,3 +28,11 @@ def random_packets(min_size=4, max_size=64, count=10):
     """
     for i in range(count):
         yield random_bytes(random.randint(min_size, max_size), random_byte())
+
+
+def random_integers(mini=0, maxi=100, count=10):
+    """
+    Generate N random integers inbetween the min/max range
+    """
+    for i in range(count):
+        yield random.randint(mini, maxi)
