@@ -16,6 +16,7 @@ from cocotb_bus.drivers import BitDriver
 from cocotb_bus.scoreboard import Scoreboard
 from cocotbext.ofm.utils.throughput_probe import ThroughputProbe, ThroughputProbeMvbInterface
 from cocotbext.ofm.base.generators import ItemRateLimiter
+from cocotbext.ofm.mvb.transaction import MvbTrClassic
 
 
 class testbench():
@@ -41,7 +42,7 @@ class testbench():
 
     def model(self, transaction):
         """Model the DUT based on the input transaction"""
-        self.expected_output.append(transaction)
+        self.expected_output.append(MvbTrClassic.from_bytes(transaction))
         self.pkts_sent += 1
 
     async def reset(self):
