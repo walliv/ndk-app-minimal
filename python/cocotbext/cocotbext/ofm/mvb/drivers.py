@@ -1,142 +1,143 @@
 # drivers.py: MVBDriver
 # Copyright (C) 2024 CESNET z. s. p. o.
 # Author(s): Ondřej Schwarz <Ondrej.Schwarz@cesnet.cz>
+#            Daniel Kondys <kondys@cesnet.cz>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+from cocotb.handle import ModifiableObject
+
 from cocotbext.ofm.base.drivers import BusDriver
 from cocotbext.ofm.mvb.utils import random_delays_config
+from cocotbext.ofm.utils.signals import await_signal_sync
 
-import random
+from ..base.generators import ItemRateLimiter
+from ..base.transaction import IdleTransaction
+from .transaction import MvbTrClassic
 
 
 class MVBDriver(BusDriver):
     """Driver intender for the MVB bus used for sending transactions to the bus.
 
     Atributes:
-       _item_cnt(int): number of items sent.
-       _vld_item_cnt(int): number of valid items sent (without items containing random spaces).
-       _items(int): number of MVB items.
-       _word_width(int): width of MVB word in bytes.
-       _item_width(int): width of MVB item in bytes.
-       _item_offset(int): offset of MVB item in context of MVB word.
+       os(list): list of names of optional signals that are on the bus
+                 (filtered version of the _optional_signals).
+       _item_cnt(int): number of ready items in the current word.
+       items(int): number of MVB items in word.
+       item_widths(dict): dictionary where "keys" are the names of the (optional) signals on the bus
+                          and "values" are their respective widths.
+       bus_isarray(bool): indicates whether the bus is a vector or an array.
+       _data(dict): dictionary where "keys" are the names of the (optional) signals on the bus
+                    and "values" are their respective current values.
+       _cDelays, _mode, _delays_fill: see random_delays_config in .utils.
 
     """
 
-    _signals = ["data", "vld", "src_rdy", "dst_rdy"]
+    _signals = ["vld", "src_rdy", "dst_rdy"]
+    _optional_signals = ["data", "meta", "addr", "discard", "length"]
 
     def __init__(self, entity, name, clock, array_idx=None, mvb_params={}) -> None:
         super().__init__(entity, name, clock, array_idx=array_idx)
+
+        self.os = [s for s in MVBDriver._optional_signals if hasattr(self.bus, s)]
         self._item_cnt = 0
-        self._vld_item_cnt = 0
-        self._items = len(self.bus.vld)
-        self._word_width = len(self.bus.data) // 8
-        self._item_width = self._word_width // self._items
-        self._item_offset = 0
+        self.items = len(self.bus.vld)
+        self.item_widths = self._get_item_widths()
+        self.bus_isarray = not isinstance(getattr(self.bus, self.os[0]), ModifiableObject)
+        self._data = self._init_data()
+        self._cDelays, self._mode, self._delays_fill = random_delays_config(self.items, mvb_params)
+
         self._clear_control_signals()
+        self.bus.vld.value = 0
         self.bus.src_rdy.value = 0
 
-        self._cDelays, self._mode, self._delays_fill = random_delays_config(self._items, mvb_params)
-        """Randomized empty spaces"""
+    def _get_item_widths(self) -> dict:
+        """Make a dictionary of all optional signals on the bus and the width of each one's item."""
+
+        return {s: len(getattr(self.bus, s)) // self.items for s in self.os}
+
+    def _init_data(self) -> dict:
+        """Make a dictionary of all optional signals on the bus and initialize their values."""
+
+        if self.bus_isarray:
+            return {s: [0] * self.items for s in self.os}
+        else:
+            return {s: 0 for s in self.os}
 
     def _clear_control_signals(self) -> None:
         """Sets control signals to default values without sending them to the MVB bus."""
 
-        self._data = bytearray(self._word_width)
+        if self.bus_isarray:
+            for sig in self._data:
+                self._data[sig] = [0] * self.items
+        else:
+            for sig in self._data:
+                self._data[sig] = 0
         self._vld = 0
         self._src_rdy = 0
 
     def _propagate_control_signals(self) -> None:
         """Sends value of control signals to the MVB bus."""
 
-        self.bus.data.value = int.from_bytes(self._data, 'little')
+        for sig, val in self._data.items():
+            getattr(self.bus, sig).value = val
         self.bus.vld.value = self._vld
         self.bus.src_rdy.value = self._src_rdy
 
-    def _fill_empty_word(self) -> None:
-        """Fills MVB word with invalid data."""
+    async def _stack_items(self, transaction):
+        """Concatenates transactions (MVB Items) to form a word on the bus"""
 
-        for i in range(self._word_width):
-            if self._mode == 1 or self._mode == 3:
-                self._data[i] = self._delays_fill
-            elif self._mode == 2:
-                self._data[i] = random.randrange(0, 256)
-        self._vld = 0
-
-    async def _move_item(self) -> None:
-        """Moves MVB item in context of MVB word and if the word is full, it is fowarded to the _move_word function."""
-
-        self._item_offset += 1
-
-        if self._item_offset == self._items:
-            await self._move_word()
-            self._item_offset = 0
+        # TODO: account for Idle transactions
+        if self.bus_isarray:
+            for signal in self._data:
+                item_ptr = self.items-1 - self._item_cnt
+                self._data[signal][item_ptr] = getattr(transaction, signal)
+        else:
+            for signal, value in self._data.items():
+                shift_size = self.item_widths[signal] * self._item_cnt
+                tr_part = getattr(transaction, signal)
+                # Prepend the Item to the word: shift and OR
+                self._data[signal] = (tr_part << shift_size) | value
 
     async def _move_word(self) -> None:
         """Sends MVB word to the MVB bus if possible and clears the word."""
 
-        if (self._src_rdy):
-            self._propagate_control_signals()
+        self._src_rdy = 1 if self._vld > 0 else 0
+        self._propagate_control_signals()
 
-        else:
-            self._clear_control_signals()
-            self.bus.src_rdy.value = 0
-
-        #TODO when Utils are merged, replace with await_signal_sync
-        while True:
-            await self._clk_re
-            if self.bus.dst_rdy.value == 1:
-                break
-
-        if random.choices((0, 1), weights=self._cDelays["wordDelayEn_wt"], k=1)[0]:
-            for i in self._cDelays["wordDelay"]:
-                self._fill_empty_word()
-                self._src_rdy = 1
-                self._item_cnt += self._items
-                self._propagate_control_signals()
+        await self._clk_re
+        await await_signal_sync(clk_re=self._clk_re, signal=self.bus.dst_rdy, value=1)
 
         self._clear_control_signals()
 
-    async def _send_data(self, data: bytes) -> None:
+    async def _send_data(self, data) -> None:
         """Prepares and sends transaction to the MVB bus.
 
-           Args:
-               data - data to be sent to the MVB bus.
+            Args:
+                data: Data to be sent to the MVB bus.
+                      Can be of type "bytes" or an object of a class
+                      that inherits from the BaseTransaction class.
 
         """
 
-        self.log.debug(f"ITEM {self._vld_item_cnt}:")
-        self.log.debug(f"sending item: {data}")
+        self.log.debug(f"Recieved item: {data}")
 
-        self._data[self._item_offset * self._item_width:(self._item_offset + 1) * self._item_width] = data
+        if isinstance(data, bytes):
+            mvb_tr = MvbTrClassic.from_bytes(data)
+        else:
+            mvb_tr = data
+        await self._stack_items(mvb_tr)
 
-        self.log.debug(f"word: {self._data}")
-
-        self._vld += 1 << (self._item_cnt % self._items)
-
-        self.log.debug(f"item vld: {1 << (self._item_cnt % self._items)}")
-        self.log.debug(f"word vld: {self._vld}")
-
-        self._src_rdy = 1
-
+        self._vld |= 1 << self._item_cnt
         self._item_cnt += 1
-        self._vld_item_cnt += 1
 
-        await self._move_item()
+        # self.log.debug("Current word state:")
+        # self.log.debug(f"\t{self._item_cnt}/{self.items} Items filled")
+        # self.log.debug(f"\tData: {self._data}")
 
-        if random.choices((0, 1), weights=self._cDelays["ivgEn_wt"], k=1)[0]:
-            for i in self._cDelays["ivg"]:
-                if self._mode:
-                    for i in range(self._item_width):
-                        if self._mode == 2:
-                            self._delays_fill = random.randrange(0, 256)
-                        self._data[self._item_offset * self._item_width + i] = self._delays_fill
-                else:
-                    self._data[self._item_offset * self._item_width:(self._item_offset + 1) * self._item_width] = data
-
-                self._src_rdy = 1
-                self._item_cnt += 1
-                await self._move_item()
+        if self._item_cnt == self.items:
+            await self._move_word()
+            self._item_cnt = 0
 
     async def _send_thread(self) -> None:
         """Function used with cocotb testbench."""
@@ -148,7 +149,6 @@ class MVBDriver(BusDriver):
 
             while self._sendQ:
                 transaction, callback, event, kwargs = self._sendQ.popleft()
-                assert len(transaction) == self._item_width
                 await self._send_data(transaction)
                 if event:
                     event.set()
