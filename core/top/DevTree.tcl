@@ -89,8 +89,8 @@ proc dts_build_netcope {} {
     }
 
     global DMA_DEBUG_ENABLE
-    if {$DMA_TYPE == 4 && $DMA_DEBUG_ENABLE} {
-        append ret [data_logger "0x1320000" 0 "dma_calypte_latency_meter"]
+    if {$DMA_TYPE == 4} {
+        dts_calypte_test_core ret "0x1300000" $DMA_DEBUG_ENABLE
     }
 
     # Network module
