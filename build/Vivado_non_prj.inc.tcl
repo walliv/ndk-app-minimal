@@ -655,9 +655,12 @@ proc nb_sanitize_vars {synth_flags hierarchy} {
 
     set SYNTH_FLAGS(TOOL) "vivado"
 
-    global NB_PLATFORM_TAGS
-    global PLATFORM_TAGS
-    set NB_PLATFORM_TAGS "xilinx $PLATFORM_TAGS"
+    global NB_PLATFORM_TAGS env
+    if {[info exists env(PLATFORM_TAGS)]} {
+        set NB_PLATFORM_TAGS "$env(PLATFORM_TAGS)"
+    } else {
+        set NB_PLATFORM_TAGS "xilinx"
+    }
 
     if {[info commands version] != ""} {
         set SYNTH_FLAGS(TOOL_VERSION) [version -short]
