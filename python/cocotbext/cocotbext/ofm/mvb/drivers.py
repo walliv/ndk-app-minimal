@@ -19,13 +19,7 @@ class MVBDriver(BusDriver):
     """Driver intender for the MVB bus used for sending transactions to the bus.
 
     Atributes:
-       os(list): list of names of optional signals that are on the bus
-                 (filtered version of the _optional_signals).
        _item_cnt(int): number of ready items in the current word.
-       items(int): number of MVB items in word.
-       item_widths(dict): dictionary where "keys" are the names of the (optional) signals on the bus
-                          and "values" are their respective widths.
-       bus_isarray(bool): indicates whether the bus is a vector or an array.
        _data(dict): dictionary where "keys" are the names of the (optional) signals on the bus
                     and "values" are their respective current values.
     """
@@ -36,50 +30,74 @@ class MVBDriver(BusDriver):
     def __init__(self, entity, name, clock, array_idx=None) -> None:
         super().__init__(entity, name, clock, array_idx=array_idx)
 
-        self.os = [s for s in MVBDriver._optional_signals if hasattr(self.bus, s)]
-        self._item_cnt = 0
-        self.items = len(self.bus.vld)
-        self.item_widths = self._get_item_widths()
-        self.bus_isarray = not isinstance(getattr(self.bus, self.os[0]), ModifiableObject)
-        self._data = self._init_data()
+        self.__os = [s for s in MVBDriver._optional_signals if hasattr(self.bus, s)]
+        self.__item_cnt = 0
+        self.__items = len(self.bus.vld)
+        self.__item_widths = self._get_item_widths()
+        self.__bus_isarray = not isinstance(getattr(self.bus, self.__os[0]), ModifiableObject)
+        self.__data = self._init_data()
 
         self._clear_control_signals()
         self.bus.vld.value = 0
         self.bus.src_rdy.value = 0
 
+    @property
+    def os(self) -> list:
+        """A list of names of optional signals that are on the bus
+        (filtered version of the _optional_signals).
+        """
+        return self.__os
+
+    @property
+    def items(self) -> int:
+        """The number of MVB items in word."""
+        return self.__items
+
+    @property
+    def item_widths(self) -> dict:
+        """A dictionary where "keys" are the names of the optional signals on the bus
+        (items of the "os" list) and "values" are their respective widths.
+        """
+        return self.__item_widths
+
+    @property
+    def bus_isarray(self) -> bool:
+        """Indicates whether the bus is a vector or an array."""
+        return self.__bus_isarray
+
     def _get_item_widths(self) -> dict:
         """Make a dictionary of all optional signals on the bus and the width of each one's item."""
 
-        return {s: len(getattr(self.bus, s)) // self.items for s in self.os}
+        return {s: len(getattr(self.bus, s)) // self.__items for s in self.__os}
 
     def _init_data(self) -> dict:
         """Make a dictionary of all optional signals on the bus and initialize their values."""
 
-        if self.bus_isarray:
-            return {s: [0] * self.items for s in self.os}
+        if self.__bus_isarray:
+            return {s: [0] * self.__items for s in self.__os}
         else:
-            return {s: 0 for s in self.os}
+            return {s: 0 for s in self.__os}
 
     def _clear_item(self) -> dict:
         """Return a clear Item (all data signals are 0)."""
-        return {s: 0 for s in self.os}
+        return {s: 0 for s in self.__os}
 
     def _clear_control_signals(self) -> None:
         """Sets control signals to default values without sending them to the MVB bus."""
 
-        if self.bus_isarray:
-            for sig in self._data:
-                self._data[sig] = [0] * self.items
+        if self.__bus_isarray:
+            for sig in self.__data:
+                self.__data[sig] = [0] * self.__items
         else:
-            for sig in self._data:
-                self._data[sig] = 0
+            for sig in self.__data:
+                self.__data[sig] = 0
         self._vld = 0
         self._src_rdy = 0
 
     def _propagate_control_signals(self) -> None:
         """Sends value of control signals to the MVB bus."""
 
-        for sig, val in self._data.items():
+        for sig, val in self.__data.items():
             getattr(self.bus, sig).value = val
         self.bus.vld.value = self._vld
         self.bus.src_rdy.value = self._src_rdy
@@ -87,16 +105,16 @@ class MVBDriver(BusDriver):
     async def _stack_items(self, **kwargs) -> None:
         """Concatenates transactions (MVB Items) to form a word on the bus"""
 
-        if self.bus_isarray:
-            for signal in self._data:
-                item_ptr = self.items-1 - self._item_cnt
-                self._data[signal][item_ptr] = kwargs.get(signal)
+        if self.__bus_isarray:
+            for signal in self.__data:
+                item_ptr = self.__items-1 - self.__item_cnt
+                self.__data[signal][item_ptr] = kwargs.get(signal)
         else:
-            for signal, value in self._data.items():
-                shift_size = self.item_widths[signal] * self._item_cnt
+            for signal, value in self.__data.items():
+                shift_size = self.__item_widths[signal] * self.__item_cnt
                 tr_part = kwargs.get(signal)
                 # Prepend the Item to the word: shift and OR
-                self._data[signal] = (tr_part << shift_size) | value
+                self.__data[signal] = (tr_part << shift_size) | value
 
     async def _move_word(self) -> None:
         """Sends MVB word to the MVB bus if possible and clears the word."""
@@ -106,7 +124,7 @@ class MVBDriver(BusDriver):
 
         await self._clk_re
         while self.bus.dst_rdy.value != 1:
-            for _ in range(self.items):
+            for _ in range(self.__items):
                 self._idle_gen.put(self._idle_tr)
             await self._clk_re
 
@@ -125,22 +143,22 @@ class MVBDriver(BusDriver):
                 mvb_tr = MvbTrClassic.from_bytes(transaction)
             else:
                 mvb_tr = transaction
-            mvb_tr = {s: getattr(mvb_tr, s) for s in self.os}
+            mvb_tr = {s: getattr(mvb_tr, s) for s in self.__os}
             item_vld = 1
 
         await self._stack_items(**mvb_tr)
         self._idle_gen.put(transaction)
 
-        self._vld |= item_vld << self._item_cnt
-        self._item_cnt += 1
+        self._vld |= item_vld << self.__item_cnt
+        self.__item_cnt += 1
 
         # self.log.debug("Current word state:")
-        # self.log.debug(f"\t{self._item_cnt}/{self.items} Items filled")
-        # self.log.debug(f"\tData: {self._data}")
+        # self.log.debug(f"\t{self.__item_cnt}/{self.__items} Items filled")
+        # self.log.debug(f"\tData: {self.__data}")
 
-        if self._item_cnt == self.items:
+        if self.__item_cnt == self.__items:
             await self._move_word()
-            self._item_cnt = 0
+            self.__item_cnt = 0
 
     async def _send_thread(self) -> None:
         """Function used with cocotb testbench."""
