@@ -44,6 +44,7 @@ lappend COMPONENTS [ list "STORAGE_FIFO"        "$SUBCOMP_BASE/storage_fifo"    
 lappend COMPONENTS [ list "MVB_PIPE"            "$MVB_TOOLS_BASE/flow/pipe"                  "FULL" ]
 lappend COMPONENTS [ list "MFB_PIPE"            "$MFB_TOOLS_BASE/flow/pipe"                  "FULL" ]
 lappend COMPONENTS [ list "CUTTER"              "$MFB_TOOLS_BASE/flow/cutter_simple"         "FULL" ]
+lappend COMPONENTS [ list "DEBUG_PROBE"         "$OFM_PATH/comp/debug/streaming_debug"       "FULL" ]
 
 # entity and architecture
 lappend MOD "$ENTITY_BASE/ptc_ent.vhd"

@@ -282,8 +282,8 @@ architecture FULL of PCIE is
     -- Address offset of the PCIe Ctrl from the base address of the PCIe Core.
     -- Changes must be also made in the top-level Device Tree (TODO).
     constant PCIE_CTRL_ADDR_OFFSET : natural := 16#100000#;
-    -- Address offset of each PCIe Endpoint (each one currently contains one debug probe).
-    constant PCIE_ENDPOINT_OFFSET  : natural := 1 * 16#40#;
+    -- Address offset of each PCIe Endpoint.
+    constant PCIE_ENDPOINT_OFFSET  : natural := 16#1000#;
 
     function mi_addr_base_f return slv_array_t is
         variable mi_addr_base : slv_array_t(MI_SPLIT_PORTS-1 downto 0)(32-1 downto 0);
