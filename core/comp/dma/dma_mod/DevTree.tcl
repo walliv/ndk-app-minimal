@@ -37,6 +37,10 @@ proc dts_dmamod_open {base type rxn txn pcie rx_frame_size_max tx_frame_size_max
                 append ret [dts_event_counter [expr $base + 0x00010000 + $i * 0x80 + 0x00] "event_counter0_$i" 1]
                 append ret [dts_event_counter [expr $base + 0x00010000 + $i * 0x80 + 0x10] "event_counter1_$i" 1]
                 append ret [dts_event_counter [expr $base + 0x00010000 + $i * 0x80 + 0x20] "event_counter2_$i" 1]
+                append ret [dts_event_counter [expr $base + 0x00014000 + $i * 0x80 + 0x00] "eve_dsc_req_ok_$i" 1]
+                append ret [dts_event_counter [expr $base + 0x00014000 + $i * 0x80 + 0x10] "eve_dsc_req_ko_fw_$i" 1]
+                append ret [dts_event_counter [expr $base + 0x00014000 + $i * 0x80 + 0x20] "eve_dsc_req_ko_sw_$i" 1]
+                append ret [dts_event_counter [expr $base + 0x00014000 + $i * 0x80 + 0x30] "eve_dsc_req_ko_fwsw_$i" 1]
             }
         } elseif {$type == 4} {
             set    var_base [expr $base + $i * 0x80]
