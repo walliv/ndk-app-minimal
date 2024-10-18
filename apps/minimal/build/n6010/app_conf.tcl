@@ -22,6 +22,16 @@ set DMA_RX_BLOCKING_MODE true
 set MEM_PORTS            4
 
 # ------------------------------------------------------------------------------
+# Select debug parameters:
+# ------------------------------------------------------------------------------
+# Enables debug probes and counters in the DMA Module (Medusa)
+set DMA_DEBUG_ENABLE       false
+# Enables debug probes and counters in the PCIe Module (PCIe Core arch: USP and P-Tile)
+set PCIE_CORE_DEBUG_ENABLE false
+# Enables debug probes in the PCIe Module (PCIe Ctrl)
+set PCIE_CTRL_DEBUG_ENABLE false
+
+# ------------------------------------------------------------------------------
 # Other parameters:
 # ------------------------------------------------------------------------------
 set PROJECT_NAME "NDK_MINIMAL"
