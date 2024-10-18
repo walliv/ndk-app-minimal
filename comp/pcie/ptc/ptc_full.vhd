@@ -278,6 +278,10 @@ architecture full of PCIE_TRANSACTION_CTRL is
     signal dbg_di_mvb_cnt           : unsigned(63 downto 0);
     signal dbg_di_mfb_cnt           : unsigned(63 downto 0);
 
+    signal pcie_tag_status_async      : std_logic_vector(11-1 downto 0);
+    signal pcie_tag_status_sync       : std_logic_vector(11-1 downto 0);
+    signal pcie_tag_status_sync_vld_n : std_logic;
+
 begin
 
     assert (DEVICE = "STRATIX10" OR DEVICE = "AGILEX" OR DEVICE = "ULTRASCALE" OR DEVICE = "7SERIES")
@@ -789,8 +793,48 @@ begin
         DMA_DOWN_HDR_TAG        => tagm_dma_down_tag      ,
         DMA_DOWN_HDR_ID         => tagm_dma_down_id       ,
 
-        RCB_SIZE                => RCB_SIZE
+        RCB_SIZE                => RCB_SIZE               ,
+        PCIE_TAG_STATUS         => pcie_tag_status_async
     );
+
+    pcie_tag_status_asfifo_i : entity work.ASFIFOX
+    generic map (
+        DATA_WIDTH          => 11,
+        ITEMS               => 16,
+        RAM_TYPE            => "AUTO",
+        OUTPUT_REG          => True,
+        DEVICE              => DEVICE
+    ) port map (
+        WR_CLK    => CLK,
+        WR_RST    => RESET,
+
+        WR_DATA   => pcie_tag_status_async,
+        WR_EN     => '1',
+        WR_FULL   => open,
+        WR_AFULL  => open,
+        WR_STATUS => open,
+
+        RD_CLK    => CLK_DMA,
+        RD_RST    => RESET_DMA,
+
+        RD_DATA   => pcie_tag_status_sync,
+        RD_EN     => '1',
+        RD_EMPTY  => pcie_tag_status_sync_vld_n,
+        RD_AEMPTY => open,
+        RD_STATUS => open
+    );
+
+    process (CLK_DMA)
+    begin
+        if (rising_edge(CLK_DMA)) then
+            if (pcie_tag_status_sync_vld_n = '0') then
+                PCIE_TAG_STATUS <= pcie_tag_status_sync;
+            end if;
+            if (RESET_DMA = '1') then
+                PCIE_TAG_STATUS <= (others => '0');
+            end if;
+        end if;
+    end process;
 
     ---------------------------------------------------------------------------
 

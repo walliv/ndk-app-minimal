@@ -267,6 +267,8 @@ port(
     -- PCIe tag assigned to send transaction
     TAG_ASSIGN     : in  std_logic_vector(MVB_UP_ITEMS*PCIE_TAG_WIDTH-1 downto 0);
     -- Valid bit for assigned tags
-    TAG_ASSIGN_VLD : in  std_logic_vector(MVB_UP_ITEMS               -1 downto 0)
+    TAG_ASSIGN_VLD : in  std_logic_vector(MVB_UP_ITEMS               -1 downto 0);
+    -- The number of currently free PCIE tags (on CLK_DMA)
+    PCIE_TAG_STATUS     : out std_logic_vector(11-1 downto 0)
 );
 end entity PCIE_TRANSACTION_CTRL;

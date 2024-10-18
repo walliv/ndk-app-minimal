@@ -141,7 +141,9 @@ port(
 
     -- Read completition boundary status ('0' = RCB is 64B, '1' = RCB is 128B)
     -- Must not be changed while running.
-    RCB_SIZE            : in  std_logic
+    RCB_SIZE            : in  std_logic;
+    -- The number of currently free PCIE tags
+    PCIE_TAG_STATUS     : out std_logic_vector(11-1 downto 0)
 );
 end entity PTC_TAG_MANAGER;
 
@@ -404,6 +406,10 @@ architecture full of PTC_TAG_MANAGER is
 
     -- tag auto-assign init counters (used to fill the PCIe Tag FIFOX Multi after reset)
     signal tag_assign_init_cnts : u_array_t(MVB_DOWN_ITEMS-1 downto 0)(INTERNAL_PCIE_TAG_WIDTH+1-1 downto 0);
+
+    signal pcie_tag_write      : std_logic_vector(get_pcie_fifoxm_write_ports-1 downto 0);
+    signal pcie_tag_read       : std_logic_vector(get_pcie_fifoxm_read_ports-1 downto 0);
+    signal pcie_tag_status_reg : unsigned(11-1 downto 0);
 
     -----------------------
 
@@ -914,6 +920,26 @@ begin
         assert ((pcie_in_fifoxm_wr(i)='1' and pcie_in_fifoxm_full='1' and RESET='0')=false)
             report "Writing in full FIFO! Invalid state in this case!" severity failure;
     end generate;
+
+    pcie_tag_write <= pcie_in_fifoxm_wr and not pcie_in_fifoxm_full;
+    pcie_tag_read  <= pcie_in_fifoxm_rd and not pcie_in_fifoxm_empty;
+
+    process (CLK)
+        variable v_pcie_tag_status : unsigned(11-1 downto 0);
+    begin
+        if (rising_edge(CLK)) then
+            v_pcie_tag_status := pcie_tag_status_reg;
+            v_pcie_tag_status := v_pcie_tag_status + to_unsigned(count_ones(pcie_tag_write), log2(get_pcie_fifoxm_write_ports+1));
+            v_pcie_tag_status := v_pcie_tag_status - to_unsigned(count_ones(pcie_tag_read), log2(get_pcie_fifoxm_read_ports+1));
+            pcie_tag_status_reg <= v_pcie_tag_status;
+
+            if (RESET = '1') then
+                pcie_tag_status_reg <= (others => '0');
+            end if;
+        end if;
+    end process;
+
+    PCIE_TAG_STATUS <= std_logic_vector(pcie_tag_status_reg);
 
     pcie_in_fifoxm_out_reg_gen : if (AUTO_ASSIGN_TAGS) generate
 
