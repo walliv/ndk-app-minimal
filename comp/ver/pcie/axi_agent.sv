@@ -71,6 +71,7 @@ class axi_agent #(RCB, MPS, DEVICE, DATA_WIDTH) extends agent #(RCB, MPS);
 
     //AXI AGENTS
     sv_axi_pcie_pkg::Axi4S_RQ_agent #(DATA_WIDTH, RQ_TUSER_WIDTH, 32, RQ_ST_COUNT) axiRQ;
+    sv_axi_pcie_pkg::Axi4S_RQ_meter #(DATA_WIDTH, RQ_TUSER_WIDTH, 32, RQ_ST_COUNT) axiRQ_meter;
     AxiResponder  #(DATA_WIDTH, RQ_TUSER_WIDTH, 32)              axiRQ_responder;
     AxiDriver     #(DATA_WIDTH, RC_TUSER_WIDTH, 32, RC_ST_COUNT) axiRC;
     string inst;
@@ -82,6 +83,7 @@ class axi_agent #(RCB, MPS, DEVICE, DATA_WIDTH) extends agent #(RCB, MPS);
         rq_monitor = new();
         rq_monitor.setCallbacks(this.tags_req_cbs);
         axiRQ = new({inst, "AXI Request "}, vif_rx);
+        axiRQ_meter = new({inst, "AXI Meter "}, vif_rx);
         axiRQ.setCallbacks(rq_monitor.axi_rq_cbs);
         axiRQ_responder = new({inst, " AXI Responder"}, vif_rx);
 
@@ -94,6 +96,7 @@ class axi_agent #(RCB, MPS, DEVICE, DATA_WIDTH) extends agent #(RCB, MPS);
 
     task setEnabled();
         axiRQ.setEnabled();
+        axiRQ_meter.setEnabled();
         rq_monitor.setEnabled();
         super.setEnabled();
         axiRQ_responder.setEnabled();
@@ -103,6 +106,7 @@ class axi_agent #(RCB, MPS, DEVICE, DATA_WIDTH) extends agent #(RCB, MPS);
 
     task setDisabled();
         axiRQ.setDisabled();
+        axiRQ_meter.setDisabled();
         rq_monitor.setDisabled();
         super.setDisabled();
         axiRQ_responder.setDisabled();
