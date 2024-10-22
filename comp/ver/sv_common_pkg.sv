@@ -25,4 +25,5 @@ package sv_common_pkg;
   `include "transaction_table.sv"
   `include "sequence.sv"
   `include "sequencer.sv"
+  `include "stats.sv"
 endpackage : sv_common_pkg
