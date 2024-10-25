@@ -30,7 +30,6 @@ version = 'Git branch: ' + str(git_branch) + '<br>Git hash: ' + str(git_sha_shor
 # ones.
 extensions = [
     "ndk-fpga",
-    "piccolo_theme",
     "sphinxvhdl.vhdl",
     "sphinx.ext.autosectionlabel"
 ]
@@ -51,11 +50,10 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'piccolo_theme'
+html_theme = 'furo'
 html_theme_options = {
     "globaltoc_maxdepth": 4,
     "banner_hiding": "permanent",
-    "show_theme_credit": False,
 }
 
 html_logo = "img/ndk_fpga_logo_simple.png"

@@ -60,7 +60,7 @@ First, you need to install a few Python packages:
 $ pip3 install --user GitPython
 $ pip3 install --user sphinx
 $ pip3 install --user sphinx-vhdl
-$ pip3 install --user piccolo_theme
+$ pip3 install --user furo
 ```
 
 Then the documentation is generated simply by issuing these two commands:
