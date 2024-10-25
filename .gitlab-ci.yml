@@ -16,7 +16,7 @@ pages:
     - apk add git
     - pip install -U GitPython
     - pip install -U sphinx
-    - pip install -U piccolo_theme
+    - pip install -U furo
     - pip install -U sphinx-vhdl
     - echo "Hotfix detached head, causing trouble in GitPython:"
     - git checkout $CI_COMMIT_BRANCH
