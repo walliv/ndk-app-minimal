@@ -5,18 +5,35 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from cocotbext.ofm.mvb.monitors import MVBMonitor
+from cocotbext.ofm.mvb.transaction import MvbTrClassic
 
 
 class MVB_HASH_TABLE_SIMPLE_Monitor(MVBMonitor):
     _signals = ["data", "match", "vld", "src_rdy", "dst_rdy"]
 
-    def receive_data(self, data, offset):
+    def recv_bytes(self, vld):
+        data_val = self.bus.data.value
+        data_val.big_endian = False
+        data_bytes = data_val.buff
+
         match_val = self.bus.match.value
         match_val.big_endian = False
 
         self.log.debug(f"MATCH: {match_val}")
 
-        if match_val[offset] == 1:
-            self._recv((data[offset*self._item_width:(offset+1)*self._item_width], 1))
-        else:
-            self._recv((self._item_width * b'\x00', 0))
+        item_bytes = self._item_widths["data"] // 8
+        for i in range(self._items):
+            # Mask and shift the Valid signal per each Item
+            if vld & 1:
+                if match_val & 1:
+                    # Getting the data slice (Item) from the "bytes" transaction
+                    data_b = data_bytes[i*item_bytes : (i+1)*item_bytes]
+                    # Converting the data slice (Item) to the MvbTrClassic object
+                    mvb_tr = MvbTrClassic.from_bytes(data_b)
+                    self._recv((mvb_tr, 1))
+                else:
+                    mvb_tr = MvbTrClassic()
+                    mvb_tr.data = 0
+                    self._recv((mvb_tr, 0))
+            match_val >>= 1
+            vld >>= 1
