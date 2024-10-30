@@ -253,8 +253,8 @@ async def run_test(dut, config_file: str = "test_configs/test_config_1B.yaml", c
     last_num = 0
 
     while (tb.stream_out.item_cnt < pkt_count):
-        if (tb.stream_out.item_cnt // 1000) > last_num:
-            last_num = tb.stream_out.item_cnt // 1000
+        if (num := tb.stream_out.item_cnt // 1000) > last_num:
+            last_num = num
             cocotb.log.info(f"Number of random transactions processed: {tb.stream_out.item_cnt}/{pkt_count}")
         await ClockCycles(dut.CLK, 100)
 
