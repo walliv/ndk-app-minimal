@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Improve documentation
 - Improve documentation looks
+- Data_logger: Added packages for statistics processing
+- Histogramer: Fixed histogram box update
 
 ## [0.7.2] - 2024-10-17
 

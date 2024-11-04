@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # Copyright (C) 2022 CESNET z. s. p. o.
 # Author(s): Lukas Nevrkla <xnevrk03@stud.fit.vutbr.cz>
+#
+# Package for simple graph generation
 
 import os
 import numpy as np
@@ -39,7 +41,7 @@ class GraphGen:
 
     def plot_save(self, file_name):
         for i in self.output:
-            plt.savefig(self.folder + file_name + i)
+            plt.savefig(self.folder + file_name + i, bbox_inches='tight')
         plt.close()
 
     def basic_plot(self, x, y, style='o-', index=None, colors=None, width=1):

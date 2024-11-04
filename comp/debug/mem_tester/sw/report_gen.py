@@ -9,21 +9,21 @@
 
 import subprocess
 import argparse
-import json
 import numpy as np
 
 import nfb
 from mem_tester import MemTester
 from mem_logger.mem_logger import MemLogger
-from logger_tools.logger_tools import LoggerTools
-from graph_gen.graph_gen import GraphGen
-from pdf_gen.pdf_gen import PDFGen
+from logger_tools import LoggerTools
+from graph_gen import GraphGen
+from pdf_gen import PDFGen
 
 
 class ReportGen:
-    def __init__(self, graph_gen, dev="/dev/nfb0"):
+    def __init__(self, graph_gen, dev="/dev/nfb0", logger_offset=0):
         self.graph_gen      = graph_gen
         self.dev            = dev
+        self.logger_offset  = logger_offset
 
         self.iterCnt         = 0
         self.currIter        = 0
@@ -37,15 +37,15 @@ class ReportGen:
         assert self.tester_cnt <= self.logger_cnt
 
         self.logger_config = []
-        for i in range(0, self.logger_cnt):
+        for i in range(0, self.tester_cnt):
             self.open(i)
-            self.logger_config.append(self.mem_tester.mem_logger.config)
+            self.logger_config.append(self.mem_tester.mem_logger.stats['Constants'])
 
         self.data = {
             'info': {
                 'dev':              self.dev,
                 'tester_comp':      self.tester_comp,
-                'tester_cnt':       self.logger_comp,
+                'tester_cnt':       self.tester_cnt,
                 'logger_comp':      self.logger_comp,
                 'logger_cnt':       self.logger_cnt,
                 'logger_config':    self.logger_config,
@@ -53,7 +53,7 @@ class ReportGen:
         }
 
     def open(self, index):
-        logger = MemLogger(dev=self.dev, index=index)
+        logger = MemLogger(dev=self.dev, index=(index + self.logger_offset))
         self.mem_tester = MemTester(logger, dev=self.dev, index=index)
 
     def test(self, key, descript, index, params, test_param=None, param_values=None):
@@ -62,7 +62,7 @@ class ReportGen:
             'params':       params,
             'test_param':   test_param,
             'param_values': param_values,
-            'stats':        [],
+            'stats':        None,
             'status':       [],
             'errs':         [],
         }
@@ -79,21 +79,23 @@ class ReportGen:
             self.mem_tester.execute_test()
             config, status, stats, errs = self.mem_tester.get_test_result()
 
-            stats['latency'].pop('hist')
-
-            data['stats'].append(stats)
+            data['stats'] = stats
             data['status'].append(status)
             data['errs'].append(errs)
 
-        data['stats']  = tools.parse_dict_list(data['stats'])
+        #data['stats']   = tools.parse_dict_list(data['stats'])
         data['status']  = tools.parse_dict_list(data['status'])
         if key not in self.data:
             self.data[key] = {}
         self.data[key][index] = data
 
-    def get_burst_seq(self, index, cnt, burst_scale=1.0):
+    def get_burst_seq(self, index, cnt, burst_scale=1.0, max_burst=None):
         burst_width = self.logger_config[index]['MEM_BURST_WIDTH']
-        burst_lim   = int((2 ** burst_width - 1) * burst_scale)
+        if max_burst is None:
+            burst_lim   = int((2 ** burst_width - 1) * burst_scale)
+        else:
+            burst_lim = max_burst
+
         res = np.linspace(1, burst_lim, cnt)
         return [int(i) for i in res]
 
@@ -136,10 +138,22 @@ def print_progress(progress, txt='Complete', prefix='Progress', decimals=1, leng
 
 def parseParams():
     parser = argparse.ArgumentParser(description="""Report generator for mem_tester component""")
-    parser.add_argument('-d', '--device', default=nfb.libnfb.Nfb.default_device,
-                        metavar='device', help="""device with target FPGA card.""")
-    parser.add_argument('format', nargs='?', default='pdf', choices=['md', 'pdf'],
-                        help="""Format of the output report)""")
+    parser.add_argument(
+        '-d', '--device', default=nfb.libnfb.Nfb.default_dev_path,
+        metavar='device', help="""device with target FPGA card."""
+    )
+    parser.add_argument(
+        'format', nargs='?', default='pdf', choices=['md', 'pdf'],
+        help="""Format of the output report"""
+    )
+    parser.add_argument(
+        '--max-burst', type=int, default=None,
+        help="""Max burst count that will be tested"""
+    )
+    parser.add_argument(
+        '--logger-offset', type=int, default=0,
+        help="""Offset for mem_logger compatible (if there is more loggers then testers)"""
+    )
     args = parser.parse_args()
     return args
 
@@ -148,7 +162,9 @@ def run_cmd(cmd):
     return subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read().strip().decode("utf-8")
 
 
-def latency_table(pdf, bursts, latencies):
+def latency_table(pdf, bursts, data):
+    latencies = data['Values']['latency']
+
     header  = ['Latency x burst']
     data    = [
         ['min [ns]'],
@@ -157,25 +173,25 @@ def latency_table(pdf, bursts, latencies):
     ]
     for i, b in enumerate(bursts):
         header.append(f'{b:<.0f} [B]')
-        data[0].append(f"{latencies['latency']['min_ns'][i]:<.1f}")
-        data[1].append(f"{latencies['latency']['avg_ns'][i]:<.1f}")
-        data[2].append(f"{latencies['latency']['max_ns'][i]:<.1f}")
+        data[0].append(f"{latencies['min'][i]:<.1f}")
+        data[1].append(f"{latencies['avg'][i]:<.1f}")
+        data[2].append(f"{latencies['max'][i]:<.1f}")
     pdf.table(header, data)
 
 
 if __name__ == '__main__':
     args        = parseParams()
 
-    data_file   = 'data.json'
+    data_file   = 'data.npz'
     report_file = 'mem_tester_report'
     img_path    = 'fig/'
 
     tools       = LoggerTools()
     graph_gen   = GraphGen(folder=img_path, ratio=(13, 6), output=[".png"])
-    gen         = ReportGen(graph_gen, dev=args.device)
+    gen         = ReportGen(graph_gen, dev=args.device, logger_offset=args.logger_offset)
     pdf         = PDFGen()
 
-    burst_seq   = gen.get_burst_seq(0, 50, burst_scale=0.25)
+    burst_seq   = gen.get_burst_seq(0, 50, burst_scale=0.25, max_burst=args.max_burst)
     test_params = {'burst_cnt': burst_seq[0]}
     progress    = [0, 12 * gen.tester_cnt, False]
     addr_scale  = 0.05
@@ -204,8 +220,9 @@ if __name__ == '__main__':
         ## Get data ##
 
         print_progress(progress, 'processing data')
-        with open(data_file, 'w') as f:
-            f.write(json.dumps(gen.data, sort_keys=True, indent=4))
+        #with open(data_file, 'w') as f:
+        #    f.write(json.dumps(gen.data, sort_keys=True, indent=4))
+        np.savez_compressed(data_file, np.array(gen.data, dtype=object))
 
         seq_data  = gen.data['seq-burst'][index]['stats']
         rand_data = gen.data['rand-burst'][index]['stats']
@@ -214,17 +231,17 @@ if __name__ == '__main__':
 
         ## Plot ##
 
-        mem_width = gen.mem_tester.mem_logger.config["MEM_DATA_WIDTH"] / 8
+        mem_width = gen.mem_tester.mem_logger.stats['Constants']["MEM_DATA_WIDTH"] / 8
         burst_seq_b = [i * mem_width for i in burst_seq]
 
         # Plot data flow
         print_progress(progress, 'generating graphs')
         graph_gen.init_plots()  # title="Data flow")
         graph_gen.basic_plot(burst_seq_b, [
-            seq_data['wr_flow_gbs'],
-            seq_data['rd_flow_gbs'],
-            rand_data['wr_flow_gbs'],
-            rand_data['rd_flow_gbs'],
+            seq_data['Data flow']['wr flow'],
+            seq_data['Data flow']['rd flow'],
+            rand_data['Data flow']['wr flow'],
+            rand_data['Data flow']['rd flow'],
         ], colors=[
             'royalblue',
             'green',
@@ -254,17 +271,22 @@ if __name__ == '__main__':
                 data = rand_data_one_simult
 
             # Prepare data
-            hist = data["latency"]["hist_ns"]
-            hist_arr = tools.dict_to_numpy(hist)
-            offset = gen.mem_tester.mem_logger.latency_hist_step() / 2
-            limits = (min(burst_seq_b), max(burst_seq_b), min(data['latency']['min_ns']) - offset, max(data['latency']['max_ns']) - offset)
-            hist_arr /= np.array(data["rd_req_cnt"])
+            hist_x   = data['Values']["latency"]["hist_x"]
+            hist_arr = data['Values']["latency"]["hist"]
+            req_cnt = np.array(data['Requests']["rd req cnt"]).reshape(-1, 1)
+
+            hist_arr = hist_arr / req_cnt
+            offset = hist_x[1] - hist_x[0]
+            limits = (
+                min(burst_seq_b), max(burst_seq_b),
+                min(data['Values']['latency']['min']) - offset,
+                max(data['Values']['latency']['max']) - offset
+            )
 
             graph_gen.init_plots()  # title="Read latency")
             graph_gen.basic_plot(burst_seq_b, [
-                data['latency']["min_ns"],
-                #data['latency']["avg_ns"],
-                data['latency']["max_ns"],
+                data['Values']['latency']["min"],
+                data['Values']['latency']["max"],
             ], style='--', colors=['black', 'black', 'black'], width=3)
             graph_gen.plot_2d(hist_arr, limits=limits, min=0, log=True)
             graph_gen.set_xlabel("burst size [B]")
@@ -305,7 +327,7 @@ if __name__ == '__main__':
 
     header  = ['Interface', 'DATA WIDTH', 'ADDRESS WIDTH', 'BURST WIDTH', 'Frequency [MHz]']
     data    = []
-    for i in range(info['logger_cnt']):
+    for i in range(info['tester_cnt']):
         data.append([
             i,
             info['logger_config'][i]['MEM_DATA_WIDTH'],
@@ -332,15 +354,15 @@ if __name__ == '__main__':
             return [txt, f"{data[0]:<.2f} {unit}", f"{data[1]:<.2f} {unit}"]
 
         data = []
-        data.append(get_row("total time",       full_data['total_time_ms'],     "ms"))
-        data.append(get_row("write time",       full_data['wr_time_ms'],        "ms"))
-        data.append(get_row("read time",        full_data['rd_time_ms'],        "ms"))
-        data.append(get_row("total data flow",  full_data['total_flow_gbs'],    "Gbps"))
-        data.append(get_row("write data flow",  full_data['wr_flow_gbs'],       "Gbps"))
-        data.append(get_row("read data flow",   full_data['rd_flow_gbs'],       "Gbps"))
-        data.append(get_row("min read latency", full_data['latency']['min_ns'], "ns"))
-        data.append(get_row("avg read latency", full_data['latency']['avg_ns'], "ns"))
-        data.append(get_row("max read latency", full_data['latency']['max_ns'], "ns"))
+        data.append(get_row("total time",       full_data['Test duration']['total time'],     "ms"))
+        data.append(get_row("write time",       full_data['Test duration']['wr time'],        "ms"))
+        data.append(get_row("read time",        full_data['Test duration']['rd time'],        "ms"))
+        data.append(get_row("total data flow",  full_data['Data flow']['total flow'],    "Gbps"))
+        data.append(get_row("write data flow",  full_data['Data flow']['wr flow'],       "Gbps"))
+        data.append(get_row("read data flow",   full_data['Data flow']['rd flow'],       "Gbps"))
+        data.append(get_row("min read latency", full_data['Values']['latency']['min'], "ns"))
+        data.append(get_row("avg read latency", full_data['Values']['latency']['avg'], "ns"))
+        data.append(get_row("max read latency", full_data['Values']['latency']['max'], "ns"))
         pdf.table(header, data)
 
         pdf.heading(2, "Maximum data flow")

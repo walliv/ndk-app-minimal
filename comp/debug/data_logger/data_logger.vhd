@@ -350,8 +350,9 @@ begin
             generic map(
                 INPUT_WIDTH             => VALUE_WIDTH(i),
                 BOX_WIDTH               => HIST_BOX_WIDTH(i),
-                BOX_CNT                 => HIST_BOX_CNT(i)
-                --READ_PRIOR              => READ_PRIOR
+                BOX_CNT                 => HIST_BOX_CNT(i),
+                -- TODO: new value can be lost when read occurs!
+                READ_PRIOR              => true
             )
             port map(
                 CLK                     => CLK,
@@ -380,8 +381,13 @@ begin
     -- RST management --
     --------------------
 
-    rst_intern  <= RST or mi_ctrl_reg(CTRL_RST_BIT);
-    SW_RST      <= mi_ctrl_reg(CTRL_RST_BIT);
+    rst_p : process(CLK)
+    begin
+        if (rising_edge(CLK)) then
+            rst_intern  <= RST or mi_ctrl_reg(CTRL_RST_BIT);
+            SW_RST      <= mi_ctrl_reg(CTRL_RST_BIT);
+        end if;
+    end process;
 
     rst_done_g : if (VALUE_CNT > 0) generate
         rst_done_intern <= and rst_done_vec;

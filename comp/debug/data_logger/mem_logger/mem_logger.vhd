@@ -54,7 +54,7 @@ generic (
     MI_ADDR_WIDTH           : integer := 32;
 
     -- Specify read latency histogram precision
-    HISTOGRAM_BOXES         : integer := 255;
+    HISTOGRAM_BOXES         : integer := 256;
     -- Specify maximum paraller read requests
     MAX_PARALEL_READS       : integer := 128;
     -- Specify read latency ticks count width

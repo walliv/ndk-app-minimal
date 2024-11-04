@@ -1,0 +1,51 @@
+# rtlproject.toml: File verification and synthesis combinations
+# Copyright (C) 2024 CESNET z. s. p. o.
+# Author(s): Lukas Nevrkla <xnevrk03@stud.fit.vutbr.cz>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+[generics]
+asserts = [
+    """(2 ** INPUT_WIDTH >= BOX_CNT)"""
+]
+[settings.default]
+
+INPUT_WIDTH         = 8
+BOX_WIDTH           = 32
+BOX_CNT             = 32
+READ_PRIOR          = 0
+CLEAR_BY_READ       = 1
+CLEAR_BY_RST        = 1
+DEVICE              = "ULTRASCALE"
+
+[settings.box_cnt]
+type = "list"
+BOX_CNT         = [4, 8, 16, 2048]
+
+[settings.box_width]
+type = "list"
+BOX_WIDTH       = [1, 4, 256]
+
+[settings.input_width]
+type = "list"
+INPUT_WIDTH     = [2, 4, 512]
+
+[settings.read_prior]
+type = "list"
+READ_PRIOR      = [0, 1]
+
+[settings.clear_by_read]
+type = "list"
+CLEAR_BY_READ   = [0, 1]
+
+[[ver.combinations]]
+name = "basic"
+settings = ["box_cnt", "box_width", "input_width"] #, "read_prior", "clear_by_read"]
+
+[ver.settings]
+tests = ["test_basic"]
+
+[[synth.combinations]]
+name        = "Test differenct box cnt"
+settings = ["box_cnt", "box_width", "input_width"] #, "read_prior", "clear_by_read"]
+
