@@ -14,19 +14,64 @@ class avalon_rq_monitor extends sv_common_pkg::Monitor;
     logic [31:0] data[$];
     PcieRequest hl_tr;
 
+    protected sv_common_pkg::stats speed;
+    protected int unsigned         speed_curr;
 
-     function new (string inst = "");
-        super.new(inst);
-        avalon_rq_cbs = new();
-     endfunction
+    function new (string inst = "");
+       super.new(inst);
+       avalon_rq_cbs = new();
+       speed = new();
+    endfunction
 
     function void verbosity_set(int unsigned level);
         verbosity = level;
     endfunction
 
+    task run_meter();
+        speed_curr = 0;
+        while (enabled) begin
+            time speed_start_time;
+            time speed_end_time;
+            const int unsigned mesures = 100;
+            string msg;
+
+            speed_end_time = $time();
+            forever begin
+                time step_speed_end_time = speed_end_time;
+                time step_speed_start_time;
+
+                for (int unsigned it = 0; it < mesures; it++) begin
+                    step_speed_start_time = step_speed_end_time;
+
+                    #(1us);
+                    step_speed_end_time = $time();
+                    speed.next_val(real'(speed_curr)/((step_speed_end_time-step_speed_start_time)/1ns));
+
+                    speed_curr = 0;
+                end
+
+                begin
+                    real min, max, avg, std_dev;
+
+                    speed_start_time = speed_end_time;
+                    speed_end_time   = step_speed_end_time;
+                    speed.count(min, max, avg, std_dev);
+                    msg = $sformatf("\n\tSpeed [%0dns:%0dns]\n\t\tAverage : %0.2fGb/s std_dev %0.2fGb/s\n\t\tmin : %0.2fGb/s max  %0.2fGb/s",
+                            speed_start_time/1ns, speed_end_time/1ns, avg*32, std_dev*32, min*32, max*32);
+                    $write({"\n", this.inst , "\n", msg, "\n"});
+                    speed.reset();
+                end
+            end
+        end
+    endtask
+
     virtual task run();
         sv_common_pkg::Transaction common_tr;
         avst_rx::transaction tr;
+
+        fork
+            run_meter();
+        join_none;
 
         while(enabled) begin
             avalon_rq_cbs.get(common_tr);
@@ -84,6 +129,7 @@ class avalon_rq_monitor extends sv_common_pkg::Monitor;
                 for (int i = 0; i < m_end; i++) begin
                     data.push_back(tr.data[(i+1)*32-1 -:32]);
                 end
+                speed_curr += m_end;
             end
 
             if(tr.eop == 1'b1) begin
