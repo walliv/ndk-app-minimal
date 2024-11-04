@@ -118,6 +118,10 @@ generic (
     MISC_TOP2PCIE_WIDTH     : natural := 1;
     -- Width of MISC signal between PCIE core logic and Top-Level FPGA design
     MISC_PCIE2TOP_WIDTH     : natural := 1;
+    -- Width of MISC signal between Top-Level FPGA design and NET_MOD core logic
+    MISC_TOP2NET_WIDTH      : natural := 1;
+    -- Width of MISC signal between NET_MOD core logic and Top-Level FPGA design
+    MISC_NET2TOP_WIDTH      : natural := 1;
 
     DEVICE                  : string := "AGILEX";
     BOARD                   : string := "400G1"
@@ -263,6 +267,10 @@ port (
     MISC_TOP2PCIE           : in    slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_TOP2PCIE_WIDTH-1 downto 0) := (others => (others => '0'));
     -- Optional signal for MISC connection from PCIE core to Top-Level FPGA design.
     MISC_PCIE2TOP           : out   slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_PCIE2TOP_WIDTH-1 downto 0);
+    -- Optional signal for MISC connection from Top-Level FPGA design to NET_MOD core.
+    MISC_TOP2NET            : in    slv_array_t(ETH_PORTS-1 downto 0)(MISC_TOP2NET_WIDTH-1 downto 0) := (others => (others => '0'));
+    -- Optional signal for MISC connection from NET_MOD core to Top-Level FPGA design.
+    MISC_NET2TOP            : out   slv_array_t(ETH_PORTS-1 downto 0)(MISC_NET2TOP_WIDTH-1 downto 0);
     MISC_IN                 : in    std_logic_vector(MISC_IN_WIDTH-1 downto 0) := (others => '0');
     MISC_OUT                : out   std_logic_vector(MISC_OUT_WIDTH-1 downto 0)
 );
@@ -1533,6 +1541,8 @@ begin
         LANE_RX_POLARITY  => ETH_LANE_RXPOLARITY,
         LANE_TX_POLARITY  => ETH_LANE_TXPOLARITY,
         RESET_WIDTH       => 1              ,
+        MISC_TOP2NET_WIDTH => MISC_TOP2NET_WIDTH,
+        MISC_NET2TOP_WIDTH => MISC_NET2TOP_WIDTH,
         DEVICE            => DEVICE         ,
         BOARD             => BOARD          ,
 
@@ -1634,7 +1644,10 @@ begin
         TSU_CLK         => tsu_clk,
         TSU_RST         => tsu_rst,
         TSU_TS_NS       => tsu_ns,
-        TSU_TS_DV       => tsu_dv
+        TSU_TS_DV       => tsu_dv,
+
+        MISC_TOP2NET    => MISC_TOP2NET,
+        MISC_NET2TOP    => MISC_NET2TOP
     );
 
     eth_led_ctrl_i: entity work.ETH_LED_CTRL_TOP

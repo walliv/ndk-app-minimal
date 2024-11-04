@@ -445,6 +445,8 @@ begin
             TX_DMA_CHANNELS   => TX_DMA_CHANNELS  ,
             LANE_RX_POLARITY  => LANE_RX_POLARITY(p*LANES+LANES-1 downto p*LANES),
             LANE_TX_POLARITY  => LANE_TX_POLARITY(p*LANES+LANES-1 downto p*LANES),
+            MISC_TOP2NET_WIDTH => MISC_TOP2NET_WIDTH,
+            MISC_NET2TOP_WIDTH => MISC_NET2TOP_WIDTH,
             DEVICE            => DEVICE
         )
         port map (
@@ -499,7 +501,10 @@ begin
             MI_WR_PHY       => mi_split_wr_phy  (p),
             MI_DRD_PHY      => mi_split_drd_phy (p),
             MI_ARDY_PHY     => mi_split_ardy_phy(p),
-            MI_DRDY_PHY     => mi_split_drdy_phy(p)
+            MI_DRDY_PHY     => mi_split_drdy_phy(p),
+
+            MISC_TOP2NET    => MISC_TOP2NET(p),
+            MISC_NET2TOP    => MISC_NET2TOP(p)
         );
 
         -- =====================================================================
