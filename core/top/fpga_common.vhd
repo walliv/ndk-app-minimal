@@ -110,6 +110,10 @@ generic (
     STATUS_LEDS             : natural := 2;
     MISC_IN_WIDTH           : natural := 0;
     MISC_OUT_WIDTH          : natural := 0;
+    -- Width of MISC signal between Top-Level FPGA design and APP core logic
+    MISC_TOP2APP_WIDTH      : natural := 1;
+    -- Width of MISC signal between APP core logic and Top-Level FPGA design
+    MISC_APP2TOP_WIDTH      : natural := 1;
 
     DEVICE                  : string := "AGILEX";
     BOARD                   : string := "400G1"
@@ -244,7 +248,13 @@ port (
     BOOT_MI_ARDY            : in  std_logic := '0';
     BOOT_MI_DRDY            : in  std_logic := '0';
 
-    -- Misc interface, board specific
+    -- =========================================================================
+    -- MISC SIGNALS (the clock signal is not defined)
+    -- =========================================================================
+    -- Optional signal for MISC connection from Top-Level FPGA design to APP core.
+    MISC_TOP2APP            : in    std_logic_vector(MISC_TOP2APP_WIDTH-1 downto 0) := (others => '0');
+    -- Optional signal for MISC connection from APP core to Top-Level FPGA design.
+    MISC_APP2TOP            : out   std_logic_vector(MISC_APP2TOP_WIDTH-1 downto 0);
     MISC_IN                 : in    std_logic_vector(MISC_IN_WIDTH-1 downto 0) := (others => '0');
     MISC_OUT                : out   std_logic_vector(MISC_OUT_WIDTH-1 downto 0)
 );
@@ -1293,6 +1303,8 @@ begin
         MI_ADDR_WIDTH         => MI_ADDR_WIDTH,
         FPGA_ID_WIDTH         => FPGA_ID_WIDTH,
         RESET_WIDTH           => RESET_WIDTH,
+        MISC_TOP2APP_WIDTH    => MISC_TOP2APP_WIDTH,
+        MISC_APP2TOP_WIDTH    => MISC_APP2TOP_WIDTH,
         BOARD                 => BOARD,
         DEVICE                => DEVICE
     )
@@ -1466,7 +1478,10 @@ begin
         MI_WR              => mi_adc_wr(MI_ADC_PORT_USERAPP),
         MI_DRD             => mi_adc_drd(MI_ADC_PORT_USERAPP),
         MI_ARDY            => mi_adc_ardy(MI_ADC_PORT_USERAPP),
-        MI_DRDY            => mi_adc_drdy(MI_ADC_PORT_USERAPP)
+        MI_DRDY            => mi_adc_drdy(MI_ADC_PORT_USERAPP),
+
+        MISC_TOP2APP           => MISC_TOP2APP,
+        MISC_APP2TOP           => MISC_APP2TOP
     );
 
     -- =========================================================================
