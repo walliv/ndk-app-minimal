@@ -108,7 +108,9 @@ generic (
     AMM_FREQ_KHZ            : natural := 0;
 
     STATUS_LEDS             : natural := 2;
+    -- Width of MISC signal between Top-Level FPGA design and FPGA_COMMON
     MISC_IN_WIDTH           : natural := 0;
+    -- Width of MISC signal between FPGA_COMMON and Top-Level FPGA design
     MISC_OUT_WIDTH          : natural := 0;
     -- Width of MISC signal between Top-Level FPGA design and APP core logic
     MISC_TOP2APP_WIDTH      : natural := 1;
@@ -271,7 +273,9 @@ port (
     MISC_TOP2NET            : in    slv_array_t(ETH_PORTS-1 downto 0)(MISC_TOP2NET_WIDTH-1 downto 0) := (others => (others => '0'));
     -- Optional signal for MISC connection from NET_MOD core to Top-Level FPGA design.
     MISC_NET2TOP            : out   slv_array_t(ETH_PORTS-1 downto 0)(MISC_NET2TOP_WIDTH-1 downto 0);
+    -- Optional signal for MISC connection from Top-Level FPGA design to FPGA_COMMON.
     MISC_IN                 : in    std_logic_vector(MISC_IN_WIDTH-1 downto 0) := (others => '0');
+    -- Optional signal for MISC connection from FPGA_COMMON to Top-Level FPGA design.
     MISC_OUT                : out   std_logic_vector(MISC_OUT_WIDTH-1 downto 0)
 );
 end entity;
