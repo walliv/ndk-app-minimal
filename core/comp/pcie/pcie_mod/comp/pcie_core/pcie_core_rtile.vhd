@@ -1287,7 +1287,7 @@ begin
     -- =========================================================================
 
     dt_g : for i in 0 to PCIE_ENDPOINTS-1 generate
-        constant dt_en : boolean := (i = 0);
+        constant dt_en : boolean := true;
     begin
         cii2cfg_ext_i: entity work.PCIE_CII2CFG_EXT
         port map(
