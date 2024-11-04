@@ -1492,7 +1492,7 @@ begin
     -- =========================================================================
 
     dt_g : for i in 0 to PCIE_ENDPOINTS-1 generate
-        constant dt_en : boolean := (i = 0);
+        constant dt_en : boolean := true;
     begin
         -- Device Tree ROM
         pci_ext_cap_i: entity work.PCI_EXT_CAP
