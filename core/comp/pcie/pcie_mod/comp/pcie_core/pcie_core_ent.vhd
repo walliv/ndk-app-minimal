@@ -61,6 +61,10 @@ entity PCIE_CORE is
         CARD_ID_WIDTH    : natural := 0;
         -- Reset width for effective reset duplication
         RESET_WIDTH      : natural := 8;
+        -- Width of MISC signal between Top-Level FPGA design and PCIE core logic
+        MISC_TOP2PCIE_WIDTH : natural := 1;
+        -- Width of MISC signal between PCIE core logic and Top-Level FPGA design
+        MISC_PCIE2TOP_WIDTH : natural := 1;
         -- FPGA device
         DEVICE           : string  := "STRATIX10"
     );
@@ -196,6 +200,14 @@ entity PCIE_CORE is
         MI_WR              : in  std_logic;
         MI_DRD             : out std_logic_vector(MI_WIDTH-1 downto 0);
         MI_ARDY            : out std_logic;
-        MI_DRDY            : out std_logic
+        MI_DRDY            : out std_logic;
+
+        -- =========================================================================
+        -- MISC SIGNALS (the clock signal is not defined)
+        -- =========================================================================
+        -- Optional signal for MISC connection from Top-Level FPGA design to PCIE core.
+        MISC_TOP2PCIE      : in  slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_TOP2PCIE_WIDTH-1 downto 0);
+        -- Optional signal for MISC connection from PCIE core to Top-Level FPGA design.
+        MISC_PCIE2TOP      : out slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_PCIE2TOP_WIDTH-1 downto 0) := (others => (others => '0'))
     );
 end entity;

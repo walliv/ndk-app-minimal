@@ -72,6 +72,10 @@ entity PCIE is
         DMA_BAR_ENABLE     : boolean := false;
         -- Enable of XCV IP, for Xilinx only
         XVC_ENABLE         : boolean := false;
+        -- Width of MISC signal between Top-Level FPGA design and PCIE core logic
+        MISC_TOP2PCIE_WIDTH : natural := 1;
+        -- Width of MISC signal between PCIE core logic and Top-Level FPGA design
+        MISC_PCIE2TOP_WIDTH : natural := 1;
         -- FPGA device
         DEVICE             : string  := "STRATIX10"
     );
@@ -230,7 +234,15 @@ entity PCIE is
         MI_DBG_WR           : in  std_logic;
         MI_DBG_DRD          : out std_logic_vector(32-1 downto 0);
         MI_DBG_ARDY         : out std_logic;
-        MI_DBG_DRDY         : out std_logic
+        MI_DBG_DRDY         : out std_logic;
+
+        -- =====================================================================
+        -- MISC SIGNALS (the clock signal is not defined)
+        -- =====================================================================
+        -- Optional signal for MISC connection from Top-Level FPGA design to PCIE core.
+        MISC_TOP2PCIE      : in  slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_TOP2PCIE_WIDTH-1 downto 0) := (others => (others => '0'));
+        -- Optional signal for MISC connection from PCIE core to Top-Level FPGA design.
+        MISC_PCIE2TOP      : out slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_PCIE2TOP_WIDTH-1 downto 0)
     );
 end entity;
 
@@ -378,6 +390,8 @@ begin
         XVC_ENABLE         => XVC_ENABLE,
         CARD_ID_WIDTH      => CARD_ID_WIDTH,
         RESET_WIDTH        => RESET_WIDTH,
+        MISC_TOP2PCIE_WIDTH => MISC_TOP2PCIE_WIDTH,
+        MISC_PCIE2TOP_WIDTH => MISC_PCIE2TOP_WIDTH,
         DEVICE             => DEVICE
     )
     port map (
@@ -451,7 +465,10 @@ begin
         MI_WR               => mi_dbg_split_wr  (0),
         MI_DRD              => mi_dbg_split_drd (0),
         MI_ARDY             => mi_dbg_split_ardy(0),
-        MI_DRDY             => mi_dbg_split_drdy(0)
+        MI_DRDY             => mi_dbg_split_drdy(0),
+
+        MISC_TOP2PCIE       => MISC_TOP2PCIE,
+        MISC_PCIE2TOP       => MISC_PCIE2TOP
     );
 
     PCIE_USER_CLK <= pcie_clk;

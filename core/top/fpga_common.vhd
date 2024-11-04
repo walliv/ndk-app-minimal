@@ -114,6 +114,10 @@ generic (
     MISC_TOP2APP_WIDTH      : natural := 1;
     -- Width of MISC signal between APP core logic and Top-Level FPGA design
     MISC_APP2TOP_WIDTH      : natural := 1;
+    -- Width of MISC signal between Top-Level FPGA design and PCIE core logic
+    MISC_TOP2PCIE_WIDTH     : natural := 1;
+    -- Width of MISC signal between PCIE core logic and Top-Level FPGA design
+    MISC_PCIE2TOP_WIDTH     : natural := 1;
 
     DEVICE                  : string := "AGILEX";
     BOARD                   : string := "400G1"
@@ -255,6 +259,10 @@ port (
     MISC_TOP2APP            : in    std_logic_vector(MISC_TOP2APP_WIDTH-1 downto 0) := (others => '0');
     -- Optional signal for MISC connection from APP core to Top-Level FPGA design.
     MISC_APP2TOP            : out   std_logic_vector(MISC_APP2TOP_WIDTH-1 downto 0);
+    -- Optional signal for MISC connection from Top-Level FPGA design to PCIE core.
+    MISC_TOP2PCIE           : in    slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_TOP2PCIE_WIDTH-1 downto 0) := (others => (others => '0'));
+    -- Optional signal for MISC connection from PCIE core to Top-Level FPGA design.
+    MISC_PCIE2TOP           : out   slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_PCIE2TOP_WIDTH-1 downto 0);
     MISC_IN                 : in    std_logic_vector(MISC_IN_WIDTH-1 downto 0) := (others => '0');
     MISC_OUT                : out   std_logic_vector(MISC_OUT_WIDTH-1 downto 0)
 );
@@ -806,6 +814,8 @@ begin
         DMA_BAR_ENABLE      => (DMA_TYPE = 4),
         XVC_ENABLE          => VIRTUAL_DEBUG_ENABLE,
         CARD_ID_WIDTH       => FPGA_ID_WIDTH,
+        MISC_TOP2PCIE_WIDTH => MISC_TOP2PCIE_WIDTH,
+        MISC_PCIE2TOP_WIDTH => MISC_PCIE2TOP_WIDTH,
         DEVICE              => DEVICE
     )
     port map (
@@ -891,7 +901,10 @@ begin
         MI_DBG_WR          => mi_adc_wr  (MI_ADC_PORT_PCI_DBG),
         MI_DBG_DRD         => mi_adc_drd (MI_ADC_PORT_PCI_DBG),
         MI_DBG_ARDY        => mi_adc_ardy(MI_ADC_PORT_PCI_DBG),
-        MI_DBG_DRDY        => mi_adc_drdy(MI_ADC_PORT_PCI_DBG)
+        MI_DBG_DRDY        => mi_adc_drdy(MI_ADC_PORT_PCI_DBG),
+
+        MISC_TOP2PCIE      => MISC_TOP2PCIE,
+        MISC_PCIE2TOP      => MISC_PCIE2TOP
     );
 
     cdc_pcie_up_g: for i in 0 to PCIE_ENDPOINTS-1 generate
