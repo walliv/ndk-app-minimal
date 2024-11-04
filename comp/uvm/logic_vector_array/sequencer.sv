@@ -10,7 +10,7 @@
 
 
 class sequencer #(int unsigned ITEM_WIDTH) extends uvm_sequencer #(sequence_item #(ITEM_WIDTH));
-    `uvm_component_utils(uvm_logic_vector_array::sequencer #(ITEM_WIDTH))
+    `uvm_component_param_utils(uvm_logic_vector_array::sequencer #(ITEM_WIDTH))
 
     uvm_reset::sync_terminate reset_sync;
 
