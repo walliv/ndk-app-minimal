@@ -29,6 +29,7 @@ from sw.toolkit import MVB_HASH_TABLE_SIMPLE_TOOLKIT, toeplitz_hash, simple_xor_
 from cocotbext.ofm.utils.servicer import Servicer
 from cocotbext.ofm.utils.device import get_dtb
 from cocotbext.ofm.utils.math import ceildiv
+from cocotbext.ofm.mvb.transaction import MvbTrClassic
 
 import itertools
 from math import log2
@@ -117,7 +118,7 @@ class testbench():
                 out_keys.append(mvb_key)
                 out_data[mvb_key] = data
 
-                table.append([h, (mvb_key << (self.stream_out._item_width * 8 + 1)) + ((data << 1) + 1)])
+                table.append([h, (mvb_key << ((self.stream_out.item_widths["data"] // 8) * 8 + 1)) + ((data << 1) + 1)])
 
             out_config.append(table)
 
@@ -175,9 +176,9 @@ async def run_test(dut, config_file: str = "test_configs/test_config_1B.yaml", c
     cocotb.log.debug(f"TABLE_CAPACITY: {table_capacity}")
 
     """Asserting that the read configuration match configuration of the drivers connected to the component."""
-    assert mvb_items == tb.stream_in._items
-    assert mvb_key_width_bytes == tb.stream_in._item_width
-    assert data_out_width_bytes == tb.stream_out._item_width
+    assert mvb_items == tb.stream_in.items
+    assert mvb_key_width_bytes == tb.stream_in.item_widths["data"] // 8 # FIXME
+    assert data_out_width_bytes == tb.stream_out.item_widths["data"] // 8 # FIXME
     assert hash_width == log2(table_capacity)
 
     """Loading configuration from a config file"""
@@ -237,10 +238,14 @@ async def run_test(dut, config_file: str = "test_configs/test_config_1B.yaml", c
     for transaction in random_packets(item_width, item_width, pkt_count):
         int_transaction = int.from_bytes(transaction, "little")
 
+        mvb_tr = MvbTrClassic()
         if int_transaction in model_keys:
-            tb.model((model_data[int_transaction].to_bytes(data_out_width_bytes, 'little'), 1))
+            mvb_tr.data = model_data[int_transaction]
+            vld = 1
         else:
-            tb.model(((0).to_bytes(data_out_width_bytes, 'little'), 0))
+            mvb_tr.data = 0
+            vld = 0
+        tb.model((mvb_tr, vld))
 
         cocotb.log.info(f"generated transaction: {transaction.hex()}")
         tb.stream_in.append(transaction)
@@ -248,8 +253,8 @@ async def run_test(dut, config_file: str = "test_configs/test_config_1B.yaml", c
     last_num = 0
 
     while (tb.stream_out.item_cnt < pkt_count):
-        if (tb.stream_out.item_cnt // 1000) > last_num:
-            last_num = tb.stream_out.item_cnt // 1000
+        if (num := tb.stream_out.item_cnt // 1000) > last_num:
+            last_num = num
             cocotb.log.info(f"Number of random transactions processed: {tb.stream_out.item_cnt}/{pkt_count}")
         await ClockCycles(dut.CLK, 100)
 

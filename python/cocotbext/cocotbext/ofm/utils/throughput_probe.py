@@ -30,8 +30,8 @@ class ThroughputProbeMvbInterface(ThroughputProbeInterface):
     interface_dict = {
         "clock"     : "clock",
         "in_reset"  : "in_reset",
-        "items"     : "_items",
-        "item_width": "_item_width",
+        "items"     : "items",
+        "item_width": "item_width",
         "item_cnt"  : "item_cnt"
     }
 
