@@ -504,7 +504,7 @@ begin
                 HIST_EN         => (others => true),
 
                 SUM_EXTRA_WIDTH => (others => 16),
-                HIST_BOX_CNT    => (others => 100),
+                HIST_BOX_CNT    => (others => 128),
                 HIST_BOX_WIDTH  => (others => 32),
                 CTRLO_DEFAULT   => (others => '0'))
             port map (
