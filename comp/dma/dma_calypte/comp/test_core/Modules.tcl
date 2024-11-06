@@ -24,3 +24,4 @@ lappend COMPONENTS [ list "LATENCY_METER"        $LATENCY_METER_BASE        "FUL
 lappend COMPONENTS [ list "MFB_GENERATOR"        $MFB_GENERATOR_BASE        "FULL" ]
 
 lappend MOD "$ENTITY_BASE/dma_test_core.vhd"
+lappend MOD "$ENTITY_BASE/DevTree.tcl"

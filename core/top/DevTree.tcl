@@ -89,8 +89,8 @@ proc dts_build_netcope {} {
     }
 
     global DMA_DEBUG_ENABLE
-    if {$DMA_TYPE == 4 && $DMA_DEBUG_ENABLE} {
-        append ret [data_logger "0x1320000" 0 "dma_calypte_latency_meter"]
+    if {$DMA_TYPE == 4} {
+        dts_calypte_test_core ret "0x1300000" $DMA_DEBUG_ENABLE
     }
 
     # Network module
@@ -201,7 +201,7 @@ proc dts_build_netcope {} {
 
         for {set i 0} {$i < $CHAN_PER_EP} {incr i} {
             set    var_buff_base [expr $TX_DATA_BUFF_BASE + $i * $TX_BUFF_SIZE_HEX]
-            append ret [dts_dma_calypte_tx_buffer "data" $i $var_buff_base $TX_BUFF_SIZE_HEX "0"]
+            dts_dma_calypte_tx_buffer ret "data" $i $var_buff_base $TX_BUFF_SIZE_HEX "0"
         }
 
         set TX_HDR_BUFF_BASE   [expr $TX_DATA_BUFF_BASE + $CHAN_PER_EP*$TX_BUFF_SIZE]
@@ -209,7 +209,7 @@ proc dts_build_netcope {} {
 
         for {set i 0} {$i < $CHAN_PER_EP} {incr i} {
             set    var_buff_base [expr $TX_HDR_BUFF_BASE + $i * $TX_BUFF_SIZE_HEX]
-            append ret [dts_dma_calypte_tx_buffer "hdr" $i $var_buff_base $TX_BUFF_SIZE_HEX "0"]
+            dts_dma_calypte_tx_buffer ret "hdr" $i $var_buff_base $TX_BUFF_SIZE_HEX "0"
         }
         append ret "};"
     }

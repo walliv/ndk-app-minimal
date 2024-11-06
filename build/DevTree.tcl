@@ -1,5 +1,6 @@
 source [file join [file dirname [info script]] "scripts" "dts" "packed_item.tcl"]
 source [file join [file dirname [info script]] "scripts" "dts" "ndp_header.tcl"]
+source [file join [file dirname [info script]] "scripts" "dts" "dts_templates.tcl"]
 
 # ----------------------------------------------------------------------
 

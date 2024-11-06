@@ -33,7 +33,6 @@ entity DMA_TEST_CORE is
         MFB_LOOPBACK_EN    : boolean := TRUE;
         LATENCY_METER_EN   : boolean := TRUE;
         TX_DMA_DBG_CORE_EN : boolean := TRUE;
-        RX_DMA_DBG_CORE_EN : boolean := TRUE;
 
         ST_SP_DBG_SIGNAL_W : natural := 2;
         -- Width of MI bus
@@ -117,15 +116,14 @@ end entity;
 
 architecture FULL of DMA_TEST_CORE is
 
-    constant MI_SPLIT_PORTS : natural := 5;
+    constant MI_SPLIT_PORTS : natural := 4;
     constant MI_SPLIT_BASES : slv_array_t(MI_SPLIT_PORTS-1 downto 0)(MI_WIDTH-1 downto 0) := (
         0 => X"00000000",               -- MFB Loopback
         1 => X"00010000",               -- TX DMA Debug Core
         2 => X"00020000",               -- Latency meter
-        3 => X"00030000",               -- Reset FSM
-        4 => X"00040000"                -- RX DMA Debug Core
+        3 => X"00030000"                -- Reset FSM
         );
-    constant MI_SPLIT_ADDR_MASK : std_logic_vector(MI_WIDTH -1 downto 0) := X"00070000";
+    constant MI_SPLIT_ADDR_MASK : std_logic_vector(MI_WIDTH -1 downto 0) := X"00030000";
 
     -- MI Asynchronous crossing
     signal mi_dwr_sync  : std_logic_vector(MI_WIDTH -1 downto 0);
@@ -248,25 +246,25 @@ architecture FULL of DMA_TEST_CORE is
     -- =============================================================================================
     -- Debug probes
     -- =============================================================================================
-    attribute mark_debug : string;
+    -- attribute mark_debug : string;
 
-    attribute mark_debug of data_logger_rst : signal is "true";
-    attribute mark_debug of tst_gen_mux_sel : signal is "true";
-    attribute mark_debug of meas_fsm_pst    : signal is "true";
-    attribute mark_debug of pkt_cnt_pst     : signal is "true";
-    attribute mark_debug of test_finished   : signal is "true";
+    -- attribute mark_debug of data_logger_rst : signal is "true";
+    -- attribute mark_debug of tst_gen_mux_sel : signal is "true";
+    -- attribute mark_debug of meas_fsm_pst    : signal is "true";
+    -- attribute mark_debug of pkt_cnt_pst     : signal is "true";
+    -- attribute mark_debug of test_finished   : signal is "true";
 
-    attribute mark_debug of mfb_gen_ctrl_pkt_cnt_clr : signal is "true";
-    attribute mark_debug of mfb_gen_ctrl_length      : signal is "true";
-    attribute mark_debug of mfb_gen_ctrl_chan_val    : signal is "true";
-    attribute mark_debug of mfb_gen_ctrl_chan_inc    : signal is "true";
-    attribute mark_debug of mfb_gen_ctrl_en          : signal is "true";
-    attribute mark_debug of mfb_gen_ctrl_pkt_cnt     : signal is "true";
+    -- attribute mark_debug of mfb_gen_ctrl_pkt_cnt_clr : signal is "true";
+    -- attribute mark_debug of mfb_gen_ctrl_length      : signal is "true";
+    -- attribute mark_debug of mfb_gen_ctrl_chan_val    : signal is "true";
+    -- attribute mark_debug of mfb_gen_ctrl_chan_inc    : signal is "true";
+    -- attribute mark_debug of mfb_gen_ctrl_en          : signal is "true";
+    -- attribute mark_debug of mfb_gen_ctrl_pkt_cnt     : signal is "true";
 
-    attribute mark_debug of lat_meas_val        : signal is "true";
-    attribute mark_debug of lat_meas_val_vld    : signal is "true";
-    attribute mark_debug of lat_meas_fifo_full  : signal is "true";
-    attribute mark_debug of lat_meas_fifo_items : signal is "true";
+    -- attribute mark_debug of lat_meas_val        : signal is "true";
+    -- attribute mark_debug of lat_meas_val_vld    : signal is "true";
+    -- attribute mark_debug of lat_meas_fifo_full  : signal is "true";
+    -- attribute mark_debug of lat_meas_fifo_items : signal is "true";
 begin
     mi_async_i : entity work.MI_ASYNC
         generic map(
@@ -506,7 +504,7 @@ begin
                 HIST_EN         => (others => true),
 
                 SUM_EXTRA_WIDTH => (others => 16),
-                HIST_BOX_CNT    => (others => 100),
+                HIST_BOX_CNT    => (others => 128),
                 HIST_BOX_WIDTH  => (others => 32),
                 CTRLO_DEFAULT   => (others => '0'))
             port map (
@@ -690,85 +688,17 @@ begin
         rx_mfb_dst_rdy_lbk     <= rx_mfb_dst_rdy_gen_mux;
     end generate;
 
-    rx_dma_debug_core_g: if (RX_DMA_DBG_CORE_EN) generate
-        rx_debug_core_i : entity work.TX_DMA_DEBUG_CORE
-            generic map (
-                DEVICE             => DEVICE,
+    RX_MFB_META_PKT_SIZE_OUT <= rx_mfb_meta_pkt_size_gen_mux;
+    RX_MFB_META_HDR_META_OUT <= rx_mfb_meta_hdr_meta_gen_mux;
+    RX_MFB_META_CHAN_OUT     <= rx_mfb_meta_chan_gen_mux;
 
-                MFB_REGIONS        => MFB_REGIONS,
-                MFB_REGION_SIZE    => MFB_REGION_SIZE,
-                MFB_BLOCK_SIZE     => MFB_BLOCK_SIZE,
-                MFB_ITEM_WIDTH     => MFB_ITEM_WIDTH,
-
-                DMA_META_WIDTH     => HDR_META_WIDTH,
-                PKT_SIZE_MAX       => USR_RX_PKT_SIZE_MAX,
-                CHANNELS           => RX_CHANNELS,
-
-                DBG_CNTRS_WIDTH    => 64,
-                ST_SP_DBG_SIGNAL_W => ST_SP_DBG_SIGNAL_W,
-                MI_WIDTH           => MI_WIDTH,
-                MI_SAME_CLK        => TRUE)
-            port map (
-                CLK                  => CLK,
-                RESET                => RESET,
-
-                ST_SP_DBG_CHAN       => (others => '0'),
-                ST_SP_DBG_META       => (others => '0'),
-
-                RX_MFB_META_PKT_SIZE => rx_mfb_meta_pkt_size_gen_mux,
-                RX_MFB_META_HDR_META => rx_mfb_meta_hdr_meta_gen_mux,
-                RX_MFB_META_CHAN     => rx_mfb_meta_chan_gen_mux,
-
-                RX_MFB_DATA          => rx_mfb_data_gen_mux,
-                RX_MFB_SOF_POS       => rx_mfb_sof_pos_gen_mux,
-                RX_MFB_EOF_POS       => rx_mfb_eof_pos_gen_mux,
-                RX_MFB_SOF           => rx_mfb_sof_gen_mux,
-                RX_MFB_EOF           => rx_mfb_eof_gen_mux,
-                RX_MFB_SRC_RDY       => rx_mfb_src_rdy_gen_mux,
-                RX_MFB_DST_RDY       => rx_mfb_dst_rdy_gen_mux,
-
-                TX_MFB_DATA          => RX_MFB_DATA_OUT,
-                TX_MFB_META          => rx_mfb_meta_dbg,
-                TX_MFB_SOF_POS       => RX_MFB_SOF_POS_OUT,
-                TX_MFB_EOF_POS       => RX_MFB_EOF_POS_OUT,
-                TX_MFB_SOF           => RX_MFB_SOF_OUT,
-                TX_MFB_EOF           => RX_MFB_EOF_OUT,
-                TX_MFB_SRC_RDY       => RX_MFB_SRC_RDY_OUT,
-                TX_MFB_DST_RDY       => RX_MFB_DST_RDY_OUT,
-
-                MI_CLK               => MI_CLK,
-                MI_RESET             => MI_RESET,
-
-                MI_ADDR              => mi_addr_split(4),
-                MI_DWR               => mi_dwr_split(4),
-                MI_BE                => mi_be_split(4),
-                MI_RD                => mi_rd_split(4),
-                MI_WR                => mi_wr_split(4),
-                MI_DRD               => mi_drd_split(4),
-                MI_ARDY              => mi_ardy_split(4),
-                MI_DRDY              => mi_drdy_split(4)
-                );
-
-        RX_MFB_META_PKT_SIZE_OUT <= rx_mfb_meta_dbg(log2(USR_RX_PKT_SIZE_MAX+1) + HDR_META_WIDTH + log2(RX_CHANNELS) -1 downto HDR_META_WIDTH + log2(RX_CHANNELS));
-        RX_MFB_META_HDR_META_OUT <= rx_mfb_meta_dbg(HDR_META_WIDTH + log2(RX_CHANNELS) -1 downto log2(RX_CHANNELS));
-        RX_MFB_META_CHAN_OUT     <= rx_mfb_meta_dbg(log2(RX_CHANNELS) -1 downto 0);
-    else generate
-        mi_drd_split(4)  <= X"DEADBEAD";
-        mi_ardy_split(4) <= mi_rd_split(4) or mi_wr_split(4);
-        mi_drdy_split(4) <= mi_rd_split(4);
-
-        RX_MFB_META_PKT_SIZE_OUT <= rx_mfb_meta_pkt_size_gen_mux;
-        RX_MFB_META_HDR_META_OUT <= rx_mfb_meta_hdr_meta_gen_mux;
-        RX_MFB_META_CHAN_OUT     <= rx_mfb_meta_chan_gen_mux;
-
-        RX_MFB_DATA_OUT        <= rx_mfb_data_gen_mux;
-        RX_MFB_SOF_OUT         <= rx_mfb_sof_gen_mux;
-        RX_MFB_EOF_OUT         <= rx_mfb_eof_gen_mux;
-        RX_MFB_SOF_POS_OUT     <= rx_mfb_sof_pos_gen_mux;
-        RX_MFB_EOF_POS_OUT     <= rx_mfb_eof_pos_gen_mux;
-        RX_MFB_SRC_RDY_OUT     <= rx_mfb_src_rdy_gen_mux;
-        rx_mfb_dst_rdy_gen_mux <= RX_MFB_DST_RDY_OUT;
-    end generate;
+    RX_MFB_DATA_OUT        <= rx_mfb_data_gen_mux;
+    RX_MFB_SOF_OUT         <= rx_mfb_sof_gen_mux;
+    RX_MFB_EOF_OUT         <= rx_mfb_eof_gen_mux;
+    RX_MFB_SOF_POS_OUT     <= rx_mfb_sof_pos_gen_mux;
+    RX_MFB_EOF_POS_OUT     <= rx_mfb_eof_pos_gen_mux;
+    RX_MFB_SRC_RDY_OUT     <= rx_mfb_src_rdy_gen_mux;
+    rx_mfb_dst_rdy_gen_mux <= RX_MFB_DST_RDY_OUT;
 
     -- =============================================================================================
     -- Resetting FSM

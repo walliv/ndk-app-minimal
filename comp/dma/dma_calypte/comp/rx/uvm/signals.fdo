@@ -6,7 +6,14 @@
 
 proc ctrl {NAME PATH} {
     add wave -divider "$NAME"
-    add_wave "-noupdate -hex"       $PATH/MI_*
+    add_wave "-noupdate -hex"       $PATH/MI_ADDR
+    add_wave "-noupdate -hex"       $PATH/MI_DWR
+    add_wave "-noupdate -hex"       $PATH/MI_BE
+    add_wave "-noupdate -hex"       $PATH/MI_RD
+    add_wave "-noupdate -hex"       $PATH/MI_WR
+    add_wave "-noupdate -hex"       $PATH/MI_DRD
+    add_wave "-noupdate -hex"       $PATH/MI_ARDY
+    add_wave "-noupdate -hex"       $PATH/MI_DRDY
 }
 
 proc wr {NAME PATH} {
@@ -20,6 +27,7 @@ proc rd {NAME PATH} {
 }
 
 proc ints {PATH} {
+    add_wave [list -noupdate -hex -group "INTERNALS"] $PATH/mi_split_*
     add_wave [list -noupdate -hex -group "INTERNALS"] $PATH/start_*
     add_wave [list -noupdate -hex -group "INTERNALS"] $PATH/stop_*
     add_wave [list -noupdate -hex -group "INTERNALS"] $PATH/hdrm_*
@@ -30,6 +38,15 @@ proc ints {PATH} {
 }
 
 proc high_level_view {PATH} {
+    add_wave [list -noupdate -bin -group "HIGH LEVEL DASHBOARD"] $PATH/data_addr_req_cntr_incr
+    add_wave [list -noupdate -bin -group "HIGH LEVEL DASHBOARD"] $PATH/dma_hdr_addr_req_cntr_incr
+    add_wave [list -noupdate -bin -group "HIGH LEVEL DASHBOARD"] $PATH/data_addr_stall_incr
+    add_wave [list -noupdate -bin -group "HIGH LEVEL DASHBOARD"] $PATH/dma_hdr_addr_stall_incr
+    add_wave [list -noupdate -bin -group "HIGH LEVEL DASHBOARD"] $PATH/pcie_mfb_stall_incr
+    add_wave [list -noupdate -unsigned -group "HIGH LEVEL DASHBOARD"] $PATH/data_buff_full_chan
+    add_wave [list -noupdate -bin -group "HIGH LEVEL DASHBOARD"] $PATH/data_buff_full_cntr_incr
+    add_wave [list -noupdate -unsigned -group "HIGH LEVEL DASHBOARD"] $PATH/dma_hdr_buff_full_chan
+    add_wave [list -noupdate -bin -group "HIGH LEVEL DASHBOARD"] $PATH/dma_hdr_buff_full_cntr_incr
     add_wave [list -noupdate -hex -group "HIGH LEVEL DASHBOARD"] $PATH/rx_dma_sw_manager_i/start_fsm_pst
     add_wave [list -noupdate -hex -group "HIGH LEVEL DASHBOARD"] $PATH/rx_dma_sw_manager_i/start_fsm_nst
     add_wave [list -noupdate -hex -group "HIGH LEVEL DASHBOARD"] $PATH/rx_dma_sw_manager_i/stop_fsm_pst

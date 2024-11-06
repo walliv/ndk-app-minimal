@@ -72,6 +72,8 @@ entity DMA_CALYPTE is
         -- Enables an additional register of the transaction buffer that improves
         -- throughput
         TRBUF_REG_EN        : boolean := false;
+        -- Enables performance counters alowing metrics generation.
+        PERF_CNTR_EN        : boolean := false;
 
         -- =====================================================================
         -- TX DMA settings
@@ -266,8 +268,8 @@ begin
                 CNTRS_WIDTH    => DSP_CNT_WIDTH,
                 HDR_META_WIDTH => HDR_META_WIDTH,
                 PKT_SIZE_MAX   => USR_RX_PKT_SIZE_MAX,
-                TRBUF_FIFO_EN  => FALSE,
-                TRBUF_REG_EN   => TRBUF_REG_EN)
+                TRBUF_REG_EN   => TRBUF_REG_EN,
+                PERF_CNTR_EN   => PERF_CNTR_EN)
 
             port map (
                 CLK   => CLK,
