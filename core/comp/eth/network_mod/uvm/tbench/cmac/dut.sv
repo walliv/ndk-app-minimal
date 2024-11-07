@@ -1,4 +1,4 @@
-// dut.sv: Intel F-Tile DUT
+// dut.sv: Xilinx CMAC DUT
 // Copyright (C) 2024 CESNET z. s. p. o.
 // Author(s): Yaroslav Marushchenko <xmarus09@stud.fit.vutbr.cz>
 
@@ -56,8 +56,8 @@ module DUT #(
     reset_if.dut rst_mi_pmd,
     reset_if.dut rst_tsu,
 
-    intel_mac_seg_if.dut_rx eth_rx[ETH_PORTS],
-    intel_mac_seg_if.dut_tx eth_tx[ETH_PORTS],
+    lbus_if.dut_tx eth_tx[ETH_PORTS],
+    lbus_if.dut_rx eth_rx[ETH_PORTS],
 
     mfb_if.dut_rx usr_rx     [ETH_PORTS],
     mfb_if.dut_tx usr_tx_data[ETH_PORTS],
@@ -124,30 +124,56 @@ module DUT #(
     generate;
         for (genvar eth_it = 0; eth_it < ETH_PORTS; eth_it++) begin
             localparam int unsigned ETH_PORT_CHAN_LOCAL = ETH_PORT_CHAN[eth_it];
-            initial assert(ETH_PORT_CHAN_LOCAL == 1); // TODO
+            initial assert(ETH_PORT_CHAN_LOCAL == 1);
 
-            // TX connections
-            assign eth_tx[eth_it].DATA      = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_data}};
-            assign eth_tx[eth_it].INFRAME   = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_inframe}};
-            assign eth_tx[eth_it].EOP_EMPTY = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_eop_empty}};
-            assign eth_tx[eth_it].FCS_ERROR = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_error}}; // Both have the same width
-            assign eth_tx[eth_it].VALID     = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_valid;
+            wire logic [4*128-1 : 0] eth_rx_data;
+
+            // ------- //
+            // TX side //
+            // ------- //
+
+            for (genvar slice = 0; slice < 4; slice++) begin
+                initial begin
+                    force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_rx_lbus_data[slice] = {<<8{eth_tx[eth_it].DATA[128*(slice+1)-1 -: 128]}}; // Byte reordering
+                    force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_rx_lbus_mty [slice] = eth_tx[eth_it].MTY[4*(slice+1)-1 -: 4];
+                end
+            end
 
             initial begin
-                // RX connections
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.verification_probe_i.mac_data      = eth_rx[eth_it].DATA;
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.verification_probe_i.mac_inframe   = eth_rx[eth_it].INFRAME;
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.verification_probe_i.mac_eop_empty = eth_rx[eth_it].EOP_EMPTY;
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.verification_probe_i.mac_fcs_error = eth_rx[eth_it].FCS_ERROR;
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.verification_probe_i.mac_error     = eth_rx[eth_it].ERROR;
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.verification_probe_i.mac_status    = eth_rx[eth_it].STATUS_DATA;
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.verification_probe_i.mac_valid     = eth_rx[eth_it].VALID;
-
-                // TX READY connection
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_mac_ready[0] = eth_tx[eth_it].READY;
-                // CLK connection
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_clk_out_vec[0] = CLK_ETH[eth_it];
+                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_rx_lbus_ena = eth_tx[eth_it].ENA;
+                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_rx_lbus_sop = eth_tx[eth_it].SOP;
+                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_rx_lbus_eop = eth_tx[eth_it].EOP;
+                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_rx_lbus_err = eth_tx[eth_it].ERR;
             end
+
+            assign eth_tx[eth_it].RDY = 1'b1; // Always ready
+
+            // ------- //
+            // RX side //
+            // ------- //
+
+            assign eth_rx_data = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_tx_lbus_data}};
+            for (genvar segment = 0; segment < 4; segment++) begin
+                wire logic [128-1 : 0] segment_data;
+
+                assign segment_data = eth_rx_data[128*(segment+1)-1 -: 128];
+                assign eth_rx[eth_it].DATA[128*(segment+1)-1 -: 128] = {<<8{segment_data}}; // Byte reordering
+            end
+
+            assign eth_rx[eth_it].ENA = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_tx_lbus_ena;
+            assign eth_rx[eth_it].SOP = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_tx_lbus_sop;
+            assign eth_rx[eth_it].EOP = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_tx_lbus_eop;
+            assign eth_rx[eth_it].ERR = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_tx_lbus_err;
+            assign eth_rx[eth_it].MTY = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_tx_lbus_mty}};
+
+            initial force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_tx_lbus_rdy = eth_rx[eth_it].RDY;
+
+            // ----- //
+            // Other //
+            // ----- //
+
+            // CLK connection
+            initial force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_gt_tx_clk_322m = CLK_ETH[eth_it];
         end
     endgenerate
 

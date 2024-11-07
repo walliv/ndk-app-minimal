@@ -73,10 +73,10 @@ class virt_sequence_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIO
         seq_sync_end.clear();
 
         fork
-            while (!seq_sync_end.stopped()) begin
+            do begin
                 assert(eth_rst.randomize());
                 eth_rst.start(p_sequencer.eth_rst);
-            end
+            end while (!seq_sync_end.stopped());
         join_none
 
         #(400ns);
@@ -94,35 +94,37 @@ class virt_sequence_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIO
         end
 
         fork
-            while (!seq_sync_usr_rx.cfg[0].stopped()) begin
+            do begin
                 assert(usr_rx_data.randomize());
                 usr_rx_data.start(p_sequencer.usr_rx_data);
-            end
-            while (!seq_sync_usr_rx.cfg[1].stopped()) begin
+            end while (!seq_sync_usr_rx.cfg[0].stopped());
+            do begin
                 assert(usr_rx_meta.randomize());
                 usr_rx_meta.start(p_sequencer.usr_rx_meta);
-            end
-            while (!seq_sync_end.stopped()) begin
+            end while (!seq_sync_usr_rx.cfg[1].stopped());
+
+            do begin
                 assert(usr_tx_data.randomize());
                 usr_tx_data.start(p_sequencer.usr_tx_data);
-            end
-            while (!seq_sync_end.stopped()) begin
+            end while (!seq_sync_end.stopped());
+            do begin
                 assert(usr_tx_hdr.randomize());
                 usr_tx_hdr.start(p_sequencer.usr_tx_hdr);
-            end
+            end while (!seq_sync_end.stopped());
 
-            while (!seq_sync_eth_rx.cfg[0].stopped()) begin
+            do begin
                 assert(eth_rx_data.randomize());
                 eth_rx_data.start(p_sequencer.eth_rx_data);
-            end
-            while (!seq_sync_eth_rx.cfg[1].stopped()) begin
+            end while (!seq_sync_eth_rx.cfg[0].stopped());
+            do begin
                 assert(eth_rx_meta.randomize());
                 eth_rx_meta.start(p_sequencer.eth_rx_meta);
-            end
-            while (!seq_sync_end.stopped()) begin
+            end while (!seq_sync_eth_rx.cfg[1].stopped());
+
+            do begin
                 assert(eth_tx.randomize());
                 eth_tx.start(p_sequencer.eth_tx);
-            end
+            end while (!seq_sync_end.stopped());
         join_none
 
         while ((state == null || !state.stopped()) &&
@@ -274,24 +276,24 @@ class virt_sequence_port_stop #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, 
         end
 
         fork
-            while (!seq_sync_end.stopped()) begin
+            do begin
                 assert(eth_rst.randomize());
                 eth_rst.start(p_sequencer.eth_rst);
-            end
+            end while (!seq_sync_end.stopped());
 
-            while (!seq_sync_end.stopped()) begin
+            do begin
                 assert(usr_tx_data.randomize());
                 usr_tx_data.start(p_sequencer.usr_tx_data);
-            end
-            while (!seq_sync_end.stopped()) begin
+            end while (!seq_sync_end.stopped());
+            do begin
                 assert(usr_tx_hdr.randomize());
                 usr_tx_hdr.start(p_sequencer.usr_tx_hdr);
-            end
+            end while (!seq_sync_end.stopped());
 
-            while (!seq_sync_end.stopped()) begin
+            do begin
                 assert(eth_tx.randomize());
                 eth_tx.start(p_sequencer.eth_tx);
-            end
+            end while (!seq_sync_end.stopped());
         join_none
 
         while(!state.stopped()) begin
@@ -431,21 +433,21 @@ class virt_sequence_stop #(ETH_PORTS, ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_W
         assert(tsu_rst.randomize());
 
         fork
-            while (!seq_sync_end.stopped()) begin
+            do begin
                 usr_rst.start(p_sequencer.usr_rst, this);
-            end
-            while (!seq_sync_end.stopped()) begin
+            end while (!seq_sync_end.stopped());
+            do begin
                 mi_rst.start(p_sequencer.mi_rst, this);
-            end
-            while (!seq_sync_end.stopped()) begin
+            end while (!seq_sync_end.stopped());
+            do begin
                 mi_phy_rst.start(p_sequencer.mi_phy_rst, this);
-            end
-            while (!seq_sync_end.stopped()) begin
+            end while (!seq_sync_end.stopped());
+            do begin
                 mi_pmd_rst.start(p_sequencer.mi_pmd_rst, this);
-            end
-            while (!seq_sync_end.stopped()) begin
+            end while (!seq_sync_end.stopped());
+            do begin
                 tsu_rst.start(p_sequencer.tsu_rst, this);
-            end
+            end while (!seq_sync_end.stopped());
         join_none
 
         for (int unsigned it = 0; it <  ETH_PORTS; it++) begin

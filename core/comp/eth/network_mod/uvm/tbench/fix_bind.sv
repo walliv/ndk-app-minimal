@@ -5,13 +5,16 @@
 
 // SPDX-License-Identifier: BSD-3-Clause
 
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+
 // It only supports single channel combinations with 1, 2 or 4 ports
 module fix_bind #(int unsigned PORTS, int unsigned CHANNELS);
 
     initial begin
         assert(CHANNELS == 1)
         else begin
-            $error("%m UNSUPORTED COMBINATION: CHANNELS(%0d)!!!\n", CHANNELS);
+            `uvm_fatal($sformatf("%m"), $sformatf("AN UNSUPPORTED COMBINATION: CHANNELS(%0d)!!!", CHANNELS));
         end
     end
 
@@ -36,7 +39,7 @@ module fix_bind #(int unsigned PORTS, int unsigned CHANNELS);
                 probe_inf #(2*REGIONS) probe_drop(s_rx_src_rdy_orig_reg, {s_rx_eof_orig_reg, s_rx_force_drop_reg}, RX_CLK);
     end
     else begin
-        $error("%m UNSUPORTED COMBINATION: PORTS(%0d)!!!\n", PORTS);
+        initial `uvm_fatal($sformatf("%m"), $sformatf("AN UNSUPPORTED COMBINATION: PORTS(%0d)!!!\n", PORTS));
     end
 
 endmodule

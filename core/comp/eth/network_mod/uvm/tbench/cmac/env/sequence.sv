@@ -19,58 +19,56 @@ class virt_sequence_port #(
     int unsigned MI_DATA_WIDTH,
     int unsigned MI_ADDR_WIDTH
 ) extends uvm_network_mod_env::virt_sequence_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH);
-    `uvm_object_param_utils(uvm_network_mod_f_tile_env::virt_sequence_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH))
-    `uvm_declare_p_sequencer(uvm_network_mod_f_tile_env::sequencer_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN[0], MI_DATA_WIDTH, MI_ADDR_WIDTH))
+    `uvm_object_param_utils(uvm_network_mod_cmac_env::virt_sequence_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH))
+    `uvm_declare_p_sequencer(uvm_network_mod_cmac_env::sequencer_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN[0], MI_DATA_WIDTH, MI_ADDR_WIDTH))
 
-    uvm_sequence #(uvm_logic_vector_array::sequence_item #(ITEM_WIDTH)) eth_rx_data;
-    uvm_sequence #(uvm_logic_vector::sequence_item      #(6))           eth_rx_meta;
-    uvm_sequence #(uvm_intel_mac_seg::sequence_item     #(SEGMENTS))    eth_tx;
+    uvm_sequence #(uvm_logic_vector_array::sequence_item #(8)) eth_tx_packet;
+    uvm_sequence #(uvm_logic_vector::sequence_item       #(1)) eth_tx_error;
+    uvm_sequence #(uvm_lbus::sequence_item)                    eth_rx;
 
-    protected uvm_common::sequences_cfg_sync#(2) seq_sync_eth_rx;
+    protected uvm_common::sequences_cfg_sync #(2) seq_sync_eth_tx;
 
-    protected uvm_logic_vector_array::config_sequence eth_rx_seq_cfg;
+    protected uvm_logic_vector_array::config_sequence eth_tx_seq_cfg;
 
+    // Constructor
     function new(string name = "virt_sequence_port");
         super.new(name);
-        eth_rx_seq_cfg = null;
     endfunction
 
     function int unsigned rx_transaction_count();
-        return super.rx_transaction_count() + seq_sync_eth_rx.data.transactions[0];
+        return super.rx_transaction_count() + seq_sync_eth_tx.data.transactions[0];
     endfunction
 
-    function void packet_size_set(uvm_logic_vector_array::config_sequence usr_rx_seq_cfg, uvm_logic_vector_array::config_sequence eth_rx_seq_cfg);
+    function void packet_size_set(uvm_logic_vector_array::config_sequence usr_rx_seq_cfg, uvm_logic_vector_array::config_sequence eth_tx_seq_cfg);
         super.packet_size_set(usr_rx_seq_cfg);
-        this.eth_rx_seq_cfg = eth_rx_seq_cfg;
+        this.eth_tx_seq_cfg = eth_tx_seq_cfg;
     endfunction
 
     task pre_body();
-        uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH)                           lib_eth_rx_data;
-        //uvm_logic_vector::sequence_simple#(6)                                       lib_eth_rx_meta;
-        uvm_intel_mac_seg::sequence_simple_tx #(SEGMENTS) seq_eth_tx;
+        uvm_logic_vector_array::sequence_lib #(8) lib_eth_tx_packet;
+        uvm_lbus::sequence_library_rx             seq_eth_rx;
 
         super.pre_body();
 
-        // ETH SEQURENCE RX
-        seq_sync_eth_rx = uvm_common::sequences_cfg_sync#(2)::type_id::create("seq_sync_eth_rx", m_sequencer);
-        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_rx_data, "", "state", seq_sync_eth_rx.cfg[0]);
-        lib_eth_rx_data = uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH)::type_id::create("eth_rx_data", p_sequencer.eth_rx_data);
-        lib_eth_rx_data.max_random_count = 100;
-        lib_eth_rx_data.min_random_count = 10;
-        lib_eth_rx_data.init_sequence();
+        // TX eth packet sequence
+        seq_sync_eth_tx = uvm_common::sequences_cfg_sync#(2)::type_id::create("seq_sync_eth_tx", m_sequencer);
+        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx_packet, "", "state", seq_sync_eth_tx.cfg[0]);
+        lib_eth_tx_packet = uvm_logic_vector_array::sequence_lib #(8)::type_id::create("eth_tx_packet", p_sequencer.eth_tx_packet);
+        lib_eth_tx_packet.max_random_count = 100;
+        lib_eth_tx_packet.min_random_count = 10;
+        lib_eth_tx_packet.init_sequence();
 
-        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_rx_meta, "", "state", seq_sync_eth_rx.cfg[1]);
-        //lib_eth_rx_meta = //uvm_logic_vector::sequence_simple#(6)::type_id::create("eth_rx_meta", p_sequencer.eth_rx_meta);
-        eth_rx_meta = uvm_network_mod_env::sequence_logic_vector#(6)::type_id::create("eth_rx_meta", p_sequencer.eth_rx_meta);
-        //lib_eth_rx_meta.config_set();
+        // TX eth error sequence
+        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx_error, "", "state", seq_sync_eth_tx.cfg[1]);
+        eth_tx_error = uvm_network_mod_env::sequence_logic_vector#(1)::type_id::create("eth_tx_error", p_sequencer.eth_tx_error);
 
-        // ETH SEQURENCE TX
-        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx, "", "state", seq_sync_end);
-        seq_eth_tx = uvm_intel_mac_seg::sequence_simple_tx #(SEGMENTS)::type_id::create("eth_tx", p_sequencer.eth_tx);
+        // RX eth sequence
+        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_rx, "", "state", seq_sync_end);
+        seq_eth_rx = uvm_lbus::sequence_library_rx::type_id::create("eth_rx", p_sequencer.eth_rx);
+        seq_eth_rx.init_sequence();
 
-        eth_rx_data  = lib_eth_rx_data;
-        //eth_rx_meta  = lib_eth_rx_meta;
-        eth_tx       = seq_eth_tx;
+        eth_tx_packet = lib_eth_tx_packet;
+        eth_rx        = seq_eth_rx;
     endtask
 
     task body();
@@ -78,9 +76,9 @@ class virt_sequence_port #(
         uvm_reg_data_t data;
         uvm_common::sequence_cfg state;
 
-        if(!uvm_config_db#(uvm_common::sequence_cfg)::get(m_sequencer, "", "state", state)) begin
-            state = null;
-        end
+        assert(uvm_config_db#(uvm_common::sequence_cfg)::get(m_sequencer, "", "state", state));
+        assert(state != null);
+
         seq_sync_end.clear();
 
         fork
@@ -124,17 +122,17 @@ class virt_sequence_port #(
             end while (!seq_sync_end.stopped());
 
             do begin
-                assert(eth_rx_data.randomize());
-                eth_rx_data.start(p_sequencer.eth_rx_data);
-            end while (!seq_sync_eth_rx.cfg[0].stopped());
+                assert(eth_tx_packet.randomize());
+                eth_tx_packet.start(p_sequencer.eth_tx_packet);
+            end while (!seq_sync_eth_tx.cfg[0].stopped());
             do begin
-                assert(eth_rx_meta.randomize());
-                eth_rx_meta.start(p_sequencer.eth_rx_meta);
-            end while (!seq_sync_eth_rx.cfg[1].stopped());
+                assert(eth_tx_error.randomize());
+                eth_tx_error.start(p_sequencer.eth_tx_error);
+            end while (!seq_sync_eth_tx.cfg[1].stopped());
 
             do begin
-                assert(eth_tx.randomize());
-                eth_tx.start(p_sequencer.eth_tx);
+                assert(eth_rx.randomize());
+                eth_rx.start(p_sequencer.eth_rx);
             end while (!seq_sync_end.stopped());
         join_none
 
@@ -143,10 +141,11 @@ class virt_sequence_port #(
            ) begin
             #(300ns);
         end
+        // Stop data sequences
         seq_sync_usr_rx.send_stop();
-        seq_sync_eth_rx.send_stop();
+        seq_sync_eth_tx.send_stop();
 
-        //READ STATISTIC
+        // Read statistics
         for (int unsigned it = 0; it < ETH_PORT_CHAN; it++) begin
             uvm_network_mod_env::read_rx_counters#(RX_MAC_COUNT) rx_stats;
             uvm_network_mod_env::read_tx_counters                tx_stats;
@@ -164,13 +163,13 @@ class virt_sequence_port #(
             `uvm_info(this.get_full_name(),
                 $sformatf("RX channel %s base [%0d]\n\tSTATS trfc %0d cfc %0d dfc %0d bodfc %0d oroc %0d\n", m_sequencer.get_full_name(), it, rx_stats.trfc, rx_stats.cfc, rx_stats.dfc, rx_stats.bodfc, rx_stats.oroc),
                 UVM_LOW);
-           `uvm_info(this.get_full_name(),
+            `uvm_info(this.get_full_name(),
                 $sformatf("RX channel %s rfc  [%0d]\n\tcrc_err %0d\n\tover_mtu_addr %0d\n\t below_min_addr %0d\n\tbcast_frames_addr %0d\n\tmcast_frames_addr %0d\n\tfragment_frames_addr %0d\n\tjabber_frames_addr %0d\n\ttrans_octets_addr %0d\n\tframes_64_addr %0d\n\tframes_65_127_addr %0d\n\tframes_128_255_addr %0d\n\tframes_256_511_addr %0d\n\tframes_512_1023_addr %0d\n\tframes_1024_1518_addr %0d\n\tframes_over_1518_addr %0d\n\tframes_below_64_addr %0d\n\n",
                     m_sequencer.get_full_name(), it, rx_stats.crc_err, rx_stats.over_mtu_addr, rx_stats.below_min_addr, rx_stats.bcast_frames_addr, rx_stats.mcast_frames_addr, rx_stats.fragment_frames_addr, rx_stats.jabber_frames_addr, rx_stats.trans_octets_addr,
                     rx_stats.frames_64_addr, rx_stats.frames_65_127_addr, rx_stats.frames_128_255_addr, rx_stats.frames_256_511_addr, rx_stats.frames_512_1023_addr, rx_stats.frames_1024_1518_addr, rx_stats.frames_over_1518_addr, rx_stats.frames_below_64_addr),
                 UVM_LOW);
 
-           `uvm_info(this.get_full_name(),
+            `uvm_info(this.get_full_name(),
                 $sformatf("TX channel %s  [%0d]\n\tSTATS tfc  %0d soc %0d dfc %0d sfc %0d\n",            m_sequencer.get_full_name(), it, tx_stats.tfc, tx_stats.soc, tx_stats.dfc, tx_stats.sfc),
                 UVM_LOW);
 
@@ -179,22 +178,20 @@ class virt_sequence_port #(
                 tx_stats.reset();
             join
 
-            //#(40ns);
-
             fork
                 rx_stats.start(null);
                 tx_stats.start(null);
             join
 
-           `uvm_info(this.get_full_name(),
+            `uvm_info(this.get_full_name(),
                 $sformatf("RX channel %s [%0d]\n\tAFTER RESET STATS trfc %0d cfc %0d dfc %0d bodfc %0d oroc %0d\n", m_sequencer.get_full_name(), it, rx_stats.trfc, rx_stats.cfc, rx_stats.dfc, rx_stats.bodfc, rx_stats.oroc),
                 UVM_LOW);
-           `uvm_info(this.get_full_name(),
+            `uvm_info(this.get_full_name(),
                 $sformatf("RX channel %s rfc  [%0d]\n\tcrc_err %0d\n\tover_mtu_addr %0d\n\t below_min_addr %0d\n\tbcast_frames_addr %0d\n\tmcast_frames_addr %0d\n\tfragment_frames_addr %0d\n\tjabber_frames_addr %0d\n\ttrans_octets_addr %0d\n\tframes_64_addr %0d\n\tframes_65_127_addr %0d\n\tframes_128_255_addr %0d\n\tframes_256_511_addr %0d\n\tframes_512_1023_addr %0d\n\tframes_1024_1518_addr %0d\n\tframes_over_1518_addr %0d\n\tframes_below_64_addr %0d\n\n",
                           m_sequencer.get_full_name(), it, rx_stats.crc_err, rx_stats.over_mtu_addr, rx_stats.below_min_addr, rx_stats.bcast_frames_addr, rx_stats.mcast_frames_addr, rx_stats.fragment_frames_addr, rx_stats.jabber_frames_addr, rx_stats.trans_octets_addr,
                           rx_stats.frames_64_addr, rx_stats.frames_65_127_addr, rx_stats.frames_128_255_addr, rx_stats.frames_256_511_addr, rx_stats.frames_512_1023_addr, rx_stats.frames_1024_1518_addr, rx_stats.frames_over_1518_addr, rx_stats.frames_below_64_addr),
                 UVM_LOW);
-           `uvm_info(this.get_full_name(),
+            `uvm_info(this.get_full_name(),
                 $sformatf("TX channel %s [%0d]\n\tAFTER RESET STATS tfc  %0d soc %0d dfc %0d sfc %0d\n",            m_sequencer.get_full_name(), it, tx_stats.tfc, tx_stats.soc, tx_stats.dfc, tx_stats.sfc),
                 UVM_LOW);
 
@@ -204,18 +201,19 @@ class virt_sequence_port #(
             end
         end
 
-
-        //Send end to other sequences.
+        // Wait for the end of the data sequences
         usr_rx_meta.wait_for_sequence_state(UVM_FINISHED);
         usr_rx_data.wait_for_sequence_state(UVM_FINISHED);
-        eth_rx_data.wait_for_sequence_state(UVM_FINISHED);
-        eth_rx_meta.wait_for_sequence_state(UVM_FINISHED);
+        eth_tx_packet.wait_for_sequence_state(UVM_FINISHED);
+        eth_tx_error.wait_for_sequence_state(UVM_FINISHED);
 
+        // Stop other sequences
         seq_sync_end.send_stop();
+        // Wait for the end of the other sequences
         eth_rst.wait_for_sequence_state(UVM_FINISHED);
         usr_tx_data.wait_for_sequence_state(UVM_FINISHED);
         usr_tx_hdr.wait_for_sequence_state(UVM_FINISHED);
-        eth_tx.wait_for_sequence_state(UVM_FINISHED);
+        eth_rx.wait_for_sequence_state(UVM_FINISHED);
     endtask
 
 endclass
@@ -234,66 +232,66 @@ class virt_sequence_port_stop #(
     int unsigned MI_DATA_WIDTH,
     int unsigned MI_ADDR_WIDTH
 ) extends uvm_network_mod_env::virt_sequence_port_stop #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH);
-    `uvm_object_param_utils(uvm_network_mod_f_tile_env::virt_sequence_port_stop #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH));
-    `uvm_declare_p_sequencer(uvm_network_mod_f_tile_env::sequencer_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN[0], MI_DATA_WIDTH, MI_ADDR_WIDTH))
+    `uvm_object_param_utils(uvm_network_mod_cmac_env::virt_sequence_port_stop #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH));
+    `uvm_declare_p_sequencer(uvm_network_mod_cmac_env::sequencer_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN[0], MI_DATA_WIDTH, MI_ADDR_WIDTH))
 
-    uvm_sequence #(uvm_logic_vector_array::sequence_item #(ITEM_WIDTH)) eth_rx_data;
-    uvm_sequence #(uvm_logic_vector::sequence_item       #(6))          eth_rx_meta;
-    uvm_sequence #(uvm_intel_mac_seg::sequence_item      #(SEGMENTS))   eth_tx;
+    uvm_sequence #(uvm_logic_vector_array::sequence_item #(ITEM_WIDTH)) eth_tx_packet;
+    uvm_sequence #(uvm_logic_vector::sequence_item       #(6))          eth_tx_error;
+    uvm_sequence #(uvm_lbus::sequence_item)                             eth_rx;
 
-    protected uvm_common::sequences_cfg_sync#(2) seq_sync_eth_rx;
+    protected uvm_common::sequences_cfg_sync#(2) seq_sync_eth_tx;
 
-    protected uvm_logic_vector_array::config_sequence eth_rx_seq_cfg;
+    protected uvm_logic_vector_array::config_sequence eth_tx_seq_cfg;
 
+    // Constructor
     function new(string name = "virt_sequence_port_stop");
         super.new(name);
-        eth_rx_seq_cfg = null;
     endfunction
 
     function int unsigned rx_transaction_count();
-        return super.rx_transaction_count() + seq_sync_eth_rx.data.transactions[0];
+        return super.rx_transaction_count() + seq_sync_eth_tx.data.transactions[0];
     endfunction
 
-    function void packet_size_set(uvm_logic_vector_array::config_sequence usr_rx_seq_cfg, uvm_logic_vector_array::config_sequence eth_rx_seq_cfg);
+    function void packet_size_set(uvm_logic_vector_array::config_sequence usr_rx_seq_cfg, uvm_logic_vector_array::config_sequence eth_tx_seq_cfg);
         super.packet_size_set(usr_rx_seq_cfg);
-        this.eth_rx_seq_cfg = eth_rx_seq_cfg;
+        this.eth_tx_seq_cfg = eth_tx_seq_cfg;
     endfunction
 
     task pre_body();
-        uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH)                           lib_eth_rx_data;
-        //uvm_logic_vector::sequence_simple#(6)                                       lib_eth_rx_meta;
-        uvm_intel_mac_seg::sequence_simple_tx #(SEGMENTS) seq_eth_tx;
+        uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH) lib_eth_tx_packet;
+        uvm_lbus::sequence_library_rx                     seq_eth_rx;
 
         super.pre_body();
 
-        // ETH SEQURENCE RX
-        seq_sync_eth_rx = uvm_common::sequences_cfg_sync#(2)::type_id::create("seq_sync_eth_rx", m_sequencer);
-        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_rx_data, "", "state", seq_sync_eth_rx.cfg[0]);
-        lib_eth_rx_data = uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH)::type_id::create("eth_rx_data", p_sequencer.eth_rx_data);
-        lib_eth_rx_data.max_random_count = 100;
-        lib_eth_rx_data.min_random_count = 10;
-        lib_eth_rx_data.init_sequence();
+        // TX eth packet sequence
+        seq_sync_eth_tx = uvm_common::sequences_cfg_sync#(2)::type_id::create("seq_sync_eth_tx", m_sequencer);
+        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx_packet, "", "state", seq_sync_eth_tx.cfg[0]);
+        lib_eth_tx_packet = uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH)::type_id::create("eth_tx_packet", p_sequencer.eth_tx_packet);
+        lib_eth_tx_packet.max_random_count = 100;
+        lib_eth_tx_packet.min_random_count = 10;
+        lib_eth_tx_packet.init_sequence();
 
-        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_rx_meta, "", "state", seq_sync_eth_rx.cfg[1]);
-        //lib_eth_rx_meta = //uvm_logic_vector::sequence_simple#(6)::type_id::create("eth_rx_meta", p_sequencer.eth_rx_meta);
-        eth_rx_meta = uvm_network_mod_env::sequence_logic_vector#(6)::type_id::create("eth_rx_meta", p_sequencer.eth_rx_meta);
-        //lib_eth_rx_meta.config_set();
+        // TX eth error sequence
+        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx_error, "", "state", seq_sync_eth_tx.cfg[1]);
+        eth_tx_error = uvm_network_mod_env::sequence_logic_vector#(6)::type_id::create("eth_tx_error", p_sequencer.eth_tx_error);
 
-        // ETH SEQURENCE TX
-        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx, "", "state", seq_sync_end);
-        seq_eth_tx = uvm_intel_mac_seg::sequence_simple_tx #(SEGMENTS)::type_id::create("eth_tx", p_sequencer.eth_tx);
+        // RX eth sequence
+        uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_rx, "", "state", seq_sync_end);
+        seq_eth_rx = uvm_lbus::sequence_library_rx::type_id::create("eth_rx", p_sequencer.eth_rx);
+        seq_eth_rx.init_sequence();
 
-        eth_rx_data  = lib_eth_rx_data;
-        //eth_rx_meta  = lib_eth_rx_meta;
-        eth_tx       = seq_eth_tx;
+        eth_tx_packet = lib_eth_tx_packet;
+        eth_rx        = seq_eth_rx;
     endtask
 
     task body();
         uvm_common::sequence_cfg state;
 
         seq_sync_end.clear();
-        if(!uvm_config_db#(uvm_common::sequence_cfg)::get(m_sequencer, "", "state", state)) begin
-            `uvm_fatal(m_sequencer.get_full_name(), "\n\tCannot cast sequence synchronization");
+
+        assert(uvm_config_db#(uvm_common::sequence_cfg)::get(m_sequencer, "", "state", state))
+        else begin
+            `uvm_fatal(m_sequencer.get_full_name(), "\n\tCannot get a sequence port state object");
         end
 
         fork
@@ -312,8 +310,8 @@ class virt_sequence_port_stop #(
             end while (!seq_sync_end.stopped());
 
             do begin
-                assert(eth_tx.randomize());
-                eth_tx.start(p_sequencer.eth_tx);
+                assert(eth_rx.randomize());
+                eth_rx.start(p_sequencer.eth_rx);
             end while (!seq_sync_end.stopped());
         join_none
 
@@ -321,12 +319,13 @@ class virt_sequence_port_stop #(
             #(300ns);
         end
 
-        //Send end to other sequences.
+        // Stop the sequences
         seq_sync_end.send_stop();
+        // Wait for the end of the sequences
         eth_rst.wait_for_sequence_state(UVM_FINISHED);
         usr_tx_data.wait_for_sequence_state(UVM_FINISHED);
         usr_tx_hdr.wait_for_sequence_state(UVM_FINISHED);
-        eth_tx.wait_for_sequence_state(UVM_FINISHED);
+        eth_rx.wait_for_sequence_state(UVM_FINISHED);
     endtask
 
 endclass
@@ -346,10 +345,11 @@ class virt_sequence_simple #(
     int unsigned MI_DATA_WIDTH,
     int unsigned MI_ADDR_WIDTH
 ) extends uvm_network_mod_env::virt_sequence_simple #(ETH_PORTS, ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH);
-    `uvm_object_param_utils(uvm_network_mod_f_tile_env::virt_sequence_simple #(ETH_PORTS, ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH))
+    `uvm_object_param_utils(uvm_network_mod_cmac_env::virt_sequence_simple #(ETH_PORTS, ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH))
 
-    protected uvm_logic_vector_array::config_sequence eth_rx_seq_cfg[ETH_PORTS];
+    protected uvm_logic_vector_array::config_sequence eth_tx_seq_cfg[ETH_PORTS];
 
+    // Constructor
     function new(string name = "virt_sequence_simple");
         super.new(name);
     endfunction
@@ -364,7 +364,7 @@ class virt_sequence_simple #(
                 `uvm_fatal(this.get_full_name(), "\n\tCast failed")
             end
 
-            cast_virt_sequence_port.packet_size_set(usr_rx_seq_cfg[it], eth_rx_seq_cfg[it]);
+            cast_virt_sequence_port.packet_size_set(usr_rx_seq_cfg[it], eth_tx_seq_cfg[it]);
         end
     endtask
 
@@ -372,8 +372,8 @@ class virt_sequence_simple #(
         super.packet_size_set(min, max);
 
         for (int unsigned it = 0; it < ETH_PORTS; it++) begin
-            eth_rx_seq_cfg[it] = new($sformatf("eth_rx_seq_cfg_%0d", it));
-            eth_rx_seq_cfg[it].array_size_set(min, max);
+            eth_tx_seq_cfg[it] = new();
+            eth_tx_seq_cfg[it].array_size_set(min, max);
         end
     endfunction
 
@@ -381,13 +381,14 @@ class virt_sequence_simple #(
         logic [ETH_PORTS-1:0] port_end = '0;
         int unsigned transactions = 0;
 
-        // RANDOMIZATION
+        // Randomization
         assert(usr_rst.randomize());
         assert(mi_rst.randomize());
         assert(mi_phy_rst.randomize());
         assert(mi_pmd_rst.randomize());
         assert(tsu_rst.randomize());
 
+        // Start of the reset sequences
         fork
             usr_rst.start(p_sequencer.usr_rst);
             mi_rst.start(p_sequencer.mi_rst);
@@ -396,16 +397,18 @@ class virt_sequence_simple #(
             tsu_rst.start(p_sequencer.tsu_rst);
         join_none
 
-        for (int unsigned it = 0; it <  ETH_PORTS; it++) begin
+        // Run sequences
+        for (int unsigned it = 0; it < ETH_PORTS; it++) begin
             fork
-                automatic int unsigned index = it;
+                int unsigned index = it;
                 begin
                     virt_sequence_port_stop #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN[0], MI_DATA_WIDTH, MI_ADDR_WIDTH) seq_end;
 
                     port_end[index] = 0;
+
                     while (!seq_sync_port_end.stopped()) begin
                         assert(port[index].randomize());
-                        //RUN DATA
+                        // Run a data sequence
                         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.port[index], "", "state", seq_sync_port_end);
                         port[index].start(p_sequencer.port[index]);
                         transactions += port[index].rx_transaction_count();
@@ -413,7 +416,7 @@ class virt_sequence_simple #(
                     end
 
                     port_end[index] = 1;
-                    // run end sequence
+                    // Run an end sequence
                     uvm_config_db#(uvm_common::sequence_cfg_signal)::set(p_sequencer.port[index], "", "state", seq_sync_end);
                     seq_end = virt_sequence_port_stop #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN[0], MI_DATA_WIDTH, MI_ADDR_WIDTH)::type_id::create($sformatf("seq_end_%0d", it), p_sequencer.port[index]);
                     assert(seq_end.randomize());
@@ -422,7 +425,7 @@ class virt_sequence_simple #(
             join_none
         end
 
-        //SEND STOP
+        // Stop the sequences
         wait (transactions >= ETH_PORTS*30_000);
         seq_sync_port_end.send_stop();
         for (int unsigned it = 0; it < ETH_PORTS; it++) begin
@@ -456,10 +459,11 @@ class virt_sequence_stop #(
     int unsigned MI_DATA_WIDTH,
     int unsigned MI_ADDR_WIDTH
 ) extends uvm_network_mod_env::virt_sequence_stop #(ETH_PORTS, ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH);
-    `uvm_object_param_utils(uvm_network_mod_f_tile_env::virt_sequence_stop #(ETH_PORTS, ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH))
+    `uvm_object_param_utils(uvm_network_mod_cmac_env::virt_sequence_stop #(ETH_PORTS, ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIONS, REGION_SIZE, BLOCK_SIZE, ETH_PORT_CHAN, MI_DATA_WIDTH, MI_ADDR_WIDTH))
 
-    protected uvm_logic_vector_array::config_sequence eth_rx_seq_cfg[ETH_PORTS];
+    protected uvm_logic_vector_array::config_sequence eth_tx_seq_cfg[ETH_PORTS];
 
+    // Constructor
     function new(string name = "virt_sequence_stop");
         super.new(name);
     endfunction
@@ -468,19 +472,20 @@ class virt_sequence_stop #(
         super.packet_size_set(min, max);
 
         for (int unsigned it = 0; it < ETH_PORTS; it++) begin
-            eth_rx_seq_cfg[it] = new($sformatf("eth_rx_seq_cfg_%0d", it));
-            eth_rx_seq_cfg[it].array_size_set(min, max);
+            eth_tx_seq_cfg[it] = new();
+            eth_tx_seq_cfg[it].array_size_set(min, max);
         end
     endfunction
 
     task body();
-        // RANDOMIZATION
+        // Randomization
         assert(usr_rst.randomize());
         assert(mi_rst.randomize());
         assert(mi_phy_rst.randomize());
         assert(mi_pmd_rst.randomize());
         assert(tsu_rst.randomize());
 
+        // Start of the reset sequences
         fork
             do begin
                 usr_rst.start(p_sequencer.usr_rst, this);
@@ -499,6 +504,7 @@ class virt_sequence_stop #(
             end while (!seq_sync_end.stopped());
         join_none
 
+        // Run the sequences
         for (int unsigned it = 0; it <  ETH_PORTS; it++) begin
             fork
                 automatic int unsigned index = it;
@@ -512,6 +518,7 @@ class virt_sequence_stop #(
         while(!seq_sync_end.stopped()) begin
             #(300ns);
         end
+        // Stop the sequences
         for (int unsigned it = 0; it < ETH_PORTS; it++) begin
             port[it].wait_for_sequence_state(UVM_FINISHED);
         end

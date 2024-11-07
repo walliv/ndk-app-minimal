@@ -98,7 +98,10 @@ SETTINGS = {
         "BLOCK_SIZE"                     : "8",
         "ITEM_WIDTH"                     : "8",
         "DEVICE"                         : "\\\"ULTRASCALE\\\"",
-        "__core_params__": {"NETWORK_ARCH": "CMAC"},
+        "__core_params__": {
+            "UVM_TEST": "test::base",
+            "NETWORK_ARCH": "CMAC"
+        },
 
     },
 
@@ -125,6 +128,13 @@ SETTINGS = {
         "__core_params__": {
             "UVM_TEST": "test::speed",
             "NETWORK_ARCH": "F_TILE"
+        },
+    },
+
+    "cmac_test_speed" : {
+        "__core_params__": {
+            "UVM_TEST": "test::speed",
+            "NETWORK_ARCH": "CMAC"
         },
     },
 
@@ -168,16 +178,15 @@ SETTINGS = {
         "1p_ftile_1x100g4_normal_speed" : ("ftile_1x100g4", "ports_1", "small_packets", "ftile_test_speed",),
         "1p_ftile_1x100g4_small_speed"  : ("ftile_1x100g4", "ports_1", "large_packets", "ftile_test_speed",),
 
-        # TODO UNSUPPORTED: CMAC IS NOT IMPLEMENTED
         # 2x CMAC 100G
-        #"2p_cmac_1x100g4_normal"       : ("cmac_1x100g4", "ports_2",),
-        #"2p_cmac_1x100g4_small"        : ("cmac_1x100g4", "ports_2", "small_packets",),
-        #"2p_cmac_1x100g4_large"        : ("cmac_1x100g4", "ports_2", "large_packets",),
-        #"2p_cmac_1x100g4_normal_speed" : ("cmac_1x100g4", "ports_2", "small_packets", "test_speed",),
-        #"2p_cmac_1x100g4_small_speed"  : ("cmac_1x100g4", "ports_2", "large_packets", "test_speed",),
+        "2p_cmac_1x100g4_normal"       : ("cmac_1x100g4", "ports_2",),
+        "2p_cmac_1x100g4_small"        : ("cmac_1x100g4", "ports_2", "small_packets",),
+        "2p_cmac_1x100g4_large"        : ("cmac_1x100g4", "ports_2", "large_packets",),
+        "2p_cmac_1x100g4_normal_speed" : ("cmac_1x100g4", "ports_2", "small_packets", "cmac_test_speed",),
+        "2p_cmac_1x100g4_small_speed"  : ("cmac_1x100g4", "ports_2", "large_packets", "cmac_test_speed",),
 
         # 4x CMAC 100G
-        #"4p_cmac_1x100g4_normal"       : ("cmac_1x100g4", "ports_4",),
-        #"4p_cmac_1x100g4_small"        : ("cmac_1x100g4", "ports_4", "small_packets",),
+        "4p_cmac_1x100g4_normal"       : ("cmac_1x100g4", "ports_4",),
+        "4p_cmac_1x100g4_small"        : ("cmac_1x100g4", "ports_4", "small_packets",),
     },
 }
