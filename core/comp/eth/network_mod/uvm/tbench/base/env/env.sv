@@ -76,6 +76,10 @@ class env #(
         return m_scoreboard.used();
     endfunction
 
+    virtual function void eth_full_speed_set();
+        `uvm_fatal(this.get_full_name(), "\n\tIf you want to run full speed test you have to specified full speed sequece for ethernet");
+    endfunction
+
     // Create base components of environment.
     function void build_phase(uvm_phase phase);
         uvm_reset::config_item cfg_rst;

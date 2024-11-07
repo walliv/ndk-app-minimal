@@ -48,6 +48,10 @@ class env #(
         super.new(name, parent);
     endfunction
 
+    virtual function void eth_full_speed_set();
+        `uvm_warning(this.get_full_name(), "\n\tSpeed test for Intel F-Tile IP Core connection is not supported.")
+    endfunction
+
     function void build_phase(uvm_phase phase);
         // -------------------------------------- //
         // Overriding the base components/objects //

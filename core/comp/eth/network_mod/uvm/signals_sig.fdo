@@ -4,7 +4,7 @@
 
 # SPDX-License-Identifier: BSD-3-Clause
 
-set ETH_PORTS 2
+set ETH_PORTS 4
 
 add wave -divider "CLK"
 add_wave "-noupdate -color yellow"   /testbench/CLK_USR

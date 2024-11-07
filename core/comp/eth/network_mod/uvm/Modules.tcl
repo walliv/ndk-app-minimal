@@ -34,4 +34,10 @@ if {$ARCHGRP == "E_TILE"} {
     lappend MOD "$ENTITY_BASE/tbench/f-tile/env/pkg.sv"   \
                 "$ENTITY_BASE/tbench/f-tile/dut.sv"       \
                 "$ENTITY_BASE/tbench/f-tile/testbench.sv"
+} elseif {$ARCHGRP == "CMAC"} {
+    lappend COMPONENTS [ list "SV_LOGIC_VECTOR_ARRAY_LBUS"          "$SV_UVM_BASE/logic_vector_array_lbus"          "FULL"]
+    lappend MOD "$ENTITY_BASE/tbench/cmac/env/pkg.sv"   \
+                "$ENTITY_BASE/tbench/cmac/dut.sv"       \
+                "$ENTITY_BASE/tbench/cmac/property.sv"  \
+                "$ENTITY_BASE/tbench/cmac/testbench.sv"
 }
