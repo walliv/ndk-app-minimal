@@ -66,6 +66,10 @@ generic(
     -- Ethernet lanes polarity
     LANE_RX_POLARITY  : std_logic_vector(LANES-1 downto 0) := (others => '0');
     LANE_TX_POLARITY  : std_logic_vector(LANES-1 downto 0) := (others => '0');
+    -- Width of MISC signal between Top-Level FPGA design and NET_MOD core logic
+    MISC_TOP2NET_WIDTH : natural := 1;
+    -- Width of MISC signal between NET_MOD core logic and Top-Level FPGA design
+    MISC_NET2TOP_WIDTH : natural := 1;
     -- Select correct FPGA device.
     -- "AGILEX", "STRATIX10", "ULTRASCALE", ...
     DEVICE            : string  := "STRATIX10"
@@ -138,6 +142,14 @@ port(
     MI_BE_PHY       : in  std_logic_vector(MI_DATA_WIDTH_PHY/8-1 downto 0);
     MI_DRD_PHY      : out std_logic_vector(MI_DATA_WIDTH_PHY-1 downto 0);
     MI_ARDY_PHY     : out std_logic;
-    MI_DRDY_PHY     : out std_logic
+    MI_DRDY_PHY     : out std_logic;
+
+    -- =========================================================================
+    -- MISC SIGNALS (the clock signal is not defined)
+    -- =========================================================================
+    -- Optional signal for MISC connection from Top-Level FPGA design to NET_MOD core.
+    MISC_TOP2NET    : in  std_logic_vector(MISC_TOP2NET_WIDTH-1 downto 0);
+    -- Optional signal for MISC connection from NET_MOD core to Top-Level FPGA design.
+    MISC_NET2TOP    : out std_logic_vector(MISC_NET2TOP_WIDTH-1 downto 0) := (others => '0')
 );
 end entity;

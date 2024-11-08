@@ -95,6 +95,10 @@ generic (
     FPGA_ID_WIDTH      : natural := 64;
     -- Width of reset signals
     RESET_WIDTH        : integer := 2;
+    -- Width of MISC signal between Top-Level FPGA design and APP core logic
+    MISC_TOP2APP_WIDTH : natural := 1;
+    -- Width of MISC signal between APP core logic and Top-Level FPGA design
+    MISC_APP2TOP_WIDTH : natural := 1;
     -- Name of FPGA board
     BOARD              : string;
     -- Name of FPGA device
@@ -433,6 +437,14 @@ port (
     -- MI bus: data from slave to master (read data)
     MI_DRD                  : out std_logic_vector(MI_DATA_WIDTH-1 downto 0);
     -- MI bus: valid of MI_DRD data signal
-    MI_DRDY                 : out std_logic
+    MI_DRDY                 : out std_logic;
+
+    -- =========================================================================
+    -- MISC SIGNALS (the clock signal is not defined)
+    -- =========================================================================
+    -- Optional signal for MISC connection from Top-Level FPGA design to APP core.
+    MISC_TOP2APP            : in  std_logic_vector(MISC_TOP2APP_WIDTH-1 downto 0);
+    -- Optional signal for MISC connection from APP core to Top-Level FPGA design.
+    MISC_APP2TOP            : out std_logic_vector(MISC_APP2TOP_WIDTH-1 downto 0) := (others => '0')
 );
 end entity;

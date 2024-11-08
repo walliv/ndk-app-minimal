@@ -108,8 +108,22 @@ generic (
     AMM_FREQ_KHZ            : natural := 0;
 
     STATUS_LEDS             : natural := 2;
+    -- Width of MISC signal between Top-Level FPGA design and FPGA_COMMON
     MISC_IN_WIDTH           : natural := 0;
+    -- Width of MISC signal between FPGA_COMMON and Top-Level FPGA design
     MISC_OUT_WIDTH          : natural := 0;
+    -- Width of MISC signal between Top-Level FPGA design and APP core logic
+    MISC_TOP2APP_WIDTH      : natural := 1;
+    -- Width of MISC signal between APP core logic and Top-Level FPGA design
+    MISC_APP2TOP_WIDTH      : natural := 1;
+    -- Width of MISC signal between Top-Level FPGA design and PCIE core logic
+    MISC_TOP2PCIE_WIDTH     : natural := 1;
+    -- Width of MISC signal between PCIE core logic and Top-Level FPGA design
+    MISC_PCIE2TOP_WIDTH     : natural := 1;
+    -- Width of MISC signal between Top-Level FPGA design and NET_MOD core logic
+    MISC_TOP2NET_WIDTH      : natural := 1;
+    -- Width of MISC signal between NET_MOD core logic and Top-Level FPGA design
+    MISC_NET2TOP_WIDTH      : natural := 1;
 
     DEVICE                  : string := "AGILEX";
     BOARD                   : string := "400G1"
@@ -244,8 +258,24 @@ port (
     BOOT_MI_ARDY            : in  std_logic := '0';
     BOOT_MI_DRDY            : in  std_logic := '0';
 
-    -- Misc interface, board specific
+    -- =========================================================================
+    -- MISC SIGNALS (the clock signal is not defined)
+    -- =========================================================================
+    -- Optional signal for MISC connection from Top-Level FPGA design to APP core.
+    MISC_TOP2APP            : in    std_logic_vector(MISC_TOP2APP_WIDTH-1 downto 0) := (others => '0');
+    -- Optional signal for MISC connection from APP core to Top-Level FPGA design.
+    MISC_APP2TOP            : out   std_logic_vector(MISC_APP2TOP_WIDTH-1 downto 0);
+    -- Optional signal for MISC connection from Top-Level FPGA design to PCIE core.
+    MISC_TOP2PCIE           : in    slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_TOP2PCIE_WIDTH-1 downto 0) := (others => (others => '0'));
+    -- Optional signal for MISC connection from PCIE core to Top-Level FPGA design.
+    MISC_PCIE2TOP           : out   slv_array_t(PCIE_ENDPOINTS-1 downto 0)(MISC_PCIE2TOP_WIDTH-1 downto 0);
+    -- Optional signal for MISC connection from Top-Level FPGA design to NET_MOD core.
+    MISC_TOP2NET            : in    slv_array_t(ETH_PORTS-1 downto 0)(MISC_TOP2NET_WIDTH-1 downto 0) := (others => (others => '0'));
+    -- Optional signal for MISC connection from NET_MOD core to Top-Level FPGA design.
+    MISC_NET2TOP            : out   slv_array_t(ETH_PORTS-1 downto 0)(MISC_NET2TOP_WIDTH-1 downto 0);
+    -- Optional signal for MISC connection from Top-Level FPGA design to FPGA_COMMON.
     MISC_IN                 : in    std_logic_vector(MISC_IN_WIDTH-1 downto 0) := (others => '0');
+    -- Optional signal for MISC connection from FPGA_COMMON to Top-Level FPGA design.
     MISC_OUT                : out   std_logic_vector(MISC_OUT_WIDTH-1 downto 0)
 );
 end entity;
@@ -796,6 +826,8 @@ begin
         DMA_BAR_ENABLE      => (DMA_TYPE = 4),
         XVC_ENABLE          => VIRTUAL_DEBUG_ENABLE,
         CARD_ID_WIDTH       => FPGA_ID_WIDTH,
+        MISC_TOP2PCIE_WIDTH => MISC_TOP2PCIE_WIDTH,
+        MISC_PCIE2TOP_WIDTH => MISC_PCIE2TOP_WIDTH,
         DEVICE              => DEVICE
     )
     port map (
@@ -881,7 +913,10 @@ begin
         MI_DBG_WR          => mi_adc_wr  (MI_ADC_PORT_PCI_DBG),
         MI_DBG_DRD         => mi_adc_drd (MI_ADC_PORT_PCI_DBG),
         MI_DBG_ARDY        => mi_adc_ardy(MI_ADC_PORT_PCI_DBG),
-        MI_DBG_DRDY        => mi_adc_drdy(MI_ADC_PORT_PCI_DBG)
+        MI_DBG_DRDY        => mi_adc_drdy(MI_ADC_PORT_PCI_DBG),
+
+        MISC_TOP2PCIE      => MISC_TOP2PCIE,
+        MISC_PCIE2TOP      => MISC_PCIE2TOP
     );
 
     cdc_pcie_up_g: for i in 0 to PCIE_ENDPOINTS-1 generate
@@ -1293,6 +1328,8 @@ begin
         MI_ADDR_WIDTH         => MI_ADDR_WIDTH,
         FPGA_ID_WIDTH         => FPGA_ID_WIDTH,
         RESET_WIDTH           => RESET_WIDTH,
+        MISC_TOP2APP_WIDTH    => MISC_TOP2APP_WIDTH,
+        MISC_APP2TOP_WIDTH    => MISC_APP2TOP_WIDTH,
         BOARD                 => BOARD,
         DEVICE                => DEVICE
     )
@@ -1466,7 +1503,10 @@ begin
         MI_WR              => mi_adc_wr(MI_ADC_PORT_USERAPP),
         MI_DRD             => mi_adc_drd(MI_ADC_PORT_USERAPP),
         MI_ARDY            => mi_adc_ardy(MI_ADC_PORT_USERAPP),
-        MI_DRDY            => mi_adc_drdy(MI_ADC_PORT_USERAPP)
+        MI_DRDY            => mi_adc_drdy(MI_ADC_PORT_USERAPP),
+
+        MISC_TOP2APP           => MISC_TOP2APP,
+        MISC_APP2TOP           => MISC_APP2TOP
     );
 
     -- =========================================================================
@@ -1505,6 +1545,8 @@ begin
         LANE_RX_POLARITY  => ETH_LANE_RXPOLARITY,
         LANE_TX_POLARITY  => ETH_LANE_TXPOLARITY,
         RESET_WIDTH       => 1              ,
+        MISC_TOP2NET_WIDTH => MISC_TOP2NET_WIDTH,
+        MISC_NET2TOP_WIDTH => MISC_NET2TOP_WIDTH,
         DEVICE            => DEVICE         ,
         BOARD             => BOARD          ,
 
@@ -1606,7 +1648,10 @@ begin
         TSU_CLK         => tsu_clk,
         TSU_RST         => tsu_rst,
         TSU_TS_NS       => tsu_ns,
-        TSU_TS_DV       => tsu_dv
+        TSU_TS_DV       => tsu_dv,
+
+        MISC_TOP2NET    => MISC_TOP2NET,
+        MISC_NET2TOP    => MISC_NET2TOP
     );
 
     eth_led_ctrl_i: entity work.ETH_LED_CTRL_TOP

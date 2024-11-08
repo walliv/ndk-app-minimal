@@ -86,6 +86,10 @@ generic(
     LANE_TX_POLARITY  : std_logic_vector(ETH_PORTS*LANES-1 downto 0) := (others => '0');
     -- Number of user resets.
     RESET_WIDTH       : natural := 8;
+    -- Width of MISC signal between Top-Level FPGA design and NET_MOD core logic
+    MISC_TOP2NET_WIDTH : natural := 1;
+    -- Width of MISC signal between NET_MOD core logic and Top-Level FPGA design
+    MISC_NET2TOP_WIDTH : natural := 1;
     -- Select correct FPGA device.
     DEVICE            : string := "STRATIX10"; -- AGILEX, STRATIX10, ULTRASCALE
     BOARD             : string := "DK-DEV-1SDX-P" -- 400G1, DK-DEV-AGI027RES, DK-DEV-1SDX-P
@@ -220,6 +224,14 @@ port(
     TSU_CLK         : out std_logic;
     TSU_RST         : out std_logic;
     TSU_TS_NS       : in  std_logic_vector(64-1 downto 0);
-    TSU_TS_DV       : in  std_logic
+    TSU_TS_DV       : in  std_logic;
+
+    -- =========================================================================
+    -- MISC SIGNALS (the clock signal is not defined)
+    -- =========================================================================
+    -- Optional signal for MISC connection from Top-Level FPGA design to NET_MOD core.
+    MISC_TOP2NET    : in  slv_array_t(ETH_PORTS-1 downto 0)(MISC_TOP2NET_WIDTH-1 downto 0) := (others => (others => '0'));
+    -- Optional signal for MISC connection from NET_MOD core to Top-Level FPGA design.
+    MISC_NET2TOP    : out slv_array_t(ETH_PORTS-1 downto 0)(MISC_NET2TOP_WIDTH-1 downto 0)
 );
 end entity;
