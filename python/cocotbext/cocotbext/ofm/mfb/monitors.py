@@ -78,16 +78,19 @@ class MFBMonitor(BusMonitor):
                     self.log.debug(f"ee_idx {str(ee_idx)}")
                     self.log.debug(f"ss_idx {str(ss_idx)}")
 
-                    if (self._eof_arr[rr] == 1) and (in_frame):
-                        # Checks if there is a packet that is being processed and if it ends in this region.
-                        self.log.debug("Frame End")
-                        in_frame = False
-                        eof_done = True
-                        frame += data_bytes[rs_inx:ee_idx]
-                        self.item_cnt += len(data_bytes[rs_inx:ee_idx])*8 // self._item_width
-                        self.log.debug(f"frame done {frame.hex()}")
-                        self._recv(frame)
-                        self.frame_cnt += 1
+                    if self._eof_arr[rr] == 1:
+                        if in_frame:
+                            # Checks if there is a packet that is being processed and if it ends in this region.
+                            self.log.debug("Frame End")
+                            in_frame = False
+                            eof_done = True
+                            frame += data_bytes[rs_inx:ee_idx]
+                            self.item_cnt += len(data_bytes[rs_inx:ee_idx])*8 // self._item_width
+                            self.log.debug(f"frame done {frame.hex()}")
+                            self._recv(frame)
+                            self.frame_cnt += 1
+                        elif self._sof_arr[rr] == 1 and (self._eof_pos_arr[rr] < self._sof_pos_arr[rr]):
+                            raise MFBProtocolError("MFB error: an end-of-frame received before a start-of-frame!")
 
                     if in_frame:
                         # Region with a valid 'middle of packet'.
@@ -99,7 +102,7 @@ class MFBMonitor(BusMonitor):
                         # Checking for beginning of a packet.
                         self.log.debug("Frame Start")
                         if in_frame:
-                            raise MFBProtocolError("Duplicate start-of-frame received on MFB bus!")
+                            raise MFBProtocolError("MFB error: a start-of-frame received without an end-of-frame!")
                         in_frame = True
                         frame = b""
 
@@ -107,7 +110,7 @@ class MFBMonitor(BusMonitor):
                             # Checking if the packet ends in the same regions where it began.
                             self.log.debug("Frame End in single region")
                             if not in_frame:
-                                raise MFBProtocolError("Duplicate end-of-frame received on MFB bus!")
+                                raise MFBProtocolError("MFB error: an end-of-frame received without a start-of-frame!")
                             in_frame = False
                             frame += data_bytes[ss_idx:ee_idx]
                             self.item_cnt += len(data_bytes[ss_idx:ee_idx])*8 // self._item_width
