@@ -1,0 +1,23 @@
+[project]
+name = "cocotbext-ofm"
+version = "0.1.0"
+dependencies = [
+	"cocotb",
+	"cocotb-bus",
+]
+
+[project.optional-dependencies]
+nfb = [
+	"pylibfdt",
+	"nfb @ ${NDK_SW_PYTHON_URL}pynfb",
+	"libnfb-ext-python @ ${NDK_SW_PYTHON_URL}ext/libnfb_ext_python",
+]
+
+[build-system]
+requires = [
+	"pdm-backend",
+]
+build-backend = "pdm.backend"
+
+[tool.pdm.build]
+includes = ["cocotbext"]

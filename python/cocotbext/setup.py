@@ -11,7 +11,7 @@ setup(
 
     keywords=['python'],
     packages=find_namespace_packages(include=["cocotbext.*"]),
-    install_requires=["cocotb", "cocotb-bus"],
+    install_requires=["cocotb", "cocotb-bus", "pylibfdt"],
     python_requires=">=3.5",
     classifiers=[
         "Programming Language :: Python :: 3",
