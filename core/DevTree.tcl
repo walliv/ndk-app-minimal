@@ -208,3 +208,7 @@ proc dts_build_netcope {} {
 
     return $ret
 }
+
+proc dts_build_project {} {
+    return [dts_build_netcope]
+}
