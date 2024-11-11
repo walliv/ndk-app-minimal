@@ -36,13 +36,13 @@ proc dts_dmamod_open {base type rxn txn pcie rx_frame_size_max tx_frame_size_max
         #     append ret [dts_event_counter [expr $base + 0x00010000 + $i * 0x80 + 0x20] "event_counter2_$i" 1]
         # }
         set    var_base [expr $base + $i * 0x80]
-        append ret [dts_dma_calypte_ctrl "rx" $i $var_base $pcie]
+        dts_dma_calypte_ctrl ret "rx" $i $var_base $pcie
     }
 
     # TX DMA channels
     for {set i 0} {$i < $txn} {incr i} {
         set    var_base [expr $base + $i * 0x80 + $offset]
-        append ret [dts_dma_calypte_ctrl "tx" $i $var_base $pcie]
+        dts_dma_calypte_ctrl ret "tx" $i $var_base $pcie
     }
 
     append ret "};"
