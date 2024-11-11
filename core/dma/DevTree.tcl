@@ -1,5 +1,5 @@
 # 1.  base - base module address
-# 2.  type - controller type: 3 for DMA Medusa, 4 for DMA Calypte
+# 2.  type - controller type: 4 for DMA Calypte
 # 3.  rxn  - number of RX channels
 # 4.  txn  - number of TX channels
 # 5.  pcie - index(es) of PCIe endpoint(s) which DMA module uses.
@@ -30,18 +30,19 @@ proc dts_dmamod_open {base type rxn txn pcie rx_frame_size_max tx_frame_size_max
     # RX DMA Channels
     global DMA_DEBUG_ENABLE
     for {set i 0} {$i < $rxn} {incr i} {
+        # if {$DMA_DEBUG_ENABLE} {
+        #     append ret [dts_event_counter [expr $base + 0x00010000 + $i * 0x80 + 0x00] "event_counter0_$i" 1]
+        #     append ret [dts_event_counter [expr $base + 0x00010000 + $i * 0x80 + 0x10] "event_counter1_$i" 1]
+        #     append ret [dts_event_counter [expr $base + 0x00010000 + $i * 0x80 + 0x20] "event_counter2_$i" 1]
+        # }
         set    var_base [expr $base + $i * 0x80]
-        dts_dma_calypte_ctrl ret "rx" $i $var_base $pcie
-    }
-
-    if {$type == 4 && $DMA_DEBUG_ENABLE} {
-        dts_dma_perf_cntrs ret [expr $base + 0x3000]
+        append ret [dts_dma_calypte_ctrl "rx" $i $var_base $pcie]
     }
 
     # TX DMA channels
     for {set i 0} {$i < $txn} {incr i} {
         set    var_base [expr $base + $i * 0x80 + $offset]
-        dts_dma_calypte_ctrl ret "tx" $i $var_base $pcie
+        append ret [dts_dma_calypte_ctrl "tx" $i $var_base $pcie]
     }
 
     append ret "};"
