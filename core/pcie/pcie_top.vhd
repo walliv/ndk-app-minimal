@@ -33,14 +33,17 @@ entity PCIE is
         CQ_MFB_REGION_SIZE : natural := 1;
         CQ_MFB_BLOCK_SIZE  : natural := 8;
         CQ_MFB_ITEM_WIDTH  : natural := 32;
+
         RC_MFB_REGIONS     : natural := 2;
         RC_MFB_REGION_SIZE : natural := 1;
         RC_MFB_BLOCK_SIZE  : natural := 8;
         RC_MFB_ITEM_WIDTH  : natural := 32;
+
         CC_MFB_REGIONS     : natural := 2;
         CC_MFB_REGION_SIZE : natural := 1;
         CC_MFB_BLOCK_SIZE  : natural := 8;
         CC_MFB_ITEM_WIDTH  : natural := 32;
+
         RQ_MFB_REGIONS     : natural := 2;
         RQ_MFB_REGION_SIZE : natural := 1;
         RQ_MFB_BLOCK_SIZE  : natural := 8;
@@ -218,14 +221,14 @@ entity PCIE is
         MI_CLK              : in  std_logic;
         MI_RESET            : in  std_logic;
 
-        MI_DWR              : out slv_array_t     (PCIE_ENDPOINTS-1 downto 0)(32-1 downto 0);
-        MI_ADDR             : out slv_array_t     (PCIE_ENDPOINTS-1 downto 0)(32-1 downto 0);
-        MI_BE               : out slv_array_t     (PCIE_ENDPOINTS-1 downto 0)(32/8-1 downto 0);
-        MI_RD               : out std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
-        MI_WR               : out std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
-        MI_DRD              : in  slv_array_t     (PCIE_ENDPOINTS-1 downto 0)(32-1 downto 0);
-        MI_ARDY             : in  std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
-        MI_DRDY             : in  std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
+        MI_DWR_MTC          : out slv_array_t     (PCIE_ENDPOINTS-1 downto 0)(32-1 downto 0);
+        MI_ADDR_MTC         : out slv_array_t     (PCIE_ENDPOINTS-1 downto 0)(32-1 downto 0);
+        MI_BE_MTC           : out slv_array_t     (PCIE_ENDPOINTS-1 downto 0)(32/8-1 downto 0);
+        MI_RD_MTC           : out std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
+        MI_WR_MTC           : out std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
+        MI_DRD_MTC          : in  slv_array_t     (PCIE_ENDPOINTS-1 downto 0)(32-1 downto 0);
+        MI_ARDY_MTC         : in  std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
+        MI_DRDY_MTC         : in  std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
 
         MI_DBG_DWR          : in  std_logic_vector(32-1 downto 0);
         MI_DBG_ADDR         : in  std_logic_vector(32-1 downto 0);
@@ -619,14 +622,14 @@ begin
             RQ_TAG_ASSIGN       => core_rq_tag_assign(i),
             RQ_TAG_ASSIGN_VLD   => core_rq_tag_assign_vld(i),
 
-            MI_DWR              => MI_DWR (i),
-            MI_ADDR             => MI_ADDR(i),
-            MI_BE               => MI_BE  (i),
-            MI_RD               => MI_RD  (i),
-            MI_WR               => MI_WR  (i),
-            MI_DRD              => MI_DRD (i),
-            MI_ARDY             => MI_ARDY(i),
-            MI_DRDY             => MI_DRDY(i),
+            MI_DWR              => MI_DWR_MTC (i),
+            MI_ADDR             => MI_ADDR_MTC(i),
+            MI_BE               => MI_BE_MTC  (i),
+            MI_RD               => MI_RD_MTC  (i),
+            MI_WR               => MI_WR_MTC  (i),
+            MI_DRD              => MI_DRD_MTC (i),
+            MI_ARDY             => MI_ARDY_MTC(i),
+            MI_DRDY             => MI_DRDY_MTC(i),
 
             MI_DBG_DWR          => mi_dbg_split_dwr (i+1),
             MI_DBG_ADDR         => mi_dbg_split_addr(i+1),
