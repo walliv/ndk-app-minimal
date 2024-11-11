@@ -104,16 +104,13 @@ proc dts_build_netcope {} {
     }
 
     # Populate application, if exists
-    global APP_CORE_ENABLE
-    if {$APP_CORE_ENABLE} {
-        if { [llength [info procs dts_application]] > 0 } {
-            global HBM_PORTS APP_CORE_ARCH
-            array set GENERICS "
-                APP_CORE_ARCH $APP_CORE_ARCH
-                HBM_PORTS $HBM_PORTS
-            "
-            append ret "app:" [dts_application $ADDR_USERAPP [array get GENERICS]]
-        }
+    if { [llength [info procs dts_application]] > 0 } {
+        global HBM_CHANNELS APP_CORE_ARCH
+        array set GENERICS "
+            APP_CORE_ARCH $APP_CORE_ARCH
+            HBM_CHANNELS $HBM_CHANNELS
+        "
+        append ret "app:" [dts_application $ADDR_USERAPP [array get GENERICS]]
     }
 
     # Gen Loop Switch debug modules for each DMA stream/module
