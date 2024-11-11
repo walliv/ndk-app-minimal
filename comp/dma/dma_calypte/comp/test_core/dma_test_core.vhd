@@ -653,22 +653,22 @@ begin
                 TX_MFB_SRC_RDY   => rx_mfb_src_rdy_gen,
                 TX_MFB_DST_RDY   => rx_mfb_dst_rdy_gen);
 
-        rx_mfb_meta_pkt_size_gen_mux <= rx_mfb_meta_lbk(log2(USR_RX_PKT_SIZE_MAX+1) + HDR_META_WIDTH + log2(RX_CHANNELS) -1 downto HDR_META_WIDTH + log2(RX_CHANNELS))
-                                    when tst_gen_mux_sel = '0' else rx_mfb_meta_gen(log2(USR_RX_PKT_SIZE_MAX+1) -1 downto 0);
-        rx_mfb_meta_hdr_meta_gen_mux <= rx_mfb_meta_lbk(HDR_META_WIDTH + log2(RX_CHANNELS) -1 downto log2(RX_CHANNELS))
-                                    when tst_gen_mux_sel = '0' else (others => '0');
-        rx_mfb_meta_chan_gen_mux     <= rx_mfb_meta_lbk(log2(RX_CHANNELS) -1 downto 0)
-                                    when tst_gen_mux_sel = '0' else rx_mfb_meta_gen(log2(RX_CHANNELS) + log2(USR_RX_PKT_SIZE_MAX+1) -1 downto log2(USR_RX_PKT_SIZE_MAX+1));
+        RX_MFB_META_PKT_SIZE_OUT <= rx_mfb_meta_pkt_size_out_lbk when tst_gen_mux_sel = '0'
+                                    else rx_mfb_meta_gen(log2(USR_RX_PKT_SIZE_MAX+1) -1 downto 0);
+        RX_MFB_META_HDR_META_OUT <= rx_mfb_meta_hdr_meta_out_lbk when tst_gen_mux_sel = '0'
+                                    else (others => '0');
+        RX_MFB_META_CHAN_OUT     <= rx_mfb_meta_chan_out_lbk  when tst_gen_mux_sel = '0'
+                                    else rx_mfb_meta_gen(log2(RX_CHANNELS) + log2(USR_RX_PKT_SIZE_MAX+1) -1 downto log2(USR_RX_PKT_SIZE_MAX+1));
 
-        rx_mfb_data_gen_mux    <= rx_mfb_data_lbk    when tst_gen_mux_sel = '0' else rx_mfb_data_gen;
-        rx_mfb_sof_gen_mux     <= rx_mfb_sof_lbk     when tst_gen_mux_sel = '0' else rx_mfb_sof_gen;
-        rx_mfb_eof_gen_mux     <= rx_mfb_eof_lbk     when tst_gen_mux_sel = '0' else rx_mfb_eof_gen;
-        rx_mfb_sof_pos_gen_mux <= rx_mfb_sof_pos_lbk when tst_gen_mux_sel = '0' else rx_mfb_sof_pos_gen;
-        rx_mfb_eof_pos_gen_mux <= rx_mfb_eof_pos_lbk when tst_gen_mux_sel = '0' else rx_mfb_eof_pos_gen;
-        rx_mfb_src_rdy_gen_mux <= rx_mfb_src_rdy_lbk when tst_gen_mux_sel = '0' else rx_mfb_src_rdy_gen;
+        RX_MFB_DATA_OUT    <= rx_mfb_data_lbk    when tst_gen_mux_sel = '0' else rx_mfb_data_gen;
+        RX_MFB_SOF_OUT     <= rx_mfb_sof_lbk     when tst_gen_mux_sel = '0' else rx_mfb_sof_gen;
+        RX_MFB_EOF_OUT     <= rx_mfb_eof_lbk     when tst_gen_mux_sel = '0' else rx_mfb_eof_gen;
+        RX_MFB_SOF_POS_OUT <= rx_mfb_sof_pos_lbk when tst_gen_mux_sel = '0' else rx_mfb_sof_pos_gen;
+        RX_MFB_EOF_POS_OUT <= rx_mfb_eof_pos_lbk when tst_gen_mux_sel = '0' else rx_mfb_eof_pos_gen;
+        RX_MFB_SRC_RDY_OUT <= rx_mfb_src_rdy_lbk when tst_gen_mux_sel = '0' else rx_mfb_src_rdy_gen;
 
-        rx_mfb_dst_rdy_lbk <= rx_mfb_dst_rdy_gen_mux when tst_gen_mux_sel = '0' else '1';
-        rx_mfb_dst_rdy_gen <= rx_mfb_dst_rdy_gen_mux when tst_gen_mux_sel = '1' else '1';
+        rx_mfb_dst_rdy_lbk <= RX_MFB_DST_RDY_OUT when tst_gen_mux_sel = '0' else '1';
+        rx_mfb_dst_rdy_gen <= RX_MFB_DST_RDY_OUT when tst_gen_mux_sel = '1' else '1';
 
     else generate
         data_logger_ctrlo <= (others => '0');
@@ -677,30 +677,18 @@ begin
         mi_ardy_split(2) <= mi_rd_split(2) or mi_wr_split(2);
         mi_drdy_split(2) <= mi_rd_split(2);
 
-        rx_mfb_meta_pkt_size_gen_mux <= rx_mfb_meta_lbk(log2(USR_RX_PKT_SIZE_MAX+1) + HDR_META_WIDTH + log2(RX_CHANNELS) -1 downto HDR_META_WIDTH + log2(RX_CHANNELS));
-        rx_mfb_meta_hdr_meta_gen_mux <= rx_mfb_meta_lbk(HDR_META_WIDTH + log2(RX_CHANNELS) -1 downto log2(RX_CHANNELS));
-        rx_mfb_meta_chan_gen_mux     <= rx_mfb_meta_lbk(log2(RX_CHANNELS) -1 downto 0);
+        RX_MFB_META_PKT_SIZE_OUT <= rx_mfb_meta_pkt_size_out_lbk;
+        RX_MFB_META_HDR_META_OUT <= rx_mfb_meta_hdr_meta_out_lbk;
+        RX_MFB_META_CHAN_OUT     <= rx_mfb_meta_chan_out_lbk;
 
-        rx_mfb_data_gen_mux    <= rx_mfb_data_lbk;
-        rx_mfb_sof_gen_mux     <= rx_mfb_sof_lbk;
-        rx_mfb_eof_gen_mux     <= rx_mfb_eof_lbk;
-        rx_mfb_sof_pos_gen_mux <= rx_mfb_sof_pos_lbk;
-        rx_mfb_eof_pos_gen_mux <= rx_mfb_eof_pos_lbk;
-        rx_mfb_src_rdy_gen_mux <= rx_mfb_src_rdy_lbk;
-        rx_mfb_dst_rdy_lbk     <= rx_mfb_dst_rdy_gen_mux;
+        RX_MFB_DATA_OUT    <= rx_mfb_data_lbk;
+        RX_MFB_SOF_OUT     <= rx_mfb_sof_lbk;
+        RX_MFB_EOF_OUT     <= rx_mfb_eof_lbk;
+        RX_MFB_SOF_POS_OUT <= rx_mfb_sof_pos_lbk;
+        RX_MFB_EOF_POS_OUT <= rx_mfb_eof_pos_lbk;
+        RX_MFB_SRC_RDY_OUT <= rx_mfb_src_rdy_lbk;
+        rx_mfb_dst_rdy_lbk <= RX_MFB_DST_RDY_OUT;
     end generate;
-
-    RX_MFB_META_PKT_SIZE_OUT <= rx_mfb_meta_pkt_size_gen_mux;
-    RX_MFB_META_HDR_META_OUT <= rx_mfb_meta_hdr_meta_gen_mux;
-    RX_MFB_META_CHAN_OUT     <= rx_mfb_meta_chan_gen_mux;
-
-    RX_MFB_DATA_OUT        <= rx_mfb_data_gen_mux;
-    RX_MFB_SOF_OUT         <= rx_mfb_sof_gen_mux;
-    RX_MFB_EOF_OUT         <= rx_mfb_eof_gen_mux;
-    RX_MFB_SOF_POS_OUT     <= rx_mfb_sof_pos_gen_mux;
-    RX_MFB_EOF_POS_OUT     <= rx_mfb_eof_pos_gen_mux;
-    RX_MFB_SRC_RDY_OUT     <= rx_mfb_src_rdy_gen_mux;
-    rx_mfb_dst_rdy_gen_mux <= RX_MFB_DST_RDY_OUT;
 
     -- =============================================================================================
     -- Resetting FSM
