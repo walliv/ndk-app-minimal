@@ -16,7 +16,6 @@ if {$ARCHGRP == "TEST"} {
 
     lappend COMPONENTS [list "HBM_TESTER" $HBM_TESTER_BASE "FULL" ]
     lappend MOD "$ENTITY_BASE/application_core_test_arch.vhd"
-    lappend MOD "$ENTITY_BASE/DevTree.tcl"
 
 } elseif {$ARCHGRP == "EMPTY"} {
     lappend MOD "$ENTITY_BASE/application_core_empty_arch.vhd"
