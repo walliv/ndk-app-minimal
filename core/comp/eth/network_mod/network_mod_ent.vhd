@@ -156,9 +156,9 @@ port(
 
     -- This interface is to transmit Channel IDs and Timestamps of packets
     -- from the APP Core to the demo/testing logic in the Network Mod Core (E-Tile).
-    ETH_TX_MVB_CHANNEL   : in std_logic_vector(ETH_PORTS*REGIONS*max(1,log2(TX_DMA_CHANNELS))-1 downto 0);
-    ETH_TX_MVB_TIMESTAMP : in std_logic_vector(ETH_PORTS*REGIONS*48-1 downto 0);
-    ETH_TX_MVB_VLD       : in std_logic_vector(ETH_PORTS*REGIONS-1 downto 0);
+    ETH_TX_MVB_CHANNEL   : in std_logic_vector(ETH_STREAMS*REGIONS*max(1,log2(TX_DMA_CHANNELS))-1 downto 0);
+    ETH_TX_MVB_TIMESTAMP : in std_logic_vector(ETH_STREAMS*REGIONS*48-1 downto 0);
+    ETH_TX_MVB_VLD       : in std_logic_vector(ETH_STREAMS*REGIONS-1 downto 0);
 
     -- =====================================================================
     -- TX interface (Packets received from Ethernet)
