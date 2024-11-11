@@ -423,6 +423,7 @@ begin
         RQ_MFB_BLOCK_SIZE   => DMA_RQ_MFB_BLOCK_SIZE,
         RQ_MFB_ITEM_WIDTH   => DMA_RQ_MFB_ITEM_WIDTH,
 
+        DMA_PORTS           => PCIE_ENDPOINTS,
         PCIE_ENDPOINT_TYPE  => PCIE_ENDPOINT_TYPE,
         PCIE_ENDPOINT_MODE  => PCIE_ENDPOINT_MODE,
         PCIE_ENDPOINTS      => PCIE_ENDPOINTS,
@@ -430,6 +431,8 @@ begin
         PCIE_CONS           => PCIE_CONS,
         PCIE_LANES          => PCIE_LANES,
 
+        PTC_DISABLE         => true,
+        DMA_BAR_ENABLE      => true,
         XVC_ENABLE          => VIRTUAL_DEBUG_ENABLE,
         CARD_ID_WIDTH       => FPGA_ID_WIDTH,
         DEVICE              => DEVICE
@@ -441,6 +444,8 @@ begin
         INIT_DONE_N         => init_done_n,
         PCIE_USER_CLK       => clk_pci,
         PCIE_USER_RESET     => rst_pci,
+        DMA_CLK             => clk_pci(0),
+        DMA_RESET           => rst_pci(0),
 
         PCIE_RX_P           => PCIE_RX_P,
         PCIE_RX_N           => PCIE_RX_N,
@@ -455,6 +460,11 @@ begin
         PCIE_RCB_SIZE       => open,
         CARD_ID             => pcie_fpga_id,
 
+        DMA_RQ_MVB_DATA     => (others => (others => '0')),
+        DMA_RQ_MVB_VLD      => (others => (others => '0')),
+        DMA_RQ_MVB_SRC_RDY  => (others => '0'),
+        DMA_RQ_MVB_DST_RDY  => open,
+
         DMA_RQ_MFB_DATA     => dma_rq_mfb_data,
         DMA_RQ_MFB_META     => dma_rq_mfb_meta,
         DMA_RQ_MFB_SOF      => dma_rq_mfb_sof,
@@ -463,6 +473,11 @@ begin
         DMA_RQ_MFB_EOF_POS  => dma_rq_mfb_eof_pos,
         DMA_RQ_MFB_SRC_RDY  => dma_rq_mfb_src_rdy,
         DMA_RQ_MFB_DST_RDY  => dma_rq_mfb_dst_rdy,
+
+        DMA_RC_MVB_DATA     => open,
+        DMA_RC_MVB_VLD      => open,
+        DMA_RC_MVB_SRC_RDY  => open,
+        DMA_RC_MVB_DST_RDY  => (others => '1'),
 
         DMA_RC_MFB_DATA     => dma_rc_mfb_data,
         DMA_RC_MFB_META     => open,
