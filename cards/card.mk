@@ -9,7 +9,7 @@
 ###############################################################################
 
 # Load correct paths to build system
-OFM_PATH:=$(COMBO_BASE)/src/ofm
+OFM_PATH:=$(COMBO_BASE)
 
 # Optional parameters (can be changed in user Makefile)
 ###############################################################################
