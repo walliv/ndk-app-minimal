@@ -83,12 +83,6 @@ proc dts_build_netcope {} {
         dts_calypte_test_core ret "0x1300000" $DMA_DEBUG_ENABLE
     }
 
-    # Network module
-    global NET_MOD_ARCH ETH_PORTS ETH_PORT_SPEED ETH_PORT_CHAN ETH_PORT_LANES ETH_PORT_RX_MTU ETH_PORT_TX_MTU NET_MOD_ARCH QSFP_CAGES QSFP_I2C_ADDR
-    if {$NET_MOD_ARCH != "EMPTY"} {
-        append ret [dts_network_mod $ADDR_ETH_MAC $ADDR_ETH_PCS $ADDR_ETH_PMD $ETH_PORTS ETH_PORT_SPEED ETH_PORT_CHAN ETH_PORT_LANES ETH_PORT_RX_MTU ETH_PORT_TX_MTU $NET_MOD_ARCH $QSFP_CAGES QSFP_I2C_ADDR $CARD_NAME]
-    }
-
     global SDM_SYSMON_ARCH
     # Intel FPGA SDM controller
     if {$SDM_SYSMON_ARCH == "INTEL_SDM"} {
