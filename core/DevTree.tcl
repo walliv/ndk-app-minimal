@@ -114,9 +114,12 @@ proc dts_build_netcope {} {
     }
 
     # Gen Loop Switch debug modules for each DMA stream/module
-    for {set i 0} {$i < $PCIE_ENDPOINTS} {incr i} {
-        set    gls_offset [expr $i * 0x200]
-        append ret [dts_gen_loop_switch [expr $ADDR_GEN_LOOP + $gls_offset] "dbg_gls$i"]
+    global DMA_GEN_LOOP_EN
+    if {$DMA_GEN_LOOP_EN} {
+        for {set i 0} {$i < $PCIE_ENDPOINTS} {incr i} {
+            set    gls_offset [expr $i * 0x200]
+            append ret [dts_gen_loop_switch [expr $ADDR_GEN_LOOP + $gls_offset] "dbg_gls$i"]
+        }
     }
 
     # PCIe Debug
