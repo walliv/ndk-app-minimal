@@ -22,7 +22,7 @@ USER_ENV?=
 
 # Private parameters (do not change these values in user Makefile)
 ###############################################################################
-CORE_BASE:=$(COMBO_BASE)/src
+CORE_BASE:=$(COMBO_BASE)/core
 
 NETCOPE_ENV = \
 	OFM_PATH=$(OFM_PATH) \
@@ -40,4 +40,4 @@ NETCOPE_ENV = \
 
 filelist : ttarget_filelist
 
-include $(OFM_PATH)/build/Makefile.Vivado.inc
+include $(COMBO_BASE)/build/Makefile.Vivado.inc
