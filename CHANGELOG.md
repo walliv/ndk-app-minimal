@@ -4,12 +4,51 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format is required for commit messages.
 
 ## [Unreleased]
-- Improve documentation
-- Improve documentation looks
-- Data_logger: Added packages for statistics processing
-- Histogramer: Fixed histogram box update
+
+### Added
+- cocotb: Introduced generator of random integers.
+- cocotb: Introduced MVB rate limiter.
+- build: Introduced EXPERIMENTAL env.sh file with mandatory environment variables.
+- build: Introduced PLATFORM_TAGS variable for platform, replacement for SYNTH_FLAGS(TOOL).
+- build: Introduced templates for DTS generation.
+- cards: Introduced support for Terasic A2700 Accelerator card.
+- comp: Introduced MFB_MVB_APPENDER component.
+- comp: Introduced MVB_ITEM_COLLISION_RESOLVER component.
+- comp: Introduced MEM_CLEAR component.
+- comp: Added packages for statistics processing in Data Logger component.
+- core: Added MISC signals between Top-Level and APP/PCIE/NET core.
+- dma: Added performance counters to measure blocking behavior in RX DMA Calypte.
+- uvm: Added support of the CMAC variant in Network Module verification.
+- ver: Added meters to AVST(PCIE) and AXI(PCIE) for the old verification.
+- pkg: Added two functions for slv array concatenation to TYPE_PACK.
+- ci: Introduced checking of commit messages in MR using commitlint.
+
+### Changed
+- cocotb: Refactored implementation of MVB transactions and their usage in drivers and monitors.
+- cocotb: Used prepare.sh + pyproject.toml instead of dep. list in cocotb top-level simulation.
+- comp: Improved statistics processing for Data Logger component.
+- comp: Refactored implementation of Histogramer component.
+- comp: Refactored implementation of TCAM2 component.
+- comp: Refactored implementation of MVB_TCAM component.
+- core: Enabled Device Tree on all PCIe endpoints. This is required for proper identification of PCIe endpoints when bifurcation is enabled.
+- docs: Improved NDK-FPGA documentation.
+- uvm: Improved print of MVB transaction for APP-UVM verifications.
+
+### Deprecated
+
+### Removed
+
+### Fixed
+- cocotb: Fixed SOF/EOF error checking in cocotb MFB monitor.
+- comp: Fixed histogram box update in Histogramer component.
+- core: Fixed width of demo/testing ports in Network Module.
+- uvm: Fixed LOGIC_VECTOR_ARRAY sequencer, the DB registration macro is now parameterized.
+- uvm: Fixed count speed in MFB bus.
+
+### Security
 
 ## [0.7.2] - 2024-10-17
 
