@@ -84,6 +84,7 @@ architecture FULL of NETWORK_MOD is
     constant RESIZE_BUFFER  : boolean := (ETH_CORE_ARCH = "F_TILE" or (ETH_CORE_ARCH = "E_TILE" and ETH_CHANNELS = 4));
 
     constant TS_TIMEOUT_W : natural := 3; -- last TS is unvalided after 4 cycles
+    constant TS_REPLICAS  : natural := tsel(LL_MODE, ETH_CHANNELS, 1);
 
     -- =========================================================================
     --                                FUNCTIONS
@@ -188,12 +189,8 @@ architecture FULL of NETWORK_MOD is
     signal mi_split_drdy_phy : std_logic_vector(MI_ADDR_BASES_PHY-1 downto 0);
 
     -- TS signals
-    signal asfifox_ts_dv_n     : std_logic_vector(ETH_PORTS-1 downto 0);
-    signal asfifox_ts_ns       : slv_array_t     (ETH_PORTS-1 downto 0)(64-1 downto 0);
-    signal asfifox_ts_timeout  : u_array_t(ETH_PORTS-1 downto 0)(TS_TIMEOUT_W-1 downto 0);
-    signal asfifox_ts_last_vld : std_logic_vector(ETH_PORTS-1 downto 0);
-    signal synced_ts_dv        : std_logic_vector(ETH_PORTS-1 downto 0);
-    signal synced_ts_ns        : slv_array_t     (ETH_PORTS-1 downto 0)(64-1 downto 0);
+    signal synced_ts_dv        : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal synced_ts_ns        : slv_array_2d_t  (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(64-1 downto 0);
 
     -- Demo signals
     signal eth_tx_mvb_channel_arr   : slv_array_t     (ETH_PORTS-1 downto 0)(REGIONS*max(1,log2(TX_DMA_CHANNELS))-1 downto 0);
@@ -499,8 +496,8 @@ begin
             RX_MVB_TIMESTAMP => mvb_ts (p),
             RX_MVB_VLD       => mvb_vld(p),
 
-            TSU_TS_NS       => synced_ts_ns(p),
-            TSU_TS_DV       => synced_ts_dv(p),
+            TSU_TS_NS       => synced_ts_ns(p)(0),
+            TSU_TS_DV       => synced_ts_dv(p)(0),
 
             -- TX interface (packets received from Ethernet, transmit to RX MAC lite)
             TX_MFB_CLK      => rx_mfb_clk      (p),
@@ -546,78 +543,33 @@ begin
         end generate;
 
         -- =====================================================================
-        -- TIMESTAMP ASFIFOX
+        -- TIMESTAMP synchronization
         -- =====================================================================
-        -- TBD: in LL_MODE, synchronize timestamps per channel / logic_rx_clk
-        ts_asfifox_i : entity work.ASFIFOX
-        generic map(
-            DATA_WIDTH => 64    ,
-            ITEMS      => 32    ,
-            RAM_TYPE   => "LUT" ,
-            FWFT_MODE  => true  ,
-            OUTPUT_REG => true  ,
-            DEVICE     => DEVICE
-        )
-        port map (
-            WR_CLK    => CLK_ETH     (0)   ,
-            WR_RST    => repl_rst_arr(0)(1),
-            WR_DATA   => TSU_TS_NS         ,
-            WR_EN     => TSU_TS_DV         ,
-            WR_FULL   => open              ,
-            WR_AFULL  => open              ,
-            WR_STATUS => open              ,
+        ts_chan_sync_g: for ch in 0 to TS_REPLICAS-1 generate
 
-            RD_CLK    => CLK_ETH        (p)   ,
-            RD_RST    => repl_rst_arr   (p)(1),
-            RD_DATA   => asfifox_ts_ns  (p)   ,
-            RD_EN     => '1'                  ,
-            RD_EMPTY  => asfifox_ts_dv_n(p)   ,
-            RD_AEMPTY => open                 ,
-            RD_STATUS => open
-        );
+            ts_sync_i: entity work.TS_SYNC
+            generic map (
+                DEVICE       => DEVICE,
+                TS_TIMEOUT_W => TS_TIMEOUT_W
+            )
+            port map (
+                TSU_RST      => repl_rst_arr(0)(1),
+                TSU_CLK      => CLK_ETH     (0)   ,
+                TSU_TS_NS    => TSU_TS_NS         ,
+                TSU_TS_DV    => TSU_TS_DV         ,
+                --
+                SYNC_RST     => logic_rst_arr(p)(ch*2),
+                SYNC_CLK     => logic_rx_clk(p)(ch)   ,
+                SYNCED_TS_NS => synced_ts_ns(p)(ch)   ,
+                SYNCED_TS_DV => synced_ts_dv(p)(ch)
+            );
+        end generate;
 
-        process(CLK_ETH)
-        begin
-            if (rising_edge(CLK_ETH(p))) then
-                if (asfifox_ts_dv_n(p) = '1' and asfifox_ts_timeout(p)(TS_TIMEOUT_W-1) = '0') then
-                    asfifox_ts_timeout(p) <= asfifox_ts_timeout(p) + 1;
-                end if;
-                if (repl_rst_arr(p)(1) = '1' or asfifox_ts_dv_n(p) = '0') then
-                    asfifox_ts_timeout(p) <= (others => '0');
-                end if;
-            end if;
-        end process;
-
-        process(CLK_ETH)
-        begin
-            if (rising_edge(CLK_ETH(p))) then
-                if (asfifox_ts_dv_n(p) = '0') then
-                    asfifox_ts_last_vld(p) <= '1';
-                end if;
-                if (repl_rst_arr(p)(1) = '1') then
-                    asfifox_ts_last_vld(p) <= '0';
-                end if;
-            end if;
-        end process;
-
-        -- Synced TS is valid if the value is current or if the value is a few
-        -- clock cycles old. This provides filtering for occasional flushing of
-        -- the asynchronous FIFO.
-        process(CLK_ETH)
-        begin
-            if (rising_edge(CLK_ETH(p))) then
-                if (asfifox_ts_dv_n(p) = '0') then
-                    synced_ts_ns(p) <= asfifox_ts_ns(p);
-                end if;
-
-                synced_ts_dv(p) <= (not asfifox_ts_dv_n(p)) or
-                                   (asfifox_ts_last_vld(p) and not asfifox_ts_timeout(p)(TS_TIMEOUT_W-1));
-
-                if (repl_rst_arr(p)(1) = '1') then
-                    synced_ts_dv(p) <= '0';
-                end if;
-            end if;
-        end process;
+        -- When the single TS_SYNC is generated, replicate channel 0 timestaps to all other channels
+        ts_repl_g: for ch in TS_REPLICAS+1 to ETH_CHANNELS generate
+            synced_ts_ns(p)(ch-1) <= synced_ts_ns(p)(0);
+            synced_ts_dv(p)(ch-1) <= synced_ts_dv(p)(0);
+        end generate;
 
         -- ETH clock is used as TSU main clock
         TSU_CLK <= CLK_ETH     (0)   ;

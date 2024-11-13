@@ -151,8 +151,8 @@ port(
     -- =====================================================================
     -- TSU interface
     -- =====================================================================
-    TSU_TS_NS       : in  std_logic_vector(64-1 downto 0);
-    TSU_TS_DV       : in  std_logic
+    TSU_TS_NS       : in  slv_array_t(ETH_PORT_CHAN-1 downto 0)(64-1 downto 0);
+    TSU_TS_DV       : in  std_logic_vector(ETH_PORT_CHAN-1 downto 0)
 );
 end entity;
 
@@ -473,8 +473,8 @@ begin
 
                 ADAPTER_LINK_UP => RX_LINK_UP(ch),
 
-                TSU_TS_NS       => TSU_TS_NS,
-                TSU_TS_DV       => TSU_TS_DV,
+                TSU_TS_NS       => TSU_TS_NS(ch),
+                TSU_TS_DV       => TSU_TS_DV(ch),
 
                 TX_MFB_DATA     => merg_mfb_data   (ch),
                 TX_MFB_SOF      => merg_mfb_sof    (ch),
