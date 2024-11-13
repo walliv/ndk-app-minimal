@@ -384,8 +384,10 @@ architecture PTILE of PCIE_CORE is
     signal pcie_dbg_credits     : slv_array_t(PCIE_EPS_INST-1 downto 0)(15 downto 0);
     signal pcie_dbg_credits_sel : slv_array_t(PCIE_EPS_INST-1 downto 0)( 2 downto 0);
 
-    signal pcie_avst_up_src_rdy   : std_logic_vector(PCIE_EPS_INST-1 downto 0);
-    signal pcie_avst_down_src_rdy : std_logic_vector(PCIE_EPS_INST-1 downto 0);
+    signal dbg_avst_up_src_rdy   : std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
+    signal dbg_avst_up_dst_rdy   : std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
+    signal dbg_avst_down_src_rdy : std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
+    signal dbg_avst_down_dst_rdy : std_logic_vector(PCIE_ENDPOINTS-1 downto 0);
 
 begin
 
@@ -963,8 +965,10 @@ begin
     -- =========================================================================
 
     pcie_endpoints_dbg_g : for pe in 0 to PCIE_ENDPOINTS-1 generate
-        pcie_avst_up_src_rdy(pe) <= (or pcie_avst_up_valid(pe));
-        pcie_avst_down_src_rdy(pe) <= (or pcie_avst_down_valid(pe));
+        dbg_avst_up_src_rdy(pe)   <= (or pcie_avst_up_valid(pe));
+        dbg_avst_up_dst_rdy(pe)   <= pcie_avst_up_ready(pe);
+        dbg_avst_down_src_rdy(pe) <= (or pcie_avst_down_valid(pe));
+        dbg_avst_down_dst_rdy(pe) <= pcie_avst_down_ready(pe);
 
         dbg_credits_ph (pe) <= pcie_dbg_credits(pe)(11 downto 0); -- "When the traffic type is header credit, only the LSB 12 bits are valid" - Intel doc
         dbg_credits_nph(pe) <= pcie_dbg_credits(pe)(11 downto 0); -- "When the traffic type is header credit, only the LSB 12 bits are valid" - Intel doc
@@ -988,13 +992,13 @@ begin
         DEVICE         => DEVICE
     )
     port map(
-        PCIE_CLK            => pcie_clk,
-        PCIE_RESET          => pcie_rst_local,
+        PCIE_CLK            => pcie_clk(PCIE_ENDPOINTS-1 downto 0),
+        PCIE_RESET          => pcie_rst_local(PCIE_ENDPOINTS-1 downto 0),
 
-        DBG_UP_SRC_RDY      => pcie_avst_up_src_rdy,
-        DBG_UP_DST_RDY      => pcie_avst_up_ready,
-        DBG_DW_SRC_RDY      => pcie_avst_down_src_rdy,
-        DBG_DW_DST_RDY      => pcie_avst_down_ready,
+        DBG_UP_SRC_RDY      => dbg_avst_up_src_rdy,
+        DBG_UP_DST_RDY      => dbg_avst_up_dst_rdy,
+        DBG_DW_SRC_RDY      => dbg_avst_down_src_rdy,
+        DBG_DW_DST_RDY      => dbg_avst_down_dst_rdy,
 
         DBG_CREDITS_PH      => dbg_credits_ph,
         DBG_CREDITS_NPH     => dbg_credits_nph,
