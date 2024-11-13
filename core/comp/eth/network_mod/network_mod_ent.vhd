@@ -81,6 +81,8 @@ generic(
     -- WARNING: works only for a single-channel (and single-Region) designs with E-Tile (Intel)!
     TS_DEMO_EN        : boolean := false;
     TX_DMA_CHANNELS   : natural := 16;
+    -- Enable low latency optimalization
+    LL_MODE           : boolean := false;
     -- Ethernet lanes polarity
     LANE_RX_POLARITY  : std_logic_vector(ETH_PORTS*LANES-1 downto 0) := (others => '0');
     LANE_TX_POLARITY  : std_logic_vector(ETH_PORTS*LANES-1 downto 0) := (others => '0');

@@ -110,9 +110,13 @@ architecture FULL of NETWORK_MOD is
     -- =========================================================================
     --                                SIGNALS
     -- =========================================================================
-    signal repl_rst_arr : slv_array_t(ETH_PORTS-1 downto 0)(RESET_REPLICAS-1 downto 0);
+    signal repl_rst_arr   : slv_array_t(ETH_PORTS-1 downto 0)(RESET_REPLICAS-1 downto 0);
+    signal logic_rst_arr  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS*2-1 downto 0);
+    signal clk_eth_stable : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
 
     -- Interior signals, Network Module Core -> Network Module Logic
+    signal logic_rx_clk     : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal rx_mfb_clk       : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
     signal rx_mfb_data_i    : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_WIDTH_CORE-1 downto 0);
     signal rx_mfb_sof_pos_i : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_SOFP_WIDTH_CORE-1 downto 0);
     signal rx_mfb_eof_pos_i : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_EOFP_WIDTH_CORE-1 downto 0);
@@ -147,6 +151,8 @@ architecture FULL of NETWORK_MOD is
     signal rx_usr_mfb_dst_rdy_arr : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_PORT_STREAMS-1 downto 0);
 
     -- Interior signals, Network Module Logic -> Network Module Core
+    signal logic_tx_clk     : std_logic_vector(ETH_PORTS-1 downto 0);
+    signal tx_mfb_clk       : std_logic_vector(ETH_PORTS-1 downto 0);
     signal tx_mfb_data_i    : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_WIDTH_CORE-1 downto 0);
     signal tx_mfb_sof_i     : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(REGIONS_CORE-1 downto 0);
     signal tx_mfb_eof_i     : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(REGIONS_CORE-1 downto 0);
@@ -218,6 +224,20 @@ begin
             ASYNC_RST   => RESET_ETH   (p),
             OUT_RST     => repl_rst_arr(p)
         );
+
+        chan_reset_g: for ch in ETH_CHANNELS-1 downto 0 generate
+            network_mod_logic_reset_i : entity work.ASYNC_RESET
+            generic map (
+                TWO_REG  => false,
+                OUT_REG  => true ,
+                REPLICAS => 2
+            )
+            port map (
+                CLK         => logic_rx_clk(p)(ch),
+                ASYNC_RST   => RESET_ETH (p) or (not clk_eth_stable(p)(ch)),
+                OUT_RST     => logic_rst_arr(p)(ch*2+1 downto ch*2)
+            );
+        end generate;
     end generate;
 
     -- =========================================================================
@@ -353,17 +373,19 @@ begin
             MI_DATA_WIDTH    => MI_DATA_WIDTH   ,
             MI_ADDR_WIDTH    => MI_ADDR_WIDTH   ,
             -- Other
+            LL_MODE          => LL_MODE         ,
             RESET_USER_WIDTH => RESET_WIDTH     ,
-            RESET_CORE_WIDTH => RESET_REPLICAS-2,
+            RESET_CORE_WIDTH => logic_rst_arr(p)'length,
             RESIZE_BUFFER    => RESIZE_BUFFER   ,
             DEVICE           => DEVICE          ,
             BOARD            => BOARD
         )
         port map(
             CLK_USER            => CLK_USER,
-            CLK_CORE            => CLK_ETH(p),
+            TX_CLK_CORE         => logic_tx_clk(p),
+            RX_CLK_CORE         => logic_rx_clk(p),
             RESET_USER          => RESET_USER,
-            RESET_CORE          => repl_rst_arr(p)(RESET_REPLICAS-1 downto 2),
+            RESET_CORE          => logic_rst_arr(p),
 
             -- Control/status interface
             ACTIVITY_RX         => sig_activity_rx(p),
@@ -441,6 +463,7 @@ begin
             ITEM_WIDTH        => ITEM_WIDTH       ,
             MI_DATA_WIDTH_PHY => MI_DATA_WIDTH_PHY,
             MI_ADDR_WIDTH_PHY => MI_ADDR_WIDTH_PHY,
+            CLK_ETH_IN_ENABLE => LL_MODE          ,
             TS_DEMO_EN        => TS_DEMO_EN       ,
             TX_DMA_CHANNELS   => TX_DMA_CHANNELS  ,
             LANE_RX_POLARITY  => LANE_RX_POLARITY(p*LANES+LANES-1 downto p*LANES),
@@ -452,6 +475,8 @@ begin
         port map (
             -- clock and reset
             CLK_ETH         => CLK_ETH(p),
+            CLK_ETH_IN      => CLK_ETH(0),
+            CLK_STABLE      => clk_eth_stable(p),
             RESET_ETH       => repl_rst_arr(p)(0),
             -- ETH serial interface
             QSFP_REFCLK_P   => ETH_REFCLK_P(p),
@@ -461,6 +486,7 @@ begin
             QSFP_TX_P       => ETH_TX_P(p*LANES+LANES-1 downto p*LANES),
             QSFP_TX_N       => ETH_TX_N(p*LANES+LANES-1 downto p*LANES),
             -- RX interface (packets for transmit to Ethernet, recieved from TX MAC lite)
+            RX_MFB_CLK      => tx_mfb_clk      (p),
             RX_MFB_DATA     => tx_mfb_data_i   (p),
             RX_MFB_SOF_POS  => tx_mfb_sof_pos_i(p),
             RX_MFB_EOF_POS  => tx_mfb_eof_pos_i(p),
@@ -477,6 +503,7 @@ begin
             TSU_TS_DV       => synced_ts_dv(p),
 
             -- TX interface (packets received from Ethernet, transmit to RX MAC lite)
+            TX_MFB_CLK      => rx_mfb_clk      (p),
             TX_MFB_DATA     => rx_mfb_data_i   (p),
             TX_MFB_SOF_POS  => rx_mfb_sof_pos_i(p),
             TX_MFB_EOF_POS  => rx_mfb_eof_pos_i(p),
@@ -508,8 +535,20 @@ begin
         );
 
         -- =====================================================================
+        -- MFB clocking based on LL mode generic
+        -- =====================================================================
+        mfb_clk_g: if LL_MODE generate
+            logic_tx_clk(p) <= tx_mfb_clk(p);
+            logic_rx_clk(p) <= rx_mfb_clk(p);
+        else generate
+            logic_tx_clk(p) <= CLK_ETH(p);
+            logic_rx_clk(p) <= (others => CLK_ETH(p));
+        end generate;
+
+        -- =====================================================================
         -- TIMESTAMP ASFIFOX
         -- =====================================================================
+        -- TBD: in LL_MODE, synchronize timestamps per channel / logic_rx_clk
         ts_asfifox_i : entity work.ASFIFOX
         generic map(
             DATA_WIDTH => 64    ,
