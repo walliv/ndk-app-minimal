@@ -29,6 +29,7 @@ lappend COMPONENTS [ list "EVENT_CNT"    $EVENT_COUNTER_BASE             "FULL" 
 lappend COMPONENTS [ list "MI_SPLITTER"  $MI_SPLITTER_BASE               "FULL" ]
 lappend COMPONENTS [ list "MI_ASYNC"     $MI_ASYNC_BASE                  "FULL" ]
 
+lappend MOD "$ENTITY_BASE/pcie_core_debug.vhd"
 lappend MOD "$ENTITY_BASE/pcie_core_ent.vhd"
 
 # Source files for implemented component

@@ -61,6 +61,11 @@ architecture full of PCIE_TRANSACTION_CTRL is
     constant CUT_HDR_BYPASS_DEV       : boolean := (DEVICE="STRATIX10" and ENDPOINT_TYPE/="H_TILE") or (DEVICE="AGILEX");
     constant INTEL_DEV                : boolean := (DEVICE="STRATIX10" or DEVICE="AGILEX");
 
+    constant DBG_PROBES            : natural := 6;
+    -- Name(s) (4-letter IDs) of Streaming Debug Probes.
+    -- DRQ0 = DMA RQ 0
+    constant DBG_PROBE_STR         : string := "PUMFPUMVPURQPDMFPDMVPDRC";
+
     ---------------------------------------------------------------------------
 
     ---------------------------------------------------------------------------
@@ -277,6 +282,13 @@ architecture full of PCIE_TRANSACTION_CTRL is
     signal dbg_rq_cnt               : unsigned(63 downto 0);
     signal dbg_di_mvb_cnt           : unsigned(63 downto 0);
     signal dbg_di_mfb_cnt           : unsigned(63 downto 0);
+
+    signal pcie_tag_status_async      : std_logic_vector(11-1 downto 0);
+    signal pcie_tag_status_sync       : std_logic_vector(11-1 downto 0);
+    signal pcie_tag_status_sync_vld_n : std_logic;
+
+    signal dp_out_src_rdy         : std_logic_vector(DBG_PROBES-1 downto 0);
+    signal dp_out_dst_rdy         : std_logic_vector(DBG_PROBES-1 downto 0);
 
 begin
 
@@ -789,8 +801,48 @@ begin
         DMA_DOWN_HDR_TAG        => tagm_dma_down_tag      ,
         DMA_DOWN_HDR_ID         => tagm_dma_down_id       ,
 
-        RCB_SIZE                => RCB_SIZE
+        RCB_SIZE                => RCB_SIZE               ,
+        PCIE_TAG_STATUS         => pcie_tag_status_async
     );
+
+    pcie_tag_status_asfifo_i : entity work.ASFIFOX
+    generic map (
+        DATA_WIDTH          => 11,
+        ITEMS               => 16,
+        RAM_TYPE            => "AUTO",
+        OUTPUT_REG          => True,
+        DEVICE              => DEVICE
+    ) port map (
+        WR_CLK    => CLK,
+        WR_RST    => RESET,
+
+        WR_DATA   => pcie_tag_status_async,
+        WR_EN     => '1',
+        WR_FULL   => open,
+        WR_AFULL  => open,
+        WR_STATUS => open,
+
+        RD_CLK    => CLK_DMA,
+        RD_RST    => RESET_DMA,
+
+        RD_DATA   => pcie_tag_status_sync,
+        RD_EN     => '1',
+        RD_EMPTY  => pcie_tag_status_sync_vld_n,
+        RD_AEMPTY => open,
+        RD_STATUS => open
+    );
+
+    process (CLK_DMA)
+    begin
+        if (rising_edge(CLK_DMA)) then
+            if (pcie_tag_status_sync_vld_n = '0') then
+                PCIE_TAG_STATUS <= pcie_tag_status_sync;
+            end if;
+            if (RESET_DMA = '1') then
+                PCIE_TAG_STATUS <= (others => '0');
+            end if;
+        end if;
+    end process;
 
     ---------------------------------------------------------------------------
 
@@ -1408,6 +1460,187 @@ begin
     end generate;
 
     -- ========================================================================
+
+    gebug_g: if DBG_ENABLE generate
+        dbg_master_i : entity work.STREAMING_DEBUG_MASTER
+        generic map(
+            CONNECTED_PROBES   => DBG_PROBES,
+            REGIONS            => 1,
+            DEBUG_ENABLED      => true,
+            PROBE_ENABLED      => (1 to DBG_PROBES => 'E'),
+            COUNTER_WORD       => (1 to DBG_PROBES => 'E'),
+            COUNTER_WAIT       => (1 to DBG_PROBES => 'E'),
+            COUNTER_DST_HOLD   => (1 to DBG_PROBES => 'E'),
+            COUNTER_SRC_HOLD   => (1 to DBG_PROBES => 'E'),
+            COUNTER_SOP        => (1 to DBG_PROBES => 'D'), -- disabled
+            COUNTER_EOP        => (1 to DBG_PROBES => 'D'), -- disabled
+            BUS_CONTROL        => (1 to DBG_PROBES => 'D'), -- disabled
+            PROBE_NAMES        => DBG_PROBE_STR,
+            DEBUG_REG          => true
+        )
+        port map(
+            CLK           => CLK,
+            RESET         => RESET,
+
+            MI_DWR        => DBG_MI_DWR,
+            MI_ADDR       => DBG_MI_ADDR,
+            MI_RD         => DBG_MI_RD,
+            MI_WR         => DBG_MI_WR,
+            MI_BE         => DBG_MI_BE,
+            MI_DRD        => DBG_MI_DRD,
+            MI_ARDY       => DBG_MI_ARDY,
+            MI_DRDY       => DBG_MI_DRDY,
+
+            DEBUG_BLOCK   => open,
+            DEBUG_DROP    => open,
+            DEBUG_SOP     => (others => '0'),
+            DEBUG_EOP     => (others => '0'),
+            DEBUG_SRC_RDY => dp_out_src_rdy,
+            DEBUG_DST_RDY => dp_out_dst_rdy
+        );
+
+        dbg_probe0_i : entity work.STREAMING_DEBUG_PROBE_MFB
+        generic map(
+            REGIONS => 1
+        )
+        port map(
+            RX_SOF         => (others => '0'),
+            RX_EOF         => (others => '0'),
+            RX_SRC_RDY     => up_mfb_merge_out_src_rdy,
+            RX_DST_RDY     => open,
+
+            TX_SOF         => open,
+            TX_EOF         => open,
+            TX_SRC_RDY     => open,
+            TX_DST_RDY     => up_mfb_merge_out_dst_rdy,
+
+            DEBUG_BLOCK    => '0',
+            DEBUG_DROP     => '0',
+            DEBUG_SOF      => open,
+            DEBUG_EOF      => open,
+            DEBUG_SRC_RDY  => dp_out_src_rdy(0),
+            DEBUG_DST_RDY  => dp_out_dst_rdy(0)
+        );
+
+        dbg_probe1_i : entity work.STREAMING_DEBUG_PROBE_MFB
+        generic map(
+            REGIONS => 1
+        )
+        port map(
+            RX_SOF         => (others => '0'),
+            RX_EOF         => (others => '0'),
+            RX_SRC_RDY     => up_mvb_merge_out_src_rdy,
+            RX_DST_RDY     => open,
+
+            TX_SOF         => open,
+            TX_EOF         => open,
+            TX_SRC_RDY     => open,
+            TX_DST_RDY     => up_mvb_merge_out_dst_rdy,
+
+            DEBUG_BLOCK    => '0',
+            DEBUG_DROP     => '0',
+            DEBUG_SOF      => open,
+            DEBUG_EOF      => open,
+            DEBUG_SRC_RDY  => dp_out_src_rdy(1),
+            DEBUG_DST_RDY  => dp_out_dst_rdy(1)
+        );
+
+        dbg_probe2_i : entity work.STREAMING_DEBUG_PROBE_MFB
+        generic map(
+            REGIONS => 1
+        )
+        port map(
+            RX_SOF         => (others => '0'),
+            RX_EOF         => (others => '0'),
+            RX_SRC_RDY     => RQ_MFB_SRC_RDY,
+            RX_DST_RDY     => open,
+
+            TX_SOF         => open,
+            TX_EOF         => open,
+            TX_SRC_RDY     => open,
+            TX_DST_RDY     => RQ_MFB_DST_RDY,
+
+            DEBUG_BLOCK    => '0',
+            DEBUG_DROP     => '0',
+            DEBUG_SOF      => open,
+            DEBUG_EOF      => open,
+            DEBUG_SRC_RDY  => dp_out_src_rdy(2),
+            DEBUG_DST_RDY  => dp_out_dst_rdy(2)
+        );
+
+        dbg_probe3_i : entity work.STREAMING_DEBUG_PROBE_MFB
+        generic map(
+            REGIONS => 1
+        )
+        port map(
+            RX_SOF         => (others => '0'),
+            RX_EOF         => (others => '0'),
+            RX_SRC_RDY     => down_mfb_split_in_src_rdy,
+            RX_DST_RDY     => open,
+
+            TX_SOF         => open,
+            TX_EOF         => open,
+            TX_SRC_RDY     => open,
+            TX_DST_RDY     => down_mfb_split_in_dst_rdy,
+
+            DEBUG_BLOCK    => '0',
+            DEBUG_DROP     => '0',
+            DEBUG_SOF      => open,
+            DEBUG_EOF      => open,
+            DEBUG_SRC_RDY  => dp_out_src_rdy(3),
+            DEBUG_DST_RDY  => dp_out_dst_rdy(3)
+        );
+
+        dbg_probe4_i : entity work.STREAMING_DEBUG_PROBE_MFB
+        generic map(
+            REGIONS => 1
+        )
+        port map(
+            RX_SOF         => (others => '0'),
+            RX_EOF         => (others => '0'),
+            RX_SRC_RDY     => down_mvb_split_in_src_rdy,
+            RX_DST_RDY     => open,
+
+            TX_SOF         => open,
+            TX_EOF         => open,
+            TX_SRC_RDY     => open,
+            TX_DST_RDY     => down_mvb_split_in_dst_rdy,
+
+            DEBUG_BLOCK    => '0',
+            DEBUG_DROP     => '0',
+            DEBUG_SOF      => open,
+            DEBUG_EOF      => open,
+            DEBUG_SRC_RDY  => dp_out_src_rdy(4),
+            DEBUG_DST_RDY  => dp_out_dst_rdy(4)
+        );
+
+        dbg_probe5_i : entity work.STREAMING_DEBUG_PROBE_MFB
+        generic map(
+            REGIONS => 1
+        )
+        port map(
+            RX_SOF         => (others => '0'),
+            RX_EOF         => (others => '0'),
+            RX_SRC_RDY     => RC_MFB_SRC_RDY,
+            RX_DST_RDY     => open,
+
+            TX_SOF         => open,
+            TX_EOF         => open,
+            TX_SRC_RDY     => open,
+            TX_DST_RDY     => RC_MFB_DST_RDY,
+
+            DEBUG_BLOCK    => '0',
+            DEBUG_DROP     => '0',
+            DEBUG_SOF      => open,
+            DEBUG_EOF      => open,
+            DEBUG_SRC_RDY  => dp_out_src_rdy(5),
+            DEBUG_DST_RDY  => dp_out_dst_rdy(5)
+        );
+    else generate
+        DBG_MI_DRD  <= (others => '0');
+        DBG_MI_ARDY <= DBG_MI_RD or DBG_MI_WR;
+        DBG_MI_DRDY <= DBG_MI_RD;
+    end generate;
 
     --pragma synthesis_off
     process (CLK)

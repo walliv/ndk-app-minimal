@@ -133,6 +133,9 @@ generic(
     -- This option must correspond with the PCIe settings.
     AUTO_ASSIGN_TAGS    : boolean := true;
 
+    -- Enable debug probes
+    DBG_ENABLE          : boolean := False;
+
     -- Target device
     -- "VIRTEX6", "7SERIES", "ULTRASCALE", "STRATIX10"
     DEVICE              : string  := "ULTRASCALE";
@@ -267,6 +270,20 @@ port(
     -- PCIe tag assigned to send transaction
     TAG_ASSIGN     : in  std_logic_vector(MVB_UP_ITEMS*PCIE_TAG_WIDTH-1 downto 0);
     -- Valid bit for assigned tags
-    TAG_ASSIGN_VLD : in  std_logic_vector(MVB_UP_ITEMS               -1 downto 0)
+    TAG_ASSIGN_VLD : in  std_logic_vector(MVB_UP_ITEMS               -1 downto 0);
+    -- The number of currently free PCIE tags (on CLK_DMA)
+    PCIE_TAG_STATUS     : out std_logic_vector(11-1 downto 0);
+
+    -- ========================================================================
+    -- DEBUG PORTS
+    -- ========================================================================
+    DBG_MI_DWR     : in  std_logic_vector(31 downto 0) := (others => '0');
+    DBG_MI_ADDR    : in  std_logic_vector(31 downto 0) := (others => '0');
+    DBG_MI_BE      : in  std_logic_vector(3 downto 0) := (others => '0');
+    DBG_MI_RD      : in  std_logic := '0';
+    DBG_MI_WR      : in  std_logic := '0';
+    DBG_MI_DRD     : out std_logic_vector(31 downto 0);
+    DBG_MI_ARDY    : out std_logic;
+    DBG_MI_DRDY    : out std_logic
 );
 end entity PCIE_TRANSACTION_CTRL;
