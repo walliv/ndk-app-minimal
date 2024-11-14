@@ -58,6 +58,7 @@ generic(
     -- =====================================================================
     -- OTHER configuration:
     -- =====================================================================
+    LL_MODE           : boolean := false;
     RESET_USER_WIDTH  : natural := 8;
     --                             ETH_PORT_CHAN x (TX MAC lite + RX MAC lite)
     RESET_CORE_WIDTH  : natural := ETH_PORT_CHAN * (1           + 1          );
@@ -73,7 +74,8 @@ port(
     -- CLOCK AND RESET
     -- =====================================================================
     CLK_USER        : in std_logic;
-    CLK_CORE        : in std_logic;
+    TX_CLK_CORE     : in std_logic;
+    RX_CLK_CORE     : in std_logic_vector(ETH_PORT_CHAN-1 downto 0);
 
     RESET_USER      : in std_logic_vector(RESET_USER_WIDTH-1 downto 0);
     RESET_CORE      : in std_logic_vector(RESET_CORE_WIDTH-1 downto 0);
@@ -149,8 +151,8 @@ port(
     -- =====================================================================
     -- TSU interface
     -- =====================================================================
-    TSU_TS_NS       : in  std_logic_vector(64-1 downto 0);
-    TSU_TS_DV       : in  std_logic
+    TSU_TS_NS       : in  slv_array_t(ETH_PORT_CHAN-1 downto 0)(64-1 downto 0);
+    TSU_TS_DV       : in  std_logic_vector(ETH_PORT_CHAN-1 downto 0)
 );
 end entity;
 
@@ -364,6 +366,7 @@ begin
                 CRC_INSERT_EN   => false           ,
                 IPG_GENERATE_EN => false           ,
                 USE_DSP_CNT     => true            ,
+                LL_MODE         => LL_MODE         ,
                 DEVICE          => DEVICE
             )
             port map(
@@ -389,7 +392,7 @@ begin
                 RX_MFB_SRC_RDY => split_mfb_src_rdy(ch),
                 RX_MFB_DST_RDY => split_mfb_dst_rdy(ch),
 
-                TX_CLK         => CLK_CORE               ,
+                TX_CLK         => TX_CLK_CORE            ,
                 TX_RESET       => RESET_CORE(ch*2)       ,
                 TX_MFB_DATA    => TX_CORE_MFB_DATA   (ch),
                 TX_MFB_SOF     => TX_CORE_MFB_SOF    (ch),
@@ -455,7 +458,7 @@ begin
                 DEVICE          => DEVICE
             )
             port map(
-                RX_CLK          => CLK_CORE     ,
+                RX_CLK          => RX_CLK_CORE(ch)   ,
                 RX_RESET        => RESET_CORE(ch*2+1), -- todo
                 TX_CLK          => CLK_USER     ,
                 TX_RESET        => RESET_USER(0),
@@ -470,8 +473,8 @@ begin
 
                 ADAPTER_LINK_UP => RX_LINK_UP(ch),
 
-                TSU_TS_NS       => TSU_TS_NS,
-                TSU_TS_DV       => TSU_TS_DV,
+                TSU_TS_NS       => TSU_TS_NS(ch),
+                TSU_TS_DV       => TSU_TS_DV(ch),
 
                 TX_MFB_DATA     => merg_mfb_data   (ch),
                 TX_MFB_SOF      => merg_mfb_sof    (ch),
@@ -531,8 +534,8 @@ begin
             MFB_ITEM_WIDTH  => ITEM_WIDTH      ,
             INPUT_FIFO_SIZE => 8               ,
             RX_PAYLOAD_EN   => (others => true),
-            IN_PIPE_EN      => true            ,
-            OUT_PIPE_EN     => true            ,
+            IN_PIPE_EN      => not LL_MODE     ,
+            OUT_PIPE_EN     => not LL_MODE     ,
             DEVICE          => DEVICE
         )
         port map(

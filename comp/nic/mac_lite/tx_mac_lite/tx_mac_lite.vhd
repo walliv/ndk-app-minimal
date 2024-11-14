@@ -69,6 +69,8 @@ entity TX_MAC_LITE is
         -- Maximum number of Transactions waiting for space insertion
         -- Ignored when IPG_GENERATE_EN==false
         TRANS_FIFO_SIZE : natural := 128;
+        -- Low-latency mode: do not discard errornous frames
+        LL_MODE         : boolean := false;
         -- FPGA device name.
         DEVICE          : string := "STRATIX10";
         -- Targeted version of Ethernet standart
@@ -616,42 +618,52 @@ begin
             TX_MFB_DST_RDY => sp_mfb_dst_rdy
         );
     else generate
-        buffer_i : entity work.MFB_PD_ASFIFO
-        generic map(
-            ITEMS              => DFIFO_ITEMS,
-            -- More time is needed to calculate CRC.
-            -- Lack of time is reported as error: "TX_MAC_LITE_CRC_INSERT: CRC32 out of sync!".
-            WR_PTR_ADD_LATENCY => 16,
-            REGIONS            => MD_REGIONS,
-            REGION_SIZE        => MD_REGION_SIZE,
-            BLOCK_SIZE         => MD_BLOCK_SIZE,
-            ITEM_WIDTH         => MD_ITEM_WIDTH,
-            DEVICE             => DEVICE
-        )
-        port map(
-            RX_CLK           => RX_CLK,
-            RX_RESET         => RX_RESET,
-            RX_DATA          => fd_mfb_data,
-            RX_SOF_POS       => fd_mfb_sof_pos,
-            RX_EOF_POS       => fd_mfb_eof_pos,
-            RX_SOF           => fd_mfb_sof,
-            RX_EOF           => fd_mfb_eof,
-            RX_SRC_RDY       => fd_mfb_src_rdy,
-            RX_DST_RDY       => fd_mfb_dst_rdy,
-            RX_DISCARD       => fd_mfb_discard,
-            RX_FORCE_DISCARD => '0',
-            STATUS           => open,
+        pdfifo_buff_g: if not LL_MODE generate
+            buffer_i : entity work.MFB_PD_ASFIFO
+            generic map(
+                ITEMS              => DFIFO_ITEMS,
+                -- More time is needed to calculate CRC.
+                -- Lack of time is reported as error: "TX_MAC_LITE_CRC_INSERT: CRC32 out of sync!".
+                WR_PTR_ADD_LATENCY => 16,
+                REGIONS            => MD_REGIONS,
+                REGION_SIZE        => MD_REGION_SIZE,
+                BLOCK_SIZE         => MD_BLOCK_SIZE,
+                ITEM_WIDTH         => MD_ITEM_WIDTH,
+                DEVICE             => DEVICE
+            )
+            port map(
+                RX_CLK           => RX_CLK,
+                RX_RESET         => RX_RESET,
+                RX_DATA          => fd_mfb_data,
+                RX_SOF_POS       => fd_mfb_sof_pos,
+                RX_EOF_POS       => fd_mfb_eof_pos,
+                RX_SOF           => fd_mfb_sof,
+                RX_EOF           => fd_mfb_eof,
+                RX_SRC_RDY       => fd_mfb_src_rdy,
+                RX_DST_RDY       => fd_mfb_dst_rdy,
+                RX_DISCARD       => fd_mfb_discard,
+                RX_FORCE_DISCARD => '0',
+                STATUS           => open,
 
-            TX_CLK           => TX_CLK,
-            TX_RESET         => TX_RESET,
-            TX_DATA          => sp_mfb_data,
-            TX_SOF_POS       => sp_mfb_sof_pos,
-            TX_EOF_POS       => sp_mfb_eof_pos,
-            TX_SOF           => sp_mfb_sof,
-            TX_EOF           => sp_mfb_eof,
-            TX_SRC_RDY       => sp_mfb_src_rdy,
-            TX_DST_RDY       => sp_mfb_dst_rdy
-        );
+                TX_CLK           => TX_CLK,
+                TX_RESET         => TX_RESET,
+                TX_DATA          => sp_mfb_data,
+                TX_SOF_POS       => sp_mfb_sof_pos,
+                TX_EOF_POS       => sp_mfb_eof_pos,
+                TX_SOF           => sp_mfb_sof,
+                TX_EOF           => sp_mfb_eof,
+                TX_SRC_RDY       => sp_mfb_src_rdy,
+                TX_DST_RDY       => sp_mfb_dst_rdy
+            );
+        else generate
+            sp_mfb_data     <= fd_mfb_data;
+            sp_mfb_sof_pos  <= fd_mfb_sof_pos;
+            sp_mfb_eof_pos  <= fd_mfb_eof_pos;
+            sp_mfb_sof      <= fd_mfb_sof;
+            sp_mfb_eof      <= fd_mfb_eof;
+            fd_mfb_dst_rdy  <= sp_mfb_dst_rdy;
+            sp_mfb_src_rdy  <= fd_mfb_src_rdy;
+        end generate;
     end generate;
 
     -- =========================================================================

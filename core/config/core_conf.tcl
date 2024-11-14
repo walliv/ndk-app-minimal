@@ -151,3 +151,6 @@ set PCIE_CTRL_DEBUG_ENABLE false
 
 # Enables Timstamp limit demo/testing logic
 set TS_DEMO_EN             false
+
+# Enable Low-latency optimalizations
+set LL_MODE                false

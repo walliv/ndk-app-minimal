@@ -38,6 +38,7 @@ if {$ARCHGRP == "EMPTY"} {
 
     # Source files for implemented component
     lappend MOD "$ENTITY_BASE/qsfp_ctrl.vhd"
+    lappend MOD "$ENTITY_BASE/ts_sync.vhd"
     lappend MOD "$ENTITY_BASE/network_mod.vhd"
     lappend MOD "$ENTITY_BASE/DevTree.tcl"
 }

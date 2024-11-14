@@ -84,6 +84,7 @@ architecture FULL of NETWORK_MOD is
     constant RESIZE_BUFFER  : boolean := (ETH_CORE_ARCH = "F_TILE" or (ETH_CORE_ARCH = "E_TILE" and ETH_CHANNELS = 4));
 
     constant TS_TIMEOUT_W : natural := 3; -- last TS is unvalided after 4 cycles
+    constant TS_REPLICAS  : natural := tsel(LL_MODE, ETH_CHANNELS, 1);
 
     -- =========================================================================
     --                                FUNCTIONS
@@ -110,9 +111,13 @@ architecture FULL of NETWORK_MOD is
     -- =========================================================================
     --                                SIGNALS
     -- =========================================================================
-    signal repl_rst_arr : slv_array_t(ETH_PORTS-1 downto 0)(RESET_REPLICAS-1 downto 0);
+    signal repl_rst_arr   : slv_array_t(ETH_PORTS-1 downto 0)(RESET_REPLICAS-1 downto 0);
+    signal logic_rst_arr  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS*2-1 downto 0);
+    signal clk_eth_stable : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
 
     -- Interior signals, Network Module Core -> Network Module Logic
+    signal logic_rx_clk     : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal rx_mfb_clk       : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
     signal rx_mfb_data_i    : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_WIDTH_CORE-1 downto 0);
     signal rx_mfb_sof_pos_i : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_SOFP_WIDTH_CORE-1 downto 0);
     signal rx_mfb_eof_pos_i : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_EOFP_WIDTH_CORE-1 downto 0);
@@ -147,6 +152,8 @@ architecture FULL of NETWORK_MOD is
     signal rx_usr_mfb_dst_rdy_arr : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_PORT_STREAMS-1 downto 0);
 
     -- Interior signals, Network Module Logic -> Network Module Core
+    signal logic_tx_clk     : std_logic_vector(ETH_PORTS-1 downto 0);
+    signal tx_mfb_clk       : std_logic_vector(ETH_PORTS-1 downto 0);
     signal tx_mfb_data_i    : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_WIDTH_CORE-1 downto 0);
     signal tx_mfb_sof_i     : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(REGIONS_CORE-1 downto 0);
     signal tx_mfb_eof_i     : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(REGIONS_CORE-1 downto 0);
@@ -182,12 +189,8 @@ architecture FULL of NETWORK_MOD is
     signal mi_split_drdy_phy : std_logic_vector(MI_ADDR_BASES_PHY-1 downto 0);
 
     -- TS signals
-    signal asfifox_ts_dv_n     : std_logic_vector(ETH_PORTS-1 downto 0);
-    signal asfifox_ts_ns       : slv_array_t     (ETH_PORTS-1 downto 0)(64-1 downto 0);
-    signal asfifox_ts_timeout  : u_array_t(ETH_PORTS-1 downto 0)(TS_TIMEOUT_W-1 downto 0);
-    signal asfifox_ts_last_vld : std_logic_vector(ETH_PORTS-1 downto 0);
-    signal synced_ts_dv        : std_logic_vector(ETH_PORTS-1 downto 0);
-    signal synced_ts_ns        : slv_array_t     (ETH_PORTS-1 downto 0)(64-1 downto 0);
+    signal synced_ts_dv        : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal synced_ts_ns        : slv_array_2d_t  (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(64-1 downto 0);
 
     -- Demo signals
     signal eth_tx_mvb_channel_arr   : slv_array_t     (ETH_PORTS-1 downto 0)(REGIONS*max(1,log2(TX_DMA_CHANNELS))-1 downto 0);
@@ -218,6 +221,20 @@ begin
             ASYNC_RST   => RESET_ETH   (p),
             OUT_RST     => repl_rst_arr(p)
         );
+
+        chan_reset_g: for ch in ETH_CHANNELS-1 downto 0 generate
+            network_mod_logic_reset_i : entity work.ASYNC_RESET
+            generic map (
+                TWO_REG  => false,
+                OUT_REG  => true ,
+                REPLICAS => 2
+            )
+            port map (
+                CLK         => logic_rx_clk(p)(ch),
+                ASYNC_RST   => RESET_ETH (p) or (not clk_eth_stable(p)(ch)),
+                OUT_RST     => logic_rst_arr(p)(ch*2+1 downto ch*2)
+            );
+        end generate;
     end generate;
 
     -- =========================================================================
@@ -353,17 +370,19 @@ begin
             MI_DATA_WIDTH    => MI_DATA_WIDTH   ,
             MI_ADDR_WIDTH    => MI_ADDR_WIDTH   ,
             -- Other
+            LL_MODE          => LL_MODE         ,
             RESET_USER_WIDTH => RESET_WIDTH     ,
-            RESET_CORE_WIDTH => RESET_REPLICAS-2,
+            RESET_CORE_WIDTH => logic_rst_arr(p)'length,
             RESIZE_BUFFER    => RESIZE_BUFFER   ,
             DEVICE           => DEVICE          ,
             BOARD            => BOARD
         )
         port map(
             CLK_USER            => CLK_USER,
-            CLK_CORE            => CLK_ETH(p),
+            TX_CLK_CORE         => logic_tx_clk(p),
+            RX_CLK_CORE         => logic_rx_clk(p),
             RESET_USER          => RESET_USER,
-            RESET_CORE          => repl_rst_arr(p)(RESET_REPLICAS-1 downto 2),
+            RESET_CORE          => logic_rst_arr(p),
 
             -- Control/status interface
             ACTIVITY_RX         => sig_activity_rx(p),
@@ -441,6 +460,7 @@ begin
             ITEM_WIDTH        => ITEM_WIDTH       ,
             MI_DATA_WIDTH_PHY => MI_DATA_WIDTH_PHY,
             MI_ADDR_WIDTH_PHY => MI_ADDR_WIDTH_PHY,
+            CLK_ETH_IN_ENABLE => LL_MODE          ,
             TS_DEMO_EN        => TS_DEMO_EN       ,
             TX_DMA_CHANNELS   => TX_DMA_CHANNELS  ,
             LANE_RX_POLARITY  => LANE_RX_POLARITY(p*LANES+LANES-1 downto p*LANES),
@@ -452,6 +472,8 @@ begin
         port map (
             -- clock and reset
             CLK_ETH         => CLK_ETH(p),
+            CLK_ETH_IN      => CLK_ETH(0),
+            CLK_STABLE      => clk_eth_stable(p),
             RESET_ETH       => repl_rst_arr(p)(0),
             -- ETH serial interface
             QSFP_REFCLK_P   => ETH_REFCLK_P(p),
@@ -461,6 +483,7 @@ begin
             QSFP_TX_P       => ETH_TX_P(p*LANES+LANES-1 downto p*LANES),
             QSFP_TX_N       => ETH_TX_N(p*LANES+LANES-1 downto p*LANES),
             -- RX interface (packets for transmit to Ethernet, recieved from TX MAC lite)
+            RX_MFB_CLK      => tx_mfb_clk      (p),
             RX_MFB_DATA     => tx_mfb_data_i   (p),
             RX_MFB_SOF_POS  => tx_mfb_sof_pos_i(p),
             RX_MFB_EOF_POS  => tx_mfb_eof_pos_i(p),
@@ -473,10 +496,11 @@ begin
             RX_MVB_TIMESTAMP => mvb_ts (p),
             RX_MVB_VLD       => mvb_vld(p),
 
-            TSU_TS_NS       => synced_ts_ns(p),
-            TSU_TS_DV       => synced_ts_dv(p),
+            TSU_TS_NS       => synced_ts_ns(p)(0),
+            TSU_TS_DV       => synced_ts_dv(p)(0),
 
             -- TX interface (packets received from Ethernet, transmit to RX MAC lite)
+            TX_MFB_CLK      => rx_mfb_clk      (p),
             TX_MFB_DATA     => rx_mfb_data_i   (p),
             TX_MFB_SOF_POS  => rx_mfb_sof_pos_i(p),
             TX_MFB_EOF_POS  => rx_mfb_eof_pos_i(p),
@@ -508,77 +532,44 @@ begin
         );
 
         -- =====================================================================
-        -- TIMESTAMP ASFIFOX
+        -- MFB clocking based on LL mode generic
         -- =====================================================================
-        ts_asfifox_i : entity work.ASFIFOX
-        generic map(
-            DATA_WIDTH => 64    ,
-            ITEMS      => 32    ,
-            RAM_TYPE   => "LUT" ,
-            FWFT_MODE  => true  ,
-            OUTPUT_REG => true  ,
-            DEVICE     => DEVICE
-        )
-        port map (
-            WR_CLK    => CLK_ETH     (0)   ,
-            WR_RST    => repl_rst_arr(0)(1),
-            WR_DATA   => TSU_TS_NS         ,
-            WR_EN     => TSU_TS_DV         ,
-            WR_FULL   => open              ,
-            WR_AFULL  => open              ,
-            WR_STATUS => open              ,
+        mfb_clk_g: if LL_MODE generate
+            logic_tx_clk(p) <= tx_mfb_clk(p);
+            logic_rx_clk(p) <= rx_mfb_clk(p);
+        else generate
+            logic_tx_clk(p) <= CLK_ETH(p);
+            logic_rx_clk(p) <= (others => CLK_ETH(p));
+        end generate;
 
-            RD_CLK    => CLK_ETH        (p)   ,
-            RD_RST    => repl_rst_arr   (p)(1),
-            RD_DATA   => asfifox_ts_ns  (p)   ,
-            RD_EN     => '1'                  ,
-            RD_EMPTY  => asfifox_ts_dv_n(p)   ,
-            RD_AEMPTY => open                 ,
-            RD_STATUS => open
-        );
+        -- =====================================================================
+        -- TIMESTAMP synchronization
+        -- =====================================================================
+        ts_chan_sync_g: for ch in 0 to TS_REPLICAS-1 generate
 
-        process(CLK_ETH)
-        begin
-            if (rising_edge(CLK_ETH(p))) then
-                if (asfifox_ts_dv_n(p) = '1' and asfifox_ts_timeout(p)(TS_TIMEOUT_W-1) = '0') then
-                    asfifox_ts_timeout(p) <= asfifox_ts_timeout(p) + 1;
-                end if;
-                if (repl_rst_arr(p)(1) = '1' or asfifox_ts_dv_n(p) = '0') then
-                    asfifox_ts_timeout(p) <= (others => '0');
-                end if;
-            end if;
-        end process;
+            ts_sync_i: entity work.TS_SYNC
+            generic map (
+                DEVICE       => DEVICE,
+                TS_TIMEOUT_W => TS_TIMEOUT_W
+            )
+            port map (
+                TSU_RST      => repl_rst_arr(0)(1),
+                TSU_CLK      => CLK_ETH     (0)   ,
+                TSU_TS_NS    => TSU_TS_NS         ,
+                TSU_TS_DV    => TSU_TS_DV         ,
+                --
+                SYNC_RST     => logic_rst_arr(p)(ch*2),
+                SYNC_CLK     => logic_rx_clk(p)(ch)   ,
+                SYNCED_TS_NS => synced_ts_ns(p)(ch)   ,
+                SYNCED_TS_DV => synced_ts_dv(p)(ch)
+            );
+        end generate;
 
-        process(CLK_ETH)
-        begin
-            if (rising_edge(CLK_ETH(p))) then
-                if (asfifox_ts_dv_n(p) = '0') then
-                    asfifox_ts_last_vld(p) <= '1';
-                end if;
-                if (repl_rst_arr(p)(1) = '1') then
-                    asfifox_ts_last_vld(p) <= '0';
-                end if;
-            end if;
-        end process;
-
-        -- Synced TS is valid if the value is current or if the value is a few
-        -- clock cycles old. This provides filtering for occasional flushing of
-        -- the asynchronous FIFO.
-        process(CLK_ETH)
-        begin
-            if (rising_edge(CLK_ETH(p))) then
-                if (asfifox_ts_dv_n(p) = '0') then
-                    synced_ts_ns(p) <= asfifox_ts_ns(p);
-                end if;
-
-                synced_ts_dv(p) <= (not asfifox_ts_dv_n(p)) or
-                                   (asfifox_ts_last_vld(p) and not asfifox_ts_timeout(p)(TS_TIMEOUT_W-1));
-
-                if (repl_rst_arr(p)(1) = '1') then
-                    synced_ts_dv(p) <= '0';
-                end if;
-            end if;
-        end process;
+        -- When the single TS_SYNC is generated, replicate channel 0 timestaps to all other channels
+        ts_repl_g: for ch in TS_REPLICAS+1 to ETH_CHANNELS generate
+            synced_ts_ns(p)(ch-1) <= synced_ts_ns(p)(0);
+            synced_ts_dv(p)(ch-1) <= synced_ts_dv(p)(0);
+        end generate;
 
         -- ETH clock is used as TSU main clock
         TSU_CLK <= CLK_ETH     (0)   ;

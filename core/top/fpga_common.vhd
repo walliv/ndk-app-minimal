@@ -1539,6 +1539,7 @@ begin
         MI_DATA_WIDTH_PHY => 32             ,
         MI_ADDR_WIDTH_PHY => 32             ,
 
+        LL_MODE           => LL_MODE        ,
         TS_DEMO_EN        => TS_DEMO_EN     ,
         TX_DMA_CHANNELS   => DMA_TX_CHANNELS,
 
