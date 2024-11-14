@@ -7,92 +7,41 @@
 from cocotb_bus.monitors import BusMonitor
 from cocotb.triggers import RisingEdge
 from cocotbext.ofm.utils.signals import get_signal_value_in_bytes
+from cocotbext.ofm.mi.transaction import MiTransaction, MiTransactionType
+from cocotbext.ofm.utils.signals import filter_bytes_by_bitmask
 
 
-class MIMasterMonitor(BusMonitor):
-    """Master monitor intended for monitoring the MI BUS OUTPUT side.
-
-    Atributes:
-        item_cnt(int): number of items recieved.
-        _clk_re(cocotb.triggers.RisingEdge): object used for awaiting the rising edge of clock signal.
-        _utils(MIUtils): object with general MI Utilities.
-        addr_width(int): width of ADDR port in bytes.
-        data_width(int): width of DATA port in bytes.
-
-    """
+class MIMonitor(BusMonitor):
+    """Monitor intended for monitoring both sides of the MI bus."""
 
     _signals = ["addr", "dwr", "be", "wr", "rd", "ardy", "drd", "drdy"]
     _optional_signals = ["mwr"]
 
-    def __init__(self, entity, name, clock, array_idx=None) -> None:
-        super().__init__(entity, name, clock, array_idx=array_idx)
-        self.item_cnt = 0
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._item_cnt = 0
         self._clk_re = RisingEdge(self.clock)
-        self.addr_width = len(self.bus.addr) // 8
-        self.data_width = len(self.bus.dwr) // 8
+        self._addr_width = len(self.bus.addr) // 8
+        self._data_width = len(self.bus.dwr) // 8
+        self.read_transactions = list()
+
+    @property
+    def item_cnt(self) -> int:
+        """Number of items received."""
+        return self._item_cnt
+
+    @property
+    def addr_width(self) -> int:
+        """Width of ADDR port in bytes."""
+        return self._addr_width
+
+    @property
+    def data_width(self) -> int:
+        """Width of DATA port in bytes."""
+        return self._data_width
 
     async def _monitor_recv(self):
-        """Recieve function for the cocotb testbench"""
-
-        # Avoid spurious object creation by recycling
-        clk_re = RisingEdge(self.clock)
-
-        while True:
-            await clk_re
-
-            if self.in_reset:
-                continue
-
-            if self.bus.wr.value == 1 and self.bus.ardy.value == 1:
-                dwr_bytes = get_signal_value_in_bytes(self.bus.dwr)
-                addr_bytes = get_signal_value_in_bytes(self.bus.addr)
-
-                be = self.bus.be.value
-                be.big_endian = False
-                be_int = int.from_bytes(be.buff, 'little')
-
-                dwr_recv = b''
-                be_list = list()
-                be_list[0:len(be)] = be
-                first_be = be_list.index(1)
-                last_be = (be_list + [0]).index(0, first_be)
-                dwr_recv = dwr_bytes[first_be:last_be]
-
-                self.log.debug(f"ITEM     {self.item_cnt}")
-                self.log.debug(f"OUT_ADDR {addr_bytes.hex()}")
-                self.log.debug(f"OUT_DWR  {dwr_bytes.hex()}")
-                self.log.debug(f"OUT_BE   {be_int}")
-
-                self._recv((int.from_bytes(addr_bytes, 'little'), int.from_bytes(dwr_recv, 'little'), be_int))
-                self.item_cnt += 1
-
-
-class MISlaveMonitor(BusMonitor):
-    """Slave monitor intended for monitoring the MI BUS INPUT side.
-
-    Atributes:
-        _signals(list): mandatory signals of the MI BUS.
-        _optional_signals(list): any other usefull signal that may be part of the MI BUS.
-        item_cnt(int): number of items recieved.
-        _clk_re(cocotb.triggers.RisingEdge): object used for awaiting the rising edge of clock signal.
-        _utils(MIUtils): object with general MI Utilities.
-        addr_width(int): width of ADDR port in bytes.
-        data_width(int): width of DATA port in bytes.
-
-    """
-
-    _signals = ["addr", "dwr", "be", "wr", "rd", "ardy", "drd", "drdy"]
-    _optional_signals = ["mwr"]
-
-    def __init__(self, entity, name, clock, array_idx=None):
-        super().__init__(entity, name, clock, array_idx=array_idx)
-        self.item_cnt = 0
-        self._clk_re = RisingEdge(self.clock)
-        self.addr_width = len(self.bus.addr) // 8
-        self.data_width = len(self.bus.dwr) // 8
-
-    async def _monitor_recv(self):
-        """Recieve function for the cocotb testbench."""
+        """Receive function for the cocotb testbench"""
 
         # Avoid spurious object creation by recycling
         clk_re = RisingEdge(self.clock)
@@ -109,13 +58,54 @@ class MISlaveMonitor(BusMonitor):
                 be.big_endian = False
                 be_int = int.from_bytes(be.buff, 'little')
 
+                recv_trans = MiTransaction()
+                recv_trans.trans_type = MiTransactionType.Request
+                recv_trans.addr = int.from_bytes(addr_bytes, 'little')
+                recv_trans.be = be_int
+
+                self.read_transactions.append(recv_trans)
+
             if self.bus.drdy.value == 1:
+                if len(self.read_transactions) == 0:
+                    raise RuntimeError("Received reponse without request.")
+
                 drd_bytes = get_signal_value_in_bytes(self.bus.drd)
 
-                self.log.debug(f"ITEM     {self.item_cnt}")
-                self.log.debug(f"IN_ADDR {addr_bytes.hex()}")
-                self.log.debug(f"IN_DRD  {drd_bytes.hex()}")
+                recv_trans = self.read_transactions.pop(0)
 
-                self._recv((int.from_bytes(addr_bytes, 'little'), int.from_bytes(drd_bytes, 'little'), be_int))
+                recv_trans.data = int.from_bytes(filter_bytes_by_bitmask(drd_bytes, recv_trans.be), 'little')
 
-                self.item_cnt += 1
+                self.log.debug(f"ITEM {self._item_cnt}")
+                self.log.debug(f"ADDR {hex(recv_trans.addr)}")
+                self.log.debug(f"DRD  {hex(recv_trans.data)}")
+
+                self._recv(recv_trans)
+                self._item_cnt += 1
+
+            if self.bus.wr.value == 1 and self.bus.ardy.value == 1:
+                dwr_bytes = get_signal_value_in_bytes(self.bus.dwr)
+                addr_bytes = get_signal_value_in_bytes(self.bus.addr)
+
+                be = self.bus.be.value
+                be.big_endian = False
+                be_int = int.from_bytes(be.buff, 'little')
+
+                dwr_recv = b''
+                be_list = [*be]
+                first_be = be_list.index(1)
+                last_be = (be_list+[0]).index(0, first_be)  # ensures there is at least one zero
+                dwr_recv = dwr_bytes[first_be:last_be]
+
+                self.log.debug(f"ITEM {self._item_cnt}")
+                self.log.debug(f"ADDR {addr_bytes.hex()}")
+                self.log.debug(f"DWR  {dwr_bytes.hex()}")
+                self.log.debug(f"BE   {be_int}")
+
+                recv_trans = MiTransaction()
+                recv_trans.trans_type = MiTransactionType.Response
+                recv_trans.addr = int.from_bytes(addr_bytes, 'little')
+                recv_trans.data = int.from_bytes(dwr_recv, 'little')
+                recv_trans.be = be_int
+
+                self._recv(recv_trans)
+                self._item_cnt += 1
