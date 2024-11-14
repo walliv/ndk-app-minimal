@@ -19,7 +19,7 @@ from cocotb.binary import BinaryValue
 from cocotbext.ofm.utils.signals import filter_bytes_by_bitmask
 
 import itertools
-from random import choice
+from random import choice, randint
 
 
 class testbench():
@@ -73,8 +73,9 @@ async def run_test(dut, pkt_count: int = 1000, item_width_min: int = 1, item_wid
     for transaction in random_packets(item_width_min, item_width_max, pkt_count):
         trans_cntr += 1
         request_type = choice([MiTransactionType.Request, MiTransactionType.Response])
+        start_addr = randint(0, 2**(tb.request_stream_in.addr_width*8)-1)
 
-        addr = int.from_bytes(transaction[0:tb.request_stream_in.addr_width], 'little')
+        addr = start_addr
         offset_transaction = transaction
         byte_enable = BinaryValue(2**len(transaction) - 1)
 
@@ -106,7 +107,7 @@ async def run_test(dut, pkt_count: int = 1000, item_width_min: int = 1, item_wid
 
         request_trans = MiRequestTransaction()
         request_trans.trans_type = request_type
-        request_trans.addr = int.from_bytes(transaction[0:tb.request_stream_in.addr_width], 'little')
+        request_trans.addr = start_addr
         request_trans.data = transaction
         request_trans.data_len = len(transaction)
 
