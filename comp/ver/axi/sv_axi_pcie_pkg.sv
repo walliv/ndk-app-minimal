@@ -14,6 +14,7 @@ package sv_axi_pcie_pkg;
     import sv_common_pkg::*;
     import sv_axi_pkg::*;
 
+    `include "axi4s_rc_meter.sv"
     `include "axi4s_rc_agent.sv"
     `include "axi4s_rq_meter.sv"
     `include "axi4s_rq_agent.sv"

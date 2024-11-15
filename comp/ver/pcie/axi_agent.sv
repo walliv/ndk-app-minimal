@@ -74,6 +74,7 @@ class axi_agent #(RCB, MPS, DEVICE, DATA_WIDTH) extends agent #(RCB, MPS);
     sv_axi_pcie_pkg::Axi4S_RQ_meter #(DATA_WIDTH, RQ_TUSER_WIDTH, 32, RQ_ST_COUNT) axiRQ_meter;
     AxiResponder  #(DATA_WIDTH, RQ_TUSER_WIDTH, 32)              axiRQ_responder;
     AxiDriver     #(DATA_WIDTH, RC_TUSER_WIDTH, 32, RC_ST_COUNT) axiRC;
+    sv_axi_pcie_pkg::Axi4S_RC_meter #(DATA_WIDTH, RC_TUSER_WIDTH, 32, RC_ST_COUNT) axiRC_meter;
     string inst;
 
     function new (string inst, sv_common_pkg::tTransMbx mbx_input, virtual iAxi4STx  #(DATA_WIDTH, RQ_TUSER_WIDTH, 32) vif_rx, virtual iAxi4SRx  #(DATA_WIDTH, RC_TUSER_WIDTH, 32) vif_tx);
@@ -82,31 +83,36 @@ class axi_agent #(RCB, MPS, DEVICE, DATA_WIDTH) extends agent #(RCB, MPS);
         //Request modules
         rq_monitor = new();
         rq_monitor.setCallbacks(this.tags_req_cbs);
-        axiRQ = new({inst, "AXI Request "}, vif_rx);
-        axiRQ_meter = new({inst, "AXI Meter "}, vif_rx);
+        axiRQ = new({inst, "AXI RQ Request "}, vif_rx);
+        axiRQ_meter = new({inst, "AXI RQ Meter "}, vif_rx);
         axiRQ.setCallbacks(rq_monitor.axi_rq_cbs);
-        axiRQ_responder = new({inst, " AXI Responder"}, vif_rx);
+        axiRQ_responder = new({inst, " AXI RQ Responder"}, vif_rx);
 
         //Response modules
         rc_driver_cbs = new(4);
         rc_driver     = new({inst, " PCIE TO AXI DRIVER"}, pcie_sq_cbs.mbx_response);
         rc_driver.setCallbacks(rc_driver_cbs);
-        axiRC = new({inst, " AXI Response agent"}, rc_driver_cbs.mbx_response, vif_tx);
+        axiRC = new({inst, " AXI RC Response agent"}, rc_driver_cbs.mbx_response, vif_tx);
+        axiRC_meter = new({inst, "AXI RC Meter "}, vif_tx);
     endfunction
 
     task setEnabled();
         axiRQ.setEnabled();
-        axiRQ_meter.setEnabled();
         rq_monitor.setEnabled();
         super.setEnabled();
         axiRQ_responder.setEnabled();
         rc_driver.setEnabled();
         axiRC.setEnabled();
+
+        axiRQ_meter.setEnabled();
+        axiRC_meter.setEnabled();
     endtask
 
     task setDisabled();
-        axiRQ.setDisabled();
         axiRQ_meter.setDisabled();
+        axiRC_meter.setDisabled();
+
+        axiRQ.setDisabled();
         rq_monitor.setDisabled();
         super.setDisabled();
         axiRQ_responder.setDisabled();
