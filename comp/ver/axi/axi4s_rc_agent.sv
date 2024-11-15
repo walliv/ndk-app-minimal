@@ -219,7 +219,7 @@ class Axi4S_RC_agent #(DATA_WIDTH = 512, USER_WIDTH = 161, ITEM_WIDTH_IN = 8, ST
             $cast(tr, transaction);
             while(sof[offset / REGION_ITEMS]) // two SOFs not allowed in the same region
                 moveBlock();
-            while(eof[(offset + tr.data.size - 1) / REGION_ITEMS]) // two EOFs not allowed in the same region
+            while((offset + tr.data.size - 1) < REGIONS*REGION_ITEMS && eof[(offset + tr.data.size - 1)/REGION_ITEMS]) // two EOFs not allowed in the same region
                 moveBlock();
 /*            if(SOF_CTRL)
                 while(((offset / REGION_ITEMS) != tr.sof) || (((offset % REGION_ITEMS) / BLOCK_SIZE) != tr.sof_pos)) // find correct SOF AND find correct SOF position
