@@ -4,6 +4,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+from cocotb.binary import BinaryValue
+from typing import Optional
+
+
 async def await_signal_sync(clk_re, signal, value: int = 1) -> None:
     """
     Synchronously waits until the value of the passed signal becomes passed value.
@@ -58,3 +62,77 @@ def filter_bytes_by_bitmask(data: bytes, byte_enable: int) -> bytes:
     b'hlo'
     """
     return bytes([x for i, x in enumerate(data) if (1 << i) & byte_enable])
+
+
+def align_request(bus_width: int, addr: int, data_len: int, *, byte_enable: Optional[BinaryValue] = None) -> (int, int, int, Optional[BinaryValue]):
+    """
+    Aligns address and byte enable of a continuous request based on the bus width.
+
+    Args:
+        bus_width: width of the used bus in bytes.
+        addr: unaligned address of the first byte.
+        data_len: lenght of the data to be written or number of bytes to be read.
+        byte_enable: which bytes of the data are valid.
+
+    Returns:
+        tuple of four elements:
+        [0] index of first valid byte within bus word,
+        [1] index of last valid byte within bus word,
+        [2] aligned address of the first word (value is multiple of bus_width),
+        [3] aligned byte enable
+    """
+    start_offset = addr % bus_width
+    end_offset = -(addr + data_len) % bus_width
+
+    byte_enable = BinaryValue(("0" * start_offset) + byte_enable.binstr + ("0" * end_offset), bigEndian=False) if byte_enable is not None else None
+    addr = addr - start_offset
+
+    return start_offset, end_offset, addr, byte_enable
+
+
+def align_write_request(bus_width: int, addr: int, data: bytes, *, byte_enable: Optional[BinaryValue] = None) -> (int, int, int, int, Optional[BinaryValue]):
+    """
+    Aligns data, address and byte enable of a continuous write request based on the bus width.
+
+    Args:
+        bus_width: width of the used bus in bytes.
+        addr: unaligned address of the first written byte.
+        data: data to be written.
+        byte_enable: which bytes of the data are valid.
+
+    Returns:
+        tuple of five elements:
+        [0] index of first valid byte within bus word,
+        [1] index of last valid byte within bus word,
+        [2] aligned address of the first word (value is multiple of bus_width),
+        [3] aligned data,
+        [4] aligned byte enable
+    """
+    start_offset, end_offset, addr, byte_enable = align_request(bus_width, addr, len(data), byte_enable=byte_enable)
+
+    data = bytes(start_offset) + data + bytes(end_offset)
+    return start_offset, end_offset, addr, data, byte_enable
+
+
+def align_read_request(bus_width: int, addr: int, byte_count: int, *, byte_enable: Optional[BinaryValue] = None) -> (int, int, int, int, Optional[BinaryValue]):
+    """
+    Aligns address and byte enable of a continuous read request based on the bus width.
+
+    Args:
+        bus_width: width of the used bus in bytes.
+        addr: unaligned address of the first read byte.
+        byte_count: number of bytes to be read.
+        byte_enable: which bytes of the data are valid.
+
+    Returns:
+        tuple of five elements:
+        [0] index of first valid byte within bus word,
+        [1] index of last valid byte within bus word,
+        [2] aligned address of the first word (value is multiple of bus_width),
+        [3] byte count including the start/end padding,
+        [4] aligned byte enable
+    """
+    start_offset, end_offset, addr, byte_enable = align_request(bus_width, addr, byte_count, byte_enable=byte_enable)
+
+    byte_count += start_offset + end_offset
+    return start_offset, end_offset, addr, byte_count, byte_enable
