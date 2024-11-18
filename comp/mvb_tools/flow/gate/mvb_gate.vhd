@@ -29,7 +29,6 @@ entity MVB_GATE is
         RX_VLD          : in    std_logic_vector(ITEMS-1 downto 0);
         RX_SRC_RDY      : in    std_logic;
         RX_DST_RDY      : out   std_logic;
-        -- ===============================================
 
         -- ===============================================
         -- TX MVB interface
@@ -38,8 +37,10 @@ entity MVB_GATE is
         TX_VLD          : out   std_logic_vector(ITEMS-1 downto 0);
         TX_SRC_RDY      : out   std_logic;
         TX_DST_RDY      : in    std_logic;
-        -- ===============================================
 
+        -- ===============================================
+        -- Control interface
+        -- ===============================================
         -- When this signal is asserted, transmission from RX -> TX
         -- is disabled.
         STOP_EN         : in    std_logic
