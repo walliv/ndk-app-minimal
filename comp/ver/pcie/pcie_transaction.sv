@@ -147,6 +147,7 @@ class PcieRequest extends sv_common_pkg::Transaction;
            byte unsigned data_que[$];
            int unsigned  data_length;
            logic [63:0]  address;
+           logic [4-1:0] lbe;
 
            //deserialize data
            if (data.size() > 0) begin
@@ -179,17 +180,23 @@ class PcieRequest extends sv_common_pkg::Transaction;
                 $finish();
             end
 
+            if(data_length > 4) begin
+                lbe = this.lbe[3:0];
+            end else begin
+                lbe = fbe;
+            end
+
             // corect length transaction by lbe
-            if (this.lbe[3] == 1'b1 || (data_length == 4 && this.lbe[3:0] == 4'b0000)) begin
+            if (lbe[3] == 1'b1) begin
                  ; //do nothing
-            end else if (this.lbe[3:2] == 2'b01) begin
+            end else if (lbe[3:2] == 2'b01) begin
                  data_length  -= 1;
                  data_que.pop_back();
-            end else if (this.lbe[3:1] == 3'b001) begin
+            end else if (lbe[3:1] == 3'b001) begin
                  data_length  -= 2;
                  data_que.pop_back();
                  data_que.pop_back();
-            end else if (this.lbe[3:0] == 4'b0001) begin
+            end else if (lbe[3:0] == 4'b0001) begin
                  data_length  -= 3;
                  data_que.pop_back();
                  data_que.pop_back();
