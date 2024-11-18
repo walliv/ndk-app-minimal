@@ -15,11 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - build: Introduced PLATFORM_TAGS variable for platform, replacement for SYNTH_FLAGS(TOOL).
 - build: Introduced templates for DTS generation.
 - cards: Introduced support for Terasic A2700 Accelerator card.
-- comp: Introduced MFB_MVB_APPENDER component.
-- comp: Introduced MVB_ITEM_COLLISION_RESOLVER component.
-- comp: Introduced MEM_CLEAR component.
+- comp: Introduced new components: MFB_MVB_APPENDER, MVB_ITEM_COLLISION_RESOLVER, MVB_GATE, MEM_CLEAR.
 - comp: Added packages for statistics processing in Data Logger component.
 - core: Added MISC signals between Top-Level and APP/PCIE/NET core.
+- core: Added optional low latency mode in Network Module for HFT applications.
 - dma: Added performance counters to measure blocking behavior in RX DMA Calypte.
 - uvm: Added support of the CMAC variant in Network Module verification.
 - ver: Added meters to AVST(PCIE) and AXI(PCIE) for the old verification.
@@ -34,12 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - comp: Refactored implementation of TCAM2 component.
 - comp: Refactored implementation of MVB_TCAM component.
 - core: Enabled Device Tree on all PCIe endpoints. This is required for proper identification of PCIe endpoints when bifurcation is enabled.
+- core: Improved PCIe core and DMA Medusa optional debug telemetry.
 - docs: Improved NDK-FPGA documentation.
 - uvm: Improved print of MVB transaction for APP-UVM verifications.
 
 ### Deprecated
 
 ### Removed
+- comp: remove old unused components (CLK_GEN, SQUARER, CAM, LED_CTRL, DMA_ASFIFO*, PAC_STATS*,
+RATE_LIM*, FIFO_PIPE, HYPER_PIPE, WATCHDOG*).
 
 ### Fixed
 - cocotb: Fixed SOF/EOF error checking in cocotb MFB monitor.
@@ -47,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - core: Fixed width of demo/testing ports in Network Module.
 - uvm: Fixed LOGIC_VECTOR_ARRAY sequencer, the DB registration macro is now parameterized.
 - uvm: Fixed count speed in MFB bus.
+- ver: Fixed lot of small bugs in PCIe transactions in old verifications.
 
 ### Security
 
