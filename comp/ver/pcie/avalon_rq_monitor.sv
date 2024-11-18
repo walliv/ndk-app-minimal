@@ -141,6 +141,10 @@ class avalon_rq_monitor extends sv_common_pkg::Monitor;
 
                 state = IDLE;
                 hl_tr.data  = data;
+                if (hl_tr.type_tr == PCIE_RQ_WRITE && hl_tr.data.size() != hl_tr.length) begin
+                    $error("%s\n Indicated size in header (%0d) is not same as payload size\n%s", `__FILE__, hl_tr.length, hl_tr.convert2string());
+                    $stop();
+                end
                 $cast(to, hl_tr);
                 foreach(cbs[it]) begin
                     cbs[it].post_rx(to, inst);

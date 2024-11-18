@@ -48,7 +48,7 @@ class PcieCompletion extends sv_common_pkg::Transaction;
         string num_to_str;
         string s = "";
 
-        $sformat(num_to_str, "PcieCompletion\n\tlower addr %h\n\tlength %d\n\ttag %h\n\tbyte_count %d\n\tCompleted %b\n", lower_address, length, tag, byte_count, completed);
+        $sformat(num_to_str, "PcieCompletion\n\trequester ID %h\n\tlower addr %h\n\tlength %d\n\ttag %h\n\tbyte_count %d\n\tCompleted %b\n", requester_id, lower_address, length*4, tag, byte_count, completed);
         s = {s, num_to_str};
 
         for (int unsigned i = 0; i < data.size; i++) begin
@@ -147,6 +147,7 @@ class PcieRequest extends sv_common_pkg::Transaction;
            byte unsigned data_que[$];
            int unsigned  data_length;
            logic [63:0]  address;
+           logic [4-1:0] lbe;
 
            //deserialize data
            if (data.size() > 0) begin
@@ -179,17 +180,23 @@ class PcieRequest extends sv_common_pkg::Transaction;
                 $finish();
             end
 
+            if(data_length > 4) begin
+                lbe = this.lbe[3:0];
+            end else begin
+                lbe = fbe;
+            end
+
             // corect length transaction by lbe
-            if (this.lbe[3] == 1'b1 || (data_length == 4 && this.lbe[3:0] == 4'b0000)) begin
+            if (lbe[3] == 1'b1) begin
                  ; //do nothing
-            end else if (this.lbe[3:2] == 2'b01) begin
+            end else if (lbe[3:2] == 2'b01) begin
                  data_length  -= 1;
                  data_que.pop_back();
-            end else if (this.lbe[3:1] == 3'b001) begin
+            end else if (lbe[3:1] == 3'b001) begin
                  data_length  -= 2;
                  data_que.pop_back();
                  data_que.pop_back();
-            end else if (this.lbe[3:0] == 4'b0001) begin
+            end else if (lbe[3:0] == 4'b0001) begin
                  data_length  -= 3;
                  data_que.pop_back();
                  data_que.pop_back();
@@ -208,7 +215,7 @@ class PcieRequest extends sv_common_pkg::Transaction;
         string num_to_str;
         string s = "";
 
-        $sformat(num_to_str, "PcieRequest\n\tTransaction type : %s\n\taddr %h\n\tlength %d\n\ttag %h\n\tfbe : %h \tlbe : %h\n", type_tr, {addr, 2'b00}, length*4, tag, fbe, lbe);
+        $sformat(num_to_str, "PcieRequest\n\tTransaction type : %s\n\trequester ID %h\n\taddr %h\n\tlength %d\n\ttag %h\n\tfbe : %h \tlbe : %h\n", type_tr, requester_id, {addr, 2'b00}, length*4, tag, fbe, lbe);
         s = {s, num_to_str};
 
         for (int unsigned i = 0; i < data.size; i++) begin

@@ -63,6 +63,10 @@ class axi_rq_monitor extends sv_common_pkg::Monitor;
                 hl_tr.display({inst, " Create PCIE RQ"});
             end
 
+            if (hl_tr.type_tr == PCIE_RQ_WRITE && hl_tr.data.size() != hl_tr.length) begin
+                $error("%s\n Indicated size in header (%0d) is not same as payload size\n%s", `__FILE__, hl_tr.length, hl_tr.convert2string());
+                $stop();
+            end
             foreach(cbs[it]) begin
                 cbs[it].post_rx(hl_tr, inst);
             end
