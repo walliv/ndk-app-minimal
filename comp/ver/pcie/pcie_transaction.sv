@@ -48,7 +48,7 @@ class PcieCompletion extends sv_common_pkg::Transaction;
         string num_to_str;
         string s = "";
 
-        $sformat(num_to_str, "PcieCompletion\n\trequester ID %h\n\tlower addr %h\n\tlength %d\n\ttag %h\n\tbyte_count %d\n\tCompleted %b\n", requester_id, lower_address, length, tag, byte_count, completed);
+        $sformat(num_to_str, "PcieCompletion\n\trequester ID %h\n\tlower addr %h\n\tlength %d\n\ttag %h\n\tbyte_count %d\n\tCompleted %b\n", requester_id, lower_address, length*4, tag, byte_count, completed);
         s = {s, num_to_str};
 
         for (int unsigned i = 0; i < data.size; i++) begin
