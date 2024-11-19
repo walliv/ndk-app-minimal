@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.8.0] - 2024-11-19
+
+### Added
 - cocotb: Introduced generator of random integers.
 - cocotb: Introduced MVB rate limiter.
 - build: Introduced EXPERIMENTAL env.sh file with mandatory environment variables.
@@ -37,21 +51,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs: Improved NDK-FPGA documentation.
 - uvm: Improved print of MVB transaction for APP-UVM verifications.
 
-### Deprecated
-
 ### Removed
-- comp: remove old unused components (CLK_GEN, SQUARER, CAM, LED_CTRL, DMA_ASFIFO*, PAC_STATS*,
+- comp: Remove old unused components (CLK_GEN, SQUARER, CAM, LED_CTRL, DMA_ASFIFO*, PAC_STATS*,
 RATE_LIM*, FIFO_PIPE, HYPER_PIPE, WATCHDOG*).
 
 ### Fixed
 - cocotb: Fixed SOF/EOF error checking in cocotb MFB monitor.
 - comp: Fixed histogram box update in Histogramer component.
 - core: Fixed width of demo/testing ports in Network Module.
+- dma: Fixed MFB transaction size in DMA Medusa Updater module.
 - uvm: Fixed LOGIC_VECTOR_ARRAY sequencer, the DB registration macro is now parameterized.
 - uvm: Fixed count speed in MFB bus.
 - ver: Fixed lot of small bugs in PCIe transactions in old verifications.
-
-### Security
 
 ## [0.7.2] - 2024-10-17
 
