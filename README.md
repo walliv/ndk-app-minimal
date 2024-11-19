@@ -25,6 +25,8 @@ Before you get started, there are a few requirements that you need to have.
     - AMD/Xilinx Alveo U200
     - AMD/Xilinx Alveo U55C
     - AMD/Xilinx Virtex UltraScale+ FPGA VCU118 Evaluation Kit
+    - PRO DESIGN FALCON Stratix 10 (only EXPERIMENTAL support)
+    - Terasic Mercury A2700 Accelerator Card
 - Other supported FPGA cards in the NDK framework but not available as open-source:
     - Netcope NFB-200G2QL card
 - To control an FPGA card with an application based on the NDK framework, you also need:
