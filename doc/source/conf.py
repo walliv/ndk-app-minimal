@@ -50,10 +50,13 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'furo'
+html_theme = 'sphinx_rtd_theme'
 html_theme_options = {
-    "globaltoc_maxdepth": 4,
-    "banner_hiding": "permanent",
+    'collapse_navigation': True,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'display_version': True,
 }
 
 html_logo = "img/ndk_fpga_logo_simple.png"
@@ -62,3 +65,5 @@ html_logo = "img/ndk_fpga_logo_simple.png"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_style = 'css/theme_overrides.css'
