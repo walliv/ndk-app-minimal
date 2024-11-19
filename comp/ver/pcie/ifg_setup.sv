@@ -14,6 +14,20 @@ class ifg_config_setup;
     int unsigned ifg_low      = 0;
     int unsigned ifg_high     = 18;
 
+    virtual function ifg_config_setup clone();
+        ifg_config_setup ret = new();
+        this.copy(ret);
+        return ret;
+    endfunction
+
+    function void copy(ifg_config_setup cl);
+        cl.rand_count   = this.rand_count;
+        cl.ifg_enabled  = this.ifg_enabled;
+        cl.ifg_disabled = this.ifg_disabled;
+        cl.ifg_low      = this.ifg_low;
+        cl.ifg_high     = this.ifg_high;
+    endfunction
+
     function void display(string prefix = "");
         $write("=================================================\n");
         $write("== %s\n", prefix);
@@ -38,6 +52,18 @@ class ifg_config_setup_slow extends ifg_config_setup;
        rand_rand_count inside {[rand_count_min:rand_count_max]};
     };
 
+    virtual function ifg_config_setup clone();
+        ifg_config_setup_slow ret = new();
+        this.copy(ret);
+        return ret;
+    endfunction
+
+    function void copy(ifg_config_setup_slow cl);
+        super.copy(cl);
+        cl.rand_count_min  = this.rand_count_min;
+        cl.rand_count_max  = this.rand_count_max;
+    endfunction
+
     function void post_randomize();
         this.rand_count   = rand_rand_count;
         this.ifg_enabled  = 90;
@@ -58,6 +84,18 @@ class ifg_config_setup_fast extends ifg_config_setup;
     constraint c1{
        rand_rand_count inside {[rand_count_min:rand_count_max]};
     };
+
+    virtual function ifg_config_setup clone();
+        ifg_config_setup_fast ret = new();
+        this.copy(ret);
+        return ret;
+    endfunction
+
+    function void copy(ifg_config_setup_fast cl);
+        super.copy(cl);
+        cl.rand_count_min  = this.rand_count_min;
+        cl.rand_count_max  = this.rand_count_max;
+    endfunction
 
     function void post_randomize();
         this.rand_count   = rand_rand_count;
@@ -103,6 +141,25 @@ class ifg_config_setup_rand extends ifg_config_setup;
        rand_ifg_low  inside {[ifg_low_min:ifg_low_max]};
        rand_ifg_high inside {[ifg_high_min:ifg_high_max]};
     };
+
+    virtual function ifg_config_setup clone();
+        ifg_config_setup_rand ret = new();
+        this.copy(ret);
+        return ret;
+    endfunction
+
+    function void copy(ifg_config_setup_rand cl);
+        cl.ifg_enabled_min   = this.ifg_enabled_min;
+        cl.ifg_enabled_max   = this.ifg_enabled_max;
+        cl.ifg_disabled_min  = this.ifg_disabled_min;
+        cl.ifg_disabled_max  = this.ifg_disabled_max;
+        cl.ifg_low_min       = this.ifg_low_min;
+        cl.ifg_low_max       = this.ifg_low_max;
+        cl.ifg_high_min      = this.ifg_high_min;
+        cl.ifg_high_max      = this.ifg_high_max;
+        cl.rand_count_min    = this.rand_count_min;
+        cl.rand_count_max    = this.rand_count_max;
+    endfunction
 
     function void post_randomize();
         this.rand_count    = rand_rand_count;
@@ -201,6 +258,21 @@ class ifg_config_setup_lib extends ifg_config_setup;
         ifg_type dist {IFG_SLOW :/ dist_slow,  IFG_FAST :/ dist_fast, IFG_RAND_MEDIUM :/ dist_rand_medium,
                        IFG_RAND_SLOW :/ dist_rand_slow, IFG_RAND_FAST :/ dist_rand_fast, IFG_RAND_LONG_SPACES :/ dist_rand_long_spaces};
     };
+
+    virtual function ifg_config_setup clone();
+        ifg_config_setup_lib ret = new();
+        this.copy(ret);
+        return ret;
+    endfunction
+
+    function void copy(ifg_config_setup_lib cl);
+        cl.dist_slow              = this.dist_slow;
+        cl.dist_fast              = this.dist_fast;
+        cl.dist_rand_slow         = this.dist_rand_slow;
+        cl.dist_rand_medium       = this.dist_rand_medium;
+        cl.dist_rand_fast         = this.dist_rand_fast;
+        cl.dist_rand_long_spaces  = this.dist_rand_long_spaces;
+    endfunction
 
     function void post_randomize();
         assert(ifg[ifg_type].randomize());
