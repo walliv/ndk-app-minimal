@@ -8,4 +8,4 @@
 # 0 - Disable DMA
 # 3 - DMA Medusa
 # 4 - DMA Calypte
-DMA_TYPE ?= 3
+DMA_TYPE?=3
