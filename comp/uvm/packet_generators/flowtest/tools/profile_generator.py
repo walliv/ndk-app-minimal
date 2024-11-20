@@ -13,7 +13,7 @@ import time
 import random
 from typing import Optional
 from typing import TextIO
-from collections import KeysView
+from collections.abc import KeysView
 from requests.structures import CaseInsensitiveDict
 
 
