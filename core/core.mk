@@ -9,3 +9,9 @@
 # 3 - DMA Medusa
 # 4 - DMA Calypte
 DMA_TYPE?=3
+
+# Enables debug components of a DMA module
+DMA_DEBUG_ENABLE?=false
+
+NETCOPE_ENV += \
+	DMA_DEBUG_ENABLE=$(DMA_DEBUG_ENABLE)
