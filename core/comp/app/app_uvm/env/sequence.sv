@@ -45,12 +45,21 @@ class sequence_main#(
     rand time time_start;
     logic [128-1:0] conf_ipv6[];
     logic [32-1:0]  conf_ipv4[];
+    int unsigned min_random_count;
+    int unsigned max_random_count;
+    int unsigned pkt_size_min;
+    int unsigned pkt_size_max;
 
 
     function new (string name = "uvm_app_core::sequencer");
         super.new(name);
         tx_status = new();
         rx_status = new();
+        min_random_count = 50;
+        max_random_count = 150;
+        pkt_size_min = 60;
+        pkt_size_max = 1500;
+
     endfunction
 
     virtual task eth_tx_sequence(int unsigned index);
@@ -58,8 +67,8 @@ class sequence_main#(
 
         mfb_seq = uvm_mfb::sequence_lib_tx#(REGIONS, MFB_REG_SIZE, MFB_BLOCK_SIZE, MFB_ITEM_WIDTH, ETH_TX_HDR_WIDTH)::type_id::create("mfb_eth_tx_seq", p_sequencer.m_eth_tx[index]);
         mfb_seq.init_sequence();
-        mfb_seq.min_random_count = 50;
-        mfb_seq.max_random_count = 150;
+        mfb_seq.min_random_count = min_random_count;
+        mfb_seq.max_random_count = max_random_count;
 
         //RUN ETH
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.m_eth_tx[index], "", "state", tx_status);
@@ -75,13 +84,13 @@ class sequence_main#(
         uvm_mvb::sequence_lib_tx#(REGIONS, DMA_TX_MVB_WIDTH)                                mvb_seq;
 
         mvb_seq = uvm_mvb::sequence_lib_tx#(REGIONS, DMA_TX_MVB_WIDTH)::type_id::create("mvb_dma_tx_seq", p_sequencer.m_dma_mvb_tx[index]);
-        mvb_seq.min_random_count = 50;
-        mvb_seq.max_random_count = 150;
+        mvb_seq.min_random_count = min_random_count;
+        mvb_seq.max_random_count = max_random_count;
         mvb_seq.init_sequence();
 
         mfb_seq = uvm_mfb::sequence_lib_tx#(REGIONS, MFB_REG_SIZE, MFB_BLOCK_SIZE, MFB_ITEM_WIDTH, 0)::type_id::create("mfb_dma_tx_seq", p_sequencer.m_dma_mfb_tx[index]);
-        mfb_seq.min_random_count = 50;
-        mfb_seq.max_random_count = 150;
+        mfb_seq.min_random_count = min_random_count;
+        mfb_seq.max_random_count = max_random_count;
         mfb_seq.init_sequence();
 
 
@@ -113,6 +122,7 @@ class sequence_main#(
         seq_cfg.time_start = time_start;
         seq_cfg.ipv4_addresses = conf_ipv4;
         seq_cfg.ipv6_addresses = conf_ipv6;
+        seq_cfg.array_size_set(pkt_size_min, pkt_size_max);
         packet_seq = uvm_app_core::sequence_library_eth#(2**8, 16, MFB_ITEM_WIDTH)::type_id::create("mfb_rx_seq", p_sequencer.m_eth_rx[index]);
         packet_seq.init_sequence(seq_cfg);
 
