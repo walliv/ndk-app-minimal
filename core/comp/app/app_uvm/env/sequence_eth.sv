@@ -52,7 +52,7 @@ class sequence_eth#(
             //generat new packet
             start_item(req);
             assert (req.randomize() with {
-                req.data.size() inside {[60:1500]};
+                req.data.size() inside {[cfg.array_size_min:cfg.array_size_max]};
                 req.timestamp_vld dist { 1'b1 :/ 80, 1'b0 :/20};
                 req.timestamp_vld -> req.timestamp == {time_act_sec, time_act_nano_sec};
             }) else begin
@@ -405,6 +405,13 @@ class sequence_flowtest_eth #(
                 `uvm_fatal(m_sequencer.get_full_name(), "\n\tCannot randomize uvm_app_core_top_agent::sequence_eth_item");
             end
 
+            if (data.size() < cfg.array_size_min) begin
+                data = new[cfg.array_size_min](data);
+            end
+            if (cfg.array_size_max > 0 && data.size() > cfg.array_size_max) begin
+                data = new[cfg.array_size_max](data);
+            end
+
             req.data = { >>{ data } };
             finish_item(req);
         end
@@ -422,8 +429,6 @@ class sequence_search_eth  #(
 ) extends uvm_common::sequence_base #(config_sequence_eth, uvm_app_core_top_agent::sequence_eth_item#(CHANNELS, LENGTH_WIDTH, ITEM_WIDTH));
     `uvm_object_param_utils(uvm_app_core::sequence_search_eth#(CHANNELS, LENGTH_WIDTH, ITEM_WIDTH))
 
-    int unsigned pkt_size_min = 60;
-    int unsigned pkt_size_max = 0;
     string config_json = "./filter.json";
     rand int unsigned transaction_count;
     rand int unsigned pkt_gen_seed;
@@ -652,11 +657,11 @@ class sequence_search_eth  #(
                 `uvm_fatal(m_sequencer.get_full_name(), "\n\tCannot randomize uvm_app_core_top_agent::sequence_eth_item");
             end
 
-            if (data.size() < pkt_size_min) begin
-                data = new[pkt_size_min](data);
+            if (data.size() < cfg.array_size_min) begin
+                data = new[cfg.array_size_min](data);
             end
-            if (pkt_size_max > 0 && data.size() > pkt_size_max) begin
-                data = new[pkt_size_max](data);
+            if (cfg.array_size_max > 0 && data.size() > cfg.array_size_max) begin
+                data = new[cfg.array_size_max](data);
             end
             req.data = {>>{data}};
             finish_item(req);
