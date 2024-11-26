@@ -5,6 +5,8 @@
 from mem_tester import MemTester
 from mem_logger.mem_logger import MemLogger
 
+import nfb
+
 # python3 -m pytest -xs --tb=short test_mem_tester.py
 # -s ... to show measured data
 # -x ... end after first failure
@@ -14,7 +16,7 @@ from mem_logger.mem_logger import MemLogger
 # TESTS #
 #########
 
-device = '/dev/nfb0'
+device = nfb.default_dev_path
 logger_offset = 0
 allow_more_loggers = False
 

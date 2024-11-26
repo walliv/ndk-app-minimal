@@ -28,7 +28,7 @@ def find_etherlink_info():
 
 
 # identification strings
-default_dev_path        = "/dev/nfb0"
+default_dev_path        = nfb.default_dev_path
 default_etherlink_path  = "/usr/local/bin/etherlink"
 default_jtagconfig_path = "/opt/intelFPGA_pro/21.4/qprogrammer/quartus/bin/jtagconfig"
 jtag_op_ctrl_compatible = "cesnet,ofm,intel_jtag_op_ctrl"

@@ -8,7 +8,7 @@ import ofm.comp.mfb_tools.logic.speed_meter as speedmeter
 
 
 parser = ap.ArgumentParser()
-parser.add_argument("-d", "--device", help="Set the path to the NFB device", default="/dev/nfb0")
+parser.add_argument("-d", "--device", help="Set the path to the NFB device", default=nfb.default_dev_path)
 parser.add_argument("-t", "--type", help="Type of output speed, Gbps ('b') or pps ('p')", choices=["b", "p"], default="b")
 parser.add_argument("-c", "--clear", help="Clear speed meters", action="store_true")
 parser.add_argument("-s", "--app_string", help="Name of the FW application", choices=["minimal", "nic", "replicator"], default="minimal")
