@@ -15,8 +15,8 @@ set IP [get_ips $IP_COMP_NAME]
 # general settings for each card
 # ==============================================================================
 
-set VENDOR_ID {1c2c}
-set PF0_DEVICE_ID {00d2}
+set VENDOR_ID {18ec}
+set PF0_DEVICE_ID {c000}
 
 # specialties for the selected card
 
