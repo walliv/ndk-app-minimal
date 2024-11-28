@@ -325,6 +325,11 @@ architecture FULL of RX_DMA_CALYPTE_HDR_MANAGER is
     signal data_addr_next_reg    : std_logic;
     signal dma_hdr_addr_next_reg : std_logic;
 
+    signal dbg_data_addr_next_reg    : std_logic;
+    signal dbg_dma_hdr_addr_next_reg : std_logic;
+    signal dbg_data_pcie_addr_vld    : std_logic;
+    signal dbg_dma_hdr_pcie_addr_vld : std_logic;
+
     -- =============================================================================================
     -- Debug signals and probes (either for verification or ILA/SignalTap)
     -- =============================================================================================
@@ -742,6 +747,8 @@ begin
             BLOCK_SIZE    => DATA_SEGMENT_SIZE,
             ADDR_WIDTH    => ADDR_WIDTH,
             POINTER_WIDTH => POINTER_WIDTH,
+            PTR_OUT_REG   => True,
+            --RSP_OUT_REG   => True,
             DEVICE        => DEVICE)
         port map (
             CLK   => CLK,
@@ -788,6 +795,8 @@ begin
             BLOCK_SIZE    => 8,
             ADDR_WIDTH    => ADDR_WIDTH,
             POINTER_WIDTH => POINTER_WIDTH,
+            PTR_OUT_REG   => True,
+            --RSP_OUT_REG   => True,
             DEVICE        => DEVICE)
         port map (
             CLK   => CLK,
@@ -1051,12 +1060,23 @@ begin
         end if;
     end process;
 
+    -- debug registers for better timing only
+    dbg_regs_p: process (CLK) is
+    begin
+        if (rising_edge(CLK)) then
+            dbg_data_addr_next_reg    <= data_addr_next_reg;
+            dbg_dma_hdr_addr_next_reg <= dma_hdr_addr_next_reg;
+            dbg_data_pcie_addr_vld    <= data_pcie_addr_vld;
+            dbg_dma_hdr_pcie_addr_vld <= dma_hdr_pcie_addr_vld;
+        end if;
+    end process;
+
     -- the response for an address request comes usually one clock period delayed. If that is not a
     -- case, the stalling occurs.
-    DATA_ADDR_STALL_INC    <= data_addr_next_reg    and (not data_pcie_addr_vld);
-    DMA_HDR_ADDR_STALL_INC <= dma_hdr_addr_next_reg and (not dma_hdr_pcie_addr_vld);
+    DATA_ADDR_STALL_INC    <= dbg_data_addr_next_reg    and (not dbg_data_pcie_addr_vld);
+    DMA_HDR_ADDR_STALL_INC <= dbg_dma_hdr_addr_next_reg and (not dbg_dma_hdr_pcie_addr_vld);
 
     -- Counters of requests for PCIe addresses (should be equal to the overall amount of packets)
-    DATA_ADDR_REQ_CNTR_INC    <= data_pcie_addr_vld;
-    DMA_HDR_ADDR_REQ_CNTR_INC <= dma_hdr_pcie_addr_vld;
+    DATA_ADDR_REQ_CNTR_INC    <= dbg_data_pcie_addr_vld;
+    DMA_HDR_ADDR_REQ_CNTR_INC <= dbg_dma_hdr_pcie_addr_vld;
 end architecture;
