@@ -14,7 +14,6 @@ class driver#(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX) extends uvm_component;
 
     mailbox#(uvm_logic_vector_array::sequence_item#(ITEM_WIDTH)) logic_vector_array_export;
     mailbox#(uvm_logic_vector::sequence_item#(MFB_META_WIDTH))   logic_vector_export;
-    local semaphore sem;
 
     // ------------------------------------------------------------------------
     // Constructor
@@ -25,7 +24,6 @@ class driver#(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX) extends uvm_component;
 
         logic_vector_array_export   = new(1);
         logic_vector_export = new(1);
-        sem = new(1);
     endfunction
 
     function int unsigned used();
@@ -72,10 +70,8 @@ class driver#(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX) extends uvm_component;
             `uvm_info(this.get_full_name(), msg, UVM_HIGH);
 
             wait(logic_vector_array_export.num() == 0 || logic_vector_export.num() == 0);
-            sem.get(1);
             logic_vector_array_export.put(logic_vector_array_new);
             logic_vector_export.put(logic_vector_new);
-            sem.put(1);
 
             seq_item_port_logic_vector_array.item_done();
         end
