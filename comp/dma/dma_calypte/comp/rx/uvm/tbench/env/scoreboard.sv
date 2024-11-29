@@ -226,6 +226,13 @@ class scoreboard #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) exten
         end
     endtask
 
+    function void check_phase(uvm_phase phase);
+
+        if (dut_data_output.size() != 0 || dut_meta_output.size() != 0 || model_output.size() != 0 || model_meta_output.size() != 0) begin
+            `uvm_error(this.get_full_name(), $sformatf("\nExpected some data\n\tMODELs data Packets(%0d) meta(%0d)\n\tDUTs data packets(%0d) meta(%0d)", model_output.size(), model_meta_output.size(), dut_data_output.size(), dut_meta_output.size()));
+        end
+    endfunction
+
     function void report_phase(uvm_phase phase);
         real min;
         real max;
