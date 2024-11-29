@@ -4,9 +4,9 @@
 
 //-- SPDX-License-Identifier: BSD-3-Clause
 
-class virt_seq#(PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH, CHANNELS) extends uvm_sequence;
-    `uvm_object_param_utils(test::virt_seq#(PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH, CHANNELS))
-    `uvm_declare_p_sequencer(uvm_dma_ll::sequencer#(PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH, CHANNELS))
+class virt_seq#(USR_ITEM_WIDTH, PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH, CHANNELS) extends uvm_sequence;
+    `uvm_object_param_utils(test::virt_seq#(USR_ITEM_WIDTH, PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH,  CHANNELS))
+    `uvm_declare_p_sequencer(uvm_dma_ll::sequencer#(USR_ITEM_WIDTH, PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH, CHANNELS))
 
     function new (string name = "virt_seq");
         super.new(name);
@@ -14,7 +14,7 @@ class virt_seq#(PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_U
 
     uvm_reset::sequence_start              m_reset;
 
-    uvm_byte_array::sequence_lib m_packet;
+    uvm_logic_vector_array::sequence_lib#(USR_ITEM_WIDTH) m_packet;
 
     uvm_dma_ll::reg_sequence#(CHANNELS)     m_reg;
     uvm_sequence#(uvm_mfb::sequence_item #(PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH)) m_pcie;
@@ -26,7 +26,7 @@ class virt_seq#(PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_U
 
         m_reset = uvm_reset::sequence_start::type_id::create("rst_seq");
 
-        m_packet = uvm_byte_array::sequence_lib::type_id::create("m_packet");
+        m_packet = uvm_logic_vector_array::sequence_lib#(USR_ITEM_WIDTH)::type_id::create("m_packet");
         m_packet.init_sequence();
         m_packet.min_random_count = 80;
         m_packet.max_random_count = 100;

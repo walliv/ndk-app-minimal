@@ -29,7 +29,7 @@ module testbench;
     // -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Interfaces
     reset_if                                                                                                   reset(CLK);
-    mfb_if #(test::USER_REGIONS, USER_REGION_SIZE, USER_BLOCK_SIZE, USER_ITEM_WIDTH, USER_META_WIDTH)          mfb_rx(CLK);
+    mfb_if #(USER_REGIONS, USER_REGION_SIZE, USER_BLOCK_SIZE, USER_ITEM_WIDTH, USER_META_WIDTH)                mfb_rx(CLK);
     mfb_if #(PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH) mfb_tx(CLK);
     mvb_if #(1, 1)                                                                                             mvb_dma(CLK);
     mi_if #(MI_WIDTH, MI_WIDTH) mi_config(CLK);
