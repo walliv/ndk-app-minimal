@@ -512,7 +512,7 @@ begin
         );
 
     else generate
-        ddr_init_calib_complete(0)                  <= '0';
+        ddr_init_calib_complete                     <= (others => '0');
         DDR4A_A                                     <= (others => '0');
         DDR4A_BA                                    <= (others => '0');
         DDR4A_CKE(0 downto 0)                       <= (others => '0');
@@ -662,7 +662,7 @@ begin
         );
 
     else generate
-        ddr_init_calib_complete(0)                  <= '0';
+        ddr_init_calib_complete                     <= (others => '0');
         DDR4B_A                                     <= (others => '0');
         DDR4B_BA                                    <= (others => '0');
         DDR4B_CKE(0 downto 0)                       <= (others => '0');
