@@ -20,7 +20,7 @@ from pdf_gen import PDFGen
 
 
 class ReportGen:
-    def __init__(self, graph_gen, dev="/dev/nfb0", logger_offset=0):
+    def __init__(self, graph_gen, dev=nfb.default_dev_path, logger_offset=0):
         self.graph_gen      = graph_gen
         self.dev            = dev
         self.logger_offset  = logger_offset
@@ -139,7 +139,7 @@ def print_progress(progress, txt='Complete', prefix='Progress', decimals=1, leng
 def parseParams():
     parser = argparse.ArgumentParser(description="""Report generator for mem_tester component""")
     parser.add_argument(
-        '-d', '--device', default=nfb.libnfb.Nfb.default_dev_path,
+        '-d', '--device', default=nfb.default_dev_path,
         metavar='device', help="""device with target FPGA card."""
     )
     parser.add_argument(
