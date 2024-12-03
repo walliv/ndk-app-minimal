@@ -83,8 +83,10 @@ architecture FULL of NETWORK_MOD is
     constant FPC202_INIT_EN : boolean := (BOARD = "DK-DEV-1SDX-P" or BOARD = "DK-DEV-AGI027RES");
     constant RESIZE_BUFFER  : boolean := (ETH_CORE_ARCH = "F_TILE" or (ETH_CORE_ARCH = "E_TILE" and ETH_CHANNELS = 4));
 
+    constant IS_USP_10G4_25G4 : boolean := ETH_CORE_ARCH = "10G4" or ETH_CORE_ARCH = "25G4";
+
     constant TS_TIMEOUT_W : natural := 3; -- last TS is unvalided after 4 cycles
-    constant TS_REPLICAS  : natural := tsel(LL_MODE, ETH_CHANNELS, 1);
+    constant TS_REPLICAS  : natural := tsel(LL_MODE or IS_USP_10G4_25G4, ETH_CHANNELS, 1);
 
     -- =========================================================================
     --                                FUNCTIONS
@@ -371,6 +373,7 @@ begin
             MI_ADDR_WIDTH    => MI_ADDR_WIDTH   ,
             -- Other
             LL_MODE          => LL_MODE         ,
+            USE_FULL_MAC     => IS_USP_10G4_25G4,
             RESET_USER_WIDTH => RESET_WIDTH     ,
             RESET_CORE_WIDTH => logic_rst_arr(p)'length,
             RESIZE_BUFFER    => RESIZE_BUFFER   ,
@@ -534,7 +537,7 @@ begin
         -- =====================================================================
         -- MFB clocking based on LL mode generic
         -- =====================================================================
-        mfb_clk_g: if LL_MODE generate
+        mfb_clk_g: if LL_MODE or IS_USP_10G4_25G4 generate
             logic_tx_clk(p) <= tx_mfb_clk(p);
             logic_rx_clk(p) <= rx_mfb_clk(p);
         else generate
