@@ -22,8 +22,8 @@ class driver#(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX) extends uvm_component;
 
         seq_item_port_logic_vector_array = new("seq_item_port_logic_vector_array", this);
 
-        logic_vector_array_export   = new(1);
-        logic_vector_export = new(1);
+        logic_vector_array_export = new(1);
+        logic_vector_export       = new(1);
     endfunction
 
     function int unsigned used();
