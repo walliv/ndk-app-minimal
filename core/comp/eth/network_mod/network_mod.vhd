@@ -170,6 +170,11 @@ architecture FULL of NETWORK_MOD is
     signal sig_rx_link_up  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
     signal sig_tx_link_up  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
 
+    signal sig_activity_rx_sync : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal sig_activity_tx_sync : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal sig_rx_link_up_sync  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal sig_tx_link_up_sync  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+
     -- MI for MAC lites
     signal mi_split_dwr  : slv_array_t     (MI_ADDR_BASES-1 downto 0)(MI_DATA_WIDTH-1 downto 0);
     signal mi_split_addr : slv_array_t     (MI_ADDR_BASES-1 downto 0)(MI_ADDR_WIDTH-1 downto 0);
@@ -630,10 +635,71 @@ begin
         end generate;
     end generate;
 
-    ACTIVITY_RX <= slv_array_ser(sig_activity_rx);
-    ACTIVITY_TX <= slv_array_ser(sig_activity_tx);
-    RX_LINK_UP  <= slv_array_ser(sig_rx_link_up);
-    TX_LINK_UP  <= slv_array_ser(sig_tx_link_up);
+    -- =====================================================================
+    -- Synchronize activity and link up signals
+    -- =====================================================================
+    sync_act_link_p_g_en: if LL_MODE or IS_USP_10G4_25G4 generate
+        sync_act_link_p_g : for p in 0 to ETH_PORTS-1 generate
+            sync_act_link_g : for ch in 0 to ETH_CHANNELS-1 generate
+                act_rx_sync_i : entity work.ASYNC_OPEN_LOOP
+                generic map(
+                    IN_REG  => false,
+                    TWO_REG => true
+                )
+                port map(
+                    ADATAIN  => sig_activity_rx(p)(ch),
+                    BCLK => CLK_ETH(p),
+                    BRST => '0',
+                    BDATAOUT => sig_activity_rx_sync(p)(ch)
+                );
+
+                act_tx_sync_i : entity work.ASYNC_OPEN_LOOP
+                generic map(
+                    IN_REG  => false,
+                    TWO_REG => true
+                )
+                port map(
+                    ADATAIN  => sig_activity_tx(p)(ch),
+                    BCLK => CLK_ETH(p),
+                    BRST => '0',
+                    BDATAOUT => sig_activity_tx_sync(p)(ch)
+                );
+
+                rx_link_up_sync_i : entity work.ASYNC_OPEN_LOOP
+                generic map(
+                    IN_REG  => false,
+                    TWO_REG => true
+                )
+                port map(
+                    ADATAIN  => sig_rx_link_up(p)(ch),
+                    BCLK => CLK_ETH(p),
+                    BRST => '0',
+                    BDATAOUT => sig_rx_link_up_sync(p)(ch)
+                );
+                tx_link_up_sync_i : entity work.ASYNC_OPEN_LOOP
+                generic map(
+                    IN_REG  => false,
+                    TWO_REG => true
+                )
+                port map(
+                    ADATAIN  => sig_tx_link_up(p)(ch),
+                    BCLK => CLK_ETH(p),
+                    BRST => '0',
+                    BDATAOUT => sig_tx_link_up_sync(p)(ch)
+                );
+            end generate;
+        end generate;
+    else generate
+        sig_activity_rx_sync <= sig_activity_rx;
+        sig_activity_tx_sync <= sig_activity_tx;
+        sig_rx_link_up_sync  <= sig_rx_link_up;
+        sig_tx_link_up_sync  <= sig_tx_link_up;
+    end generate;
+
+    ACTIVITY_RX <= slv_array_ser(sig_activity_rx_sync);
+    ACTIVITY_TX <= slv_array_ser(sig_activity_tx_sync);
+    RX_LINK_UP  <= slv_array_ser(sig_rx_link_up_sync);
+    TX_LINK_UP  <= slv_array_ser(sig_tx_link_up_sync);
 
     -- =====================================================================
     -- QSFP control
