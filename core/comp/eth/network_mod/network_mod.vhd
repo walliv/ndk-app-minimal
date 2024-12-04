@@ -152,8 +152,8 @@ architecture FULL of NETWORK_MOD is
     signal rx_usr_mfb_dst_rdy_arr : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_PORT_STREAMS-1 downto 0);
 
     -- Interior signals, Network Module Logic -> Network Module Core
-    signal logic_tx_clk     : std_logic_vector(ETH_PORTS-1 downto 0);
-    signal tx_mfb_clk       : std_logic_vector(ETH_PORTS-1 downto 0);
+    signal logic_tx_clk     : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal tx_mfb_clk       : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
     signal tx_mfb_data_i    : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_WIDTH_CORE-1 downto 0);
     signal tx_mfb_sof_i     : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(REGIONS_CORE-1 downto 0);
     signal tx_mfb_eof_i     : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(REGIONS_CORE-1 downto 0);
@@ -538,7 +538,7 @@ begin
             logic_tx_clk(p) <= tx_mfb_clk(p);
             logic_rx_clk(p) <= rx_mfb_clk(p);
         else generate
-            logic_tx_clk(p) <= CLK_ETH(p);
+            logic_tx_clk(p) <= (others => CLK_ETH(p));
             logic_rx_clk(p) <= (others => CLK_ETH(p));
         end generate;
 

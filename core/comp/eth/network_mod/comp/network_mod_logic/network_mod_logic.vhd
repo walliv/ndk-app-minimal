@@ -74,7 +74,7 @@ port(
     -- CLOCK AND RESET
     -- =====================================================================
     CLK_USER        : in std_logic;
-    TX_CLK_CORE     : in std_logic;
+    TX_CLK_CORE     : in std_logic_vector(ETH_PORT_CHAN-1 downto 0);
     RX_CLK_CORE     : in std_logic_vector(ETH_PORT_CHAN-1 downto 0);
 
     RESET_USER      : in std_logic_vector(RESET_USER_WIDTH-1 downto 0);
@@ -392,7 +392,7 @@ begin
                 RX_MFB_SRC_RDY => split_mfb_src_rdy(ch),
                 RX_MFB_DST_RDY => split_mfb_dst_rdy(ch),
 
-                TX_CLK         => TX_CLK_CORE            ,
+                TX_CLK         => TX_CLK_CORE(ch)        ,
                 TX_RESET       => RESET_CORE(ch*2)       ,
                 TX_MFB_DATA    => TX_CORE_MFB_DATA   (ch),
                 TX_MFB_SOF     => TX_CORE_MFB_SOF    (ch),
