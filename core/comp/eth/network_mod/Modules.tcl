@@ -13,6 +13,7 @@ set NETWORK_MOD_CORE_BASE     "$NETWORK_MOD_COMP_BASE/network_mod_core"
 set NETWORK_MOD_LOG_BASE      "$NETWORK_MOD_COMP_BASE/network_mod_logic"
 set I2C_BASE                  "$OFM_PATH/comp/ctrls/i2c_hw"
 set ASFIFOX_BASE              "$OFM_PATH/comp/base/fifo/asfifox"
+set NM_LOGIC_ARCHGRP          "NO_CRC"
 
 # uncomment only for local synthesis
 # options: F_TILE, E_TILE, CMAC
@@ -28,13 +29,16 @@ lappend MOD "$ENTITY_BASE/network_mod_ent.vhd"
 if {$ARCHGRP == "EMPTY"} {
     lappend MOD "$ENTITY_BASE/network_mod_empty.vhd"
 } else {
-    lappend COMPONENTS [list "ASYNC_OPENLOOP"       $ASYNC_OPENLOOP_BASE   "FULL"  ]
-    lappend COMPONENTS [list "ASYNC_RESET"          $ASYNC_RESET_BASE      "FULL"  ]
-    lappend COMPONENTS [list "MI_SPLITTER_PLUS_GEN" $MI_SPLITTER_BASE      "FULL"  ]
-    lappend COMPONENTS [list "NETWORK_MOD_CORE"     $NETWORK_MOD_CORE_BASE $ARCHGRP]
-    lappend COMPONENTS [list "NETWORK_MOD_LOGIC"    $NETWORK_MOD_LOG_BASE  "FULL"  ]
-    lappend COMPONENTS [list "I2C_CTRL"             $I2C_BASE              "FULL"  ]
-    lappend COMPONENTS [list "ASFIFOX"              $ASFIFOX_BASE          "FULL"  ]
+    if { $ARCHGRP == "10G4" || $ARCHGRP == "25G4" } {
+        set NM_LOGIC_ARCHGRP "FULL"
+    }
+    lappend COMPONENTS [list "ASYNC_OPENLOOP"       $ASYNC_OPENLOOP_BASE   "FULL"           ]
+    lappend COMPONENTS [list "ASYNC_RESET"          $ASYNC_RESET_BASE      "FULL"           ]
+    lappend COMPONENTS [list "MI_SPLITTER_PLUS_GEN" $MI_SPLITTER_BASE      "FULL"           ]
+    lappend COMPONENTS [list "NETWORK_MOD_CORE"     $NETWORK_MOD_CORE_BASE $ARCHGRP         ]
+    lappend COMPONENTS [list "NETWORK_MOD_LOGIC"    $NETWORK_MOD_LOG_BASE  $NM_LOGIC_ARCHGRP]
+    lappend COMPONENTS [list "I2C_CTRL"             $I2C_BASE              "FULL"           ]
+    lappend COMPONENTS [list "ASFIFOX"              $ASFIFOX_BASE          "FULL"           ]
 
     # Source files for implemented component
     lappend MOD "$ENTITY_BASE/qsfp_ctrl.vhd"

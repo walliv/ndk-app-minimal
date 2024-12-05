@@ -20,8 +20,8 @@ set PACKAGES "$PACKAGES $OFM_PATH/comp/base/pkg/eth_hdr_pack.vhd"
 
 set COMPONENTS [concat $COMPONENTS [list \
     [ list "MI_SPLITTER_PLUS_GEN" $MI_SPLITTER_BASE          "FULL"   ] \
-    [ list "TX_MAC_LITE"          $TX_MAC_LITE_BASE          "NO_CRC" ] \
-    [ list "RX_MAC_LITE"          $RX_MAC_LITE_BASE          "NO_CRC" ] \
+    [ list "TX_MAC_LITE"          $TX_MAC_LITE_BASE          $ARCHGRP ] \
+    [ list "RX_MAC_LITE"          $RX_MAC_LITE_BASE          $ARCHGRP ] \
     [ list "MFB_MERGER_GEN"       $MFB_MERGER_BASE           "FULL"   ] \
     [ list "MFB_SPLIT_SIMPLE_GEN" $MFB_SPLITTER_BASE         "FULL"   ] \
 ]]
