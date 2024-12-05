@@ -11,7 +11,6 @@ set SV_MVB_PIPE_UVM_BASE      "$OFM_PATH/comp/mvb_tools/flow/pipe/uvm"
 
 lappend COMPONENTS [ list "SV_COMMON"                 "$UVM_PATH/common"                   "FULL"]
 lappend COMPONENTS [ list "SV_RESET"                  "$UVM_PATH/reset"                    "FULL"]
-lappend COMPONENTS [ list "SV_BYTE_ARRAY_MFB"         "$UVM_PATH/byte_array_mfb"           "FULL"]
 lappend COMPONENTS [ list "SV_LOGIC_VECTOR_ARRAY_MFB" "$UVM_PATH/logic_vector_array_mfb"   "FULL"]
 lappend COMPONENTS [ list "SV_MVB"                    "$UVM_PATH/mvb"                      "FULL"]
 lappend COMPONENTS [ list "SV_MI"                     "$UVM_PATH/mi"                       "FULL"]

@@ -4,10 +4,10 @@
 
 //-- SPDX-License-Identifier: BSD-3-Clause
 
-class sequencer extends uvm_sequencer;
-    `uvm_component_utils(uvm_dma_ll_rx::sequencer);
+class sequencer#(ITEM_WIDTH) extends uvm_sequencer;
+    `uvm_component_param_utils(uvm_dma_ll_rx::sequencer#(ITEM_WIDTH));
 
-    uvm_byte_array::sequencer  m_data;
+    uvm_logic_vector_array::sequencer#(ITEM_WIDTH)  m_data;
 
     function new(string name, uvm_component parent = null);
         super.new(name, parent);

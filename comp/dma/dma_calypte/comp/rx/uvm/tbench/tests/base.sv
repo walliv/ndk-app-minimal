@@ -34,7 +34,7 @@ class base#(USER_REGIONS, USER_REGION_SIZE, USER_BLOCK_SIZE, USER_ITEM_WIDTH, PC
     // Create environment and Run sequences o their sequencers
     virtual task run_phase(uvm_phase phase);
         time end_time;
-        virt_seq #(PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH, CHANNELS) m_vseq;
+        virt_seq #(USER_ITEM_WIDTH, PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH, CHANNELS) m_vseq;
         uvm_reg_data_t pkt_cnt          [CHANNELS];
         uvm_reg_data_t byte_cnt         [CHANNELS];
         uvm_reg_data_t discard_pkt_cnt  [CHANNELS];
@@ -42,7 +42,7 @@ class base#(USER_REGIONS, USER_REGION_SIZE, USER_BLOCK_SIZE, USER_ITEM_WIDTH, PC
         uvm_status_e   status_r;
 
         //CREATE SEQUENCES
-        m_vseq = virt_seq #(PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH, CHANNELS)::type_id::create("m_vseq");
+        m_vseq = virt_seq #(USER_ITEM_WIDTH, PCIE_UP_REGIONS, PCIE_UP_REGION_SIZE, PCIE_UP_BLOCK_SIZE, PCIE_UP_ITEM_WIDTH, PCIE_UP_META_WIDTH, CHANNELS)::type_id::create("m_vseq");
 
         //RISE OBJECTION
         phase.raise_objection(this);
@@ -54,12 +54,13 @@ class base#(USER_REGIONS, USER_REGION_SIZE, USER_BLOCK_SIZE, USER_ITEM_WIDTH, PC
         end_time = $time();
         `uvm_info(this.get_full_name(), $sformatf("\n\tVirtual sequence finished (%0d ns). Environment used: %0d", end_time/1ns, m_env.used()), UVM_LOW);
 
-        while((end_time + 200us) > $time() && (m_env.used() != 0)) begin
+        #(2us); //wait to send last packet to DUT. This prevent when last packet is not DUT yet and m_env.used() is called.
+        // The last packet can be stored in MFB sequence and environment doesnt have to see it.
+        // this means that m_env.used() can return 0 and last packet can be send to DUT.
+        while((end_time + 200us) > $time() && m_env.used() != 0) begin
             #(600ns);
             `uvm_info(this.get_full_name(), "\n\tWaiting after virtual sequence finished.", UVM_MEDIUM);
         end
-
-        #(1us)
 
         for (int unsigned chan = 0; chan < CHANNELS; chan++) begin
             m_env.m_regmodel.m_regmodel.channel[chan].sent_packets_cnt.write(status_r, {32'h1, 32'h1});

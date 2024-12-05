@@ -78,8 +78,8 @@ class disc_probe_cbs extends uvm_probe::cbs_simple #(1);
     endfunction
 endclass
 
-class model #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_component;
-    `uvm_component_param_utils(uvm_dma_ll::model #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE))
+class model #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_component;
+    `uvm_component_param_utils(uvm_dma_ll::model #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE))
 
     localparam USER_META_WIDTH = 24 + $clog2(PKT_SIZE_MAX+1) + $clog2(CHANNELS);
     localparam IS_INTEL_DEV    = (DEVICE == "STRATIX10" || DEVICE == "AGILEX");
@@ -87,11 +87,11 @@ class model #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_component;
     //UVM PROBE - model input
     disc_probe_cbs uvm_probe_discard;
 
-    uvm_tlm_analysis_fifo #(uvm_byte_array::sequence_item)                     analysis_imp_rx;
-    uvm_tlm_analysis_fifo #(uvm_logic_vector::sequence_item#(USER_META_WIDTH)) analysis_imp_rx_meta;
-    model_accept#(CHANNELS)                                                    analysis_dma;
-    uvm_analysis_port     #(uvm_logic_vector_array::sequence_item#(32))        analysis_port_tx;
-    uvm_analysis_port     #(uvm_logic_vector::sequence_item#(META_WIDTH))      analysis_port_tx_meta;
+    uvm_tlm_analysis_fifo #(uvm_logic_vector_array::sequence_item#(ITEM_WIDTH)) analysis_imp_rx;
+    uvm_tlm_analysis_fifo #(uvm_logic_vector::sequence_item#(USER_META_WIDTH))  analysis_imp_rx_meta;
+    model_accept#(CHANNELS)                                                     analysis_dma;
+    uvm_analysis_port     #(uvm_logic_vector_array::sequence_item#(32))         analysis_port_tx;
+    uvm_analysis_port     #(uvm_logic_vector::sequence_item#(META_WIDTH))       analysis_port_tx_meta;
 
     typedef struct{
         logic [$clog2(PKT_SIZE_MAX+1)-1:0] packet_size;
@@ -228,7 +228,7 @@ class model #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_component;
         end
     endfunction
 
-    task packet_send(byte unsigned packet[], time start_time, int unsigned channel, logic [24-1:0] meta);
+    task packet_send(logic [ITEM_WIDTH-1:0] packet[], time start_time, int unsigned channel, logic [24-1:0] meta);
         uvm_logic_vector::sequence_item#(META_WIDTH) packet_meta;
 
         model_packet               packet_output;
@@ -347,7 +347,7 @@ class model #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_component;
     endfunction
 
     task run_phase(uvm_phase phase);
-        uvm_byte_array::sequence_item tr;
+        uvm_logic_vector_array::sequence_item#(ITEM_WIDTH) tr;
         string                        msg;
         int unsigned                  compare;
         int unsigned                  soft_compare;

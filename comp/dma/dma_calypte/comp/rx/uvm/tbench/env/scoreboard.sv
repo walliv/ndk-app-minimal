@@ -4,63 +4,14 @@
 
 //-- SPDX-License-Identifier: BSD-3-Clause
 
-class stats;
-
-    local real min;
-    local real max;
-    local real sum;
-    local real sum2;
-
-    int unsigned values;
-
-    function new();
-        values = 0;
-        sum  = 0;
-        sum2 = 0;
-    endfunction
-
-
-    function void count(output real min, real max, real avg, real std_dev);
-        real avg_local;
-
-        min = this.min;
-        max = this.max;
-
-        avg_local = sum/values;
-        avg = avg_local;
-
-        std_dev = (1.0/(values-1)*(sum2 - values*(avg_local**2)))**0.5;
-    endfunction
-
-    function void next_val(real val);
-        if (values == 0) begin
-            min = val;
-            max = val;
-        end else begin
-            if (min > val) begin
-                min = val;
-            end
-
-            if (max < val) begin
-               max = val;
-            end
-        end
-
-        sum   += val;
-        sum2  += val**2;
-
-        values++;
-    endfunction
-endclass
-
-class scoreboard #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_scoreboard;
-    `uvm_component_param_utils(uvm_dma_ll::scoreboard #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE))
+class scoreboard #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_scoreboard;
+    `uvm_component_param_utils(uvm_dma_ll::scoreboard #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE))
 
     localparam LOGIC_WIDTH  = 24 + $clog2(PKT_SIZE_MAX+1) + $clog2(CHANNELS);
 
     //INPUT TO DUT
-    uvm_analysis_export #(uvm_byte_array::sequence_item)                  analysis_export_rx_packet;
-    uvm_analysis_export #(uvm_logic_vector::sequence_item#(LOGIC_WIDTH))  analysis_export_rx_meta;
+    uvm_analysis_export #(uvm_logic_vector_array::sequence_item#(ITEM_WIDTH)) analysis_export_rx_packet;
+    uvm_analysis_export #(uvm_logic_vector::sequence_item#(LOGIC_WIDTH))      analysis_export_rx_meta;
 
     //DUT WATCH INTERFACE
     uvm_analysis_export #(uvm_mvb::sequence_item#(1, 1)) analysis_export_dma;
@@ -74,13 +25,13 @@ class scoreboard #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_score
     local uvm_tlm_analysis_fifo #(uvm_logic_vector_array::sequence_item#(32))   model_output;
     local uvm_tlm_analysis_fifo #(uvm_logic_vector::sequence_item#(META_WIDTH)) model_meta_output;
 
-    local model #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) m_model;
+    local model #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) m_model;
     local regmodel#(CHANNELS) m_regmodel;
 
-    local stats        m_input_speed;
-    local uvm_tlm_analysis_fifo #(uvm_byte_array::sequence_item) rx_speed_meter;
-    local stats        m_delay;
-    local stats        m_output_speed;
+    local uvm_common::stats        m_input_speed;
+    local uvm_tlm_analysis_fifo #(uvm_logic_vector_array::sequence_item#(ITEM_WIDTH)) rx_speed_meter;
+    local uvm_common::stats        m_delay;
+    local uvm_common::stats        m_output_speed;
     local int unsigned compared = 0;
     local int unsigned errors   = 0;
     typedef struct{
@@ -123,7 +74,7 @@ class scoreboard #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_score
 
     //build phase
     function void build_phase(uvm_phase phase);
-        m_model = model #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE)::type_id::create("m_model", this);
+        m_model = model #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE)::type_id::create("m_model", this);
     endfunction
 
     function void connect_phase(uvm_phase phase);
@@ -179,7 +130,7 @@ class scoreboard #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_score
         time         speed_start_time  = 0ns;
 
         forever begin
-            uvm_byte_array::sequence_item tr;
+            uvm_logic_vector_array::sequence_item#(ITEM_WIDTH) tr;
             time time_act;
             time speed_metet_duration;
             rx_speed_meter.get(tr);
@@ -274,6 +225,13 @@ class scoreboard #(CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uvm_score
             end
         end
     endtask
+
+    function void check_phase(uvm_phase phase);
+
+        if (dut_data_output.size() != 0 || dut_meta_output.size() != 0 || model_output.size() != 0 || model_meta_output.size() != 0) begin
+            `uvm_error(this.get_full_name(), $sformatf("\nExpected some data\n\tMODELs data Packets(%0d) meta(%0d)\n\tDUTs data packets(%0d) meta(%0d)", model_output.size(), model_meta_output.size(), dut_data_output.size(), dut_meta_output.size()));
+        end
+    endfunction
 
     function void report_phase(uvm_phase phase);
         real min;
