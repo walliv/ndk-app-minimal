@@ -77,7 +77,6 @@ architecture FULL of FPGA is
     constant MISC_IN_WIDTH       : integer := 4;
     constant MISC_OUT_WIDTH      : integer := 4;
     constant ETH_LANES           : integer := 4;
-    constant DMA_MODULES         : integer := PCIE_ENDPOINTS;
     constant DMA_ENDPOINTS       : integer := PCIE_ENDPOINTS;
     constant ETH_LANE_MAP        : integer_vector(2*ETH_LANES-1 downto 0) := (3, 2, 1, 0, 3, 2, 1, 0);
     constant ETH_LANE_RXPOLARITY : std_logic_vector(2*ETH_LANES-1 downto 0) := "00000000";

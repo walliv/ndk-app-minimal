@@ -184,7 +184,6 @@ architecture FULL of FPGA is
     constant MISC_IN_WIDTH  : integer := 8;
     constant MISC_OUT_WIDTH : integer := 8;
     constant ETH_LANES      : integer := 4;
-    constant DMA_MODULES    : integer := tsel(DMA_400G_DEMO or DMA_TYPE = 4, 1, ETH_PORTS);
     constant DMA_ENDPOINTS  : integer := tsel(PCIE_ENDPOINT_MODE=1 or DMA_TYPE = 4, PCIE_ENDPOINTS, 2*PCIE_ENDPOINTS);
 
     -- External memory interfaces (clocked at MEM_CLK)

@@ -405,9 +405,9 @@ begin
         PCIE_ENDPOINT_MODE      => PCIE_ENDPOINT_MODE,
 
         DMA_ENDPOINTS           => DMA_ENDPOINTS,
-        DMA_MODULES             => 1,
-        DMA_RX_CHANNELS         => DMA_RX_CHANNELS,
-        DMA_TX_CHANNELS         => DMA_TX_CHANNELS
+        DMA_MODULES             => DMA_MODULES,
+        DMA_RX_CHANNELS         => DMA_RX_CHANNELS/DMA_MODULES,
+        DMA_TX_CHANNELS         => DMA_TX_CHANNELS/DMA_MODULES
     )
     port map(
         SYSCLK                  => AG_SYSCLK1_P,

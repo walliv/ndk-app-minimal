@@ -21,7 +21,7 @@ set SDM_SYSMON_ARCH "S10_ADC"
 # Boot controller type
 set BOOT_TYPE 0
 # Total number of DMA modules/streams in FW
-set DMA_MODULES 2
+set DMA_MODULES [if {$DMA_TYPE == 4} {list 1} {list 2}]
 
 # Total number of QSFP cages
 set QSFP_CAGES       2
