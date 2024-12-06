@@ -508,11 +508,6 @@ begin
         PCIE_LANES              => PCIE_LANES,
         PCIE_CLKS               => PCIE_CLKS,
 
-        PCI_VENDOR_ID           => X"18EC",
-        PCI_DEVICE_ID           => X"C400",
-        PCI_SUBVENDOR_ID        => X"0000",
-        PCI_SUBDEVICE_ID        => X"0000",
-
         ETH_CORE_ARCH           => NET_MOD_ARCH,
         ETH_PORTS               => ETH_PORTS,
         ETH_PORT_SPEED          => ETH_PORT_SPEED,
