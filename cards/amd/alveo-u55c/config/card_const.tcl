@@ -23,6 +23,8 @@ if { $ETH_PORT_SPEED(0) == 100 } {
 } else {
     error "Unsupported Ethernet port speed $ETH_PORT_SPEED(0) !"
 }
+# Total number of DMA modules/streams in FW
+set DMA_MODULES $PCIE_ENDPOINTS
 
 # Total number of QSFP cages
 set QSFP_CAGES       2

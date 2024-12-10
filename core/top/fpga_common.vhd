@@ -46,11 +46,6 @@ generic (
     PCIE_LANES              : natural := 16;
     -- Number of PCIe clocks per connector (useful for bifurcation)
     PCIE_CLKS               : natural := 1;
-    -- PCI device identification (not applicable when using XCI PCIe cores)
-    PCI_VENDOR_ID           : std_logic_vector(15 downto 0) := X"18EC";
-    PCI_DEVICE_ID           : std_logic_vector(15 downto 0) := X"C400";
-    PCI_SUBVENDOR_ID        : std_logic_vector(15 downto 0) := X"0000";
-    PCI_SUBDEVICE_ID        : std_logic_vector(15 downto 0) := X"0000";
     -- Number of instantiated PCIe endpoints
     PCIE_ENDPOINTS          : natural := 1;
     -- Connected PCIe endpoint type: P_TILE, R_TILE, USP

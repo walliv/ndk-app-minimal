@@ -180,12 +180,11 @@ architecture FULL of FPGA is
 
     constant PCIE_LANES     : integer := 16;
     constant PCIE_CLKS      : integer := 2;
-    constant PCIE_CONS      : integer := 2;
+    constant PCIE_CONS      : integer := tsel(DMA_TYPE = 4, 1, 2);
     constant MISC_IN_WIDTH  : integer := 8;
     constant MISC_OUT_WIDTH : integer := 8;
     constant ETH_LANES      : integer := 4;
-    constant DMA_MODULES    : integer := tsel(DMA_400G_DEMO,1,ETH_PORTS);
-    constant DMA_ENDPOINTS  : integer := tsel(PCIE_ENDPOINT_MODE=1,PCIE_ENDPOINTS,2*PCIE_ENDPOINTS);
+    constant DMA_ENDPOINTS  : integer := tsel(PCIE_ENDPOINT_MODE=1 or DMA_TYPE = 4, PCIE_ENDPOINTS, 2*PCIE_ENDPOINTS);
 
     -- External memory interfaces (clocked at MEM_CLK)
     --constant DDR_PORTS          : integer := 2;
@@ -205,6 +204,13 @@ architecture FULL of FPGA is
     constant MEM_ADDR_WIDTH     : integer := 27;
     constant MEM_DATA_WIDTH     : integer := 512;
     constant MEM_BURST_WIDTH    : integer := 7;
+
+    signal pcie_sysclk_p_int : std_logic_vector(PCIE_CONS*PCIE_CLKS -1 downto 0);
+    signal pcie_rx_p_int     : std_logic_vector(PCIE_CONS*PCIE_LANES -1 downto 0);
+    signal pcie_rx_n_int     : std_logic_vector(PCIE_CONS*PCIE_LANES -1 downto 0);
+    signal pcie_tx_p_int     : std_logic_vector(PCIE_CONS*PCIE_LANES -1 downto 0);
+    signal pcie_tx_n_int     : std_logic_vector(PCIE_CONS*PCIE_LANES -1 downto 0);
+    signal pcie_sysrst_n_int : std_logic_vector(PCIE_CONS -1 downto 0);
 
     signal ddr4_reset_n         : std_logic_vector(1 downto 0);
     signal ddr4_act_n           : std_logic_vector(1 downto 0);
@@ -254,6 +260,22 @@ begin
     DDR4_DIMM_CH1_ACT_N  (0) <= ddr4_act_n   (1);
     DDR4_DIMM_CH1_PAR    (0) <= ddr4_par     (1);
     ddr4_alert_n         (1) <= DDR4_DIMM_CH1_ALERT_N(0);
+
+    pcie_conf_reduced_g : if (DMA_TYPE = 4) generate
+        pcie_sysclk_p_int    <= PCIE0_SYSCLK1_P & PCIE0_SYSCLK0_P;
+        pcie_rx_p_int        <= PCIE0_RX_P;
+        pcie_rx_n_int        <= PCIE0_RX_N;
+        PCIE0_TX_P           <= pcie_tx_p_int;
+        PCIE0_TX_N           <= pcie_tx_n_int;
+        pcie_sysrst_n_int(0) <= PCIE0_SYSRST_N;
+    else generate
+        pcie_sysclk_p_int        <= PCIE1_SYSCLK1_P & PCIE1_SYSCLK0_P & PCIE0_SYSCLK1_P & PCIE0_SYSCLK0_P;
+        pcie_rx_p_int            <= PCIE1_RX_P & PCIE0_RX_P;
+        pcie_rx_n_int            <= PCIE1_RX_N & PCIE0_RX_N;
+        (PCIE1_TX_P, PCIE0_TX_P) <= pcie_tx_p_int;
+        (PCIE1_TX_N, PCIE0_TX_N) <= pcie_tx_n_int;
+        pcie_sysrst_n_int        <= PCIE1_SYSRST_N & PCIE0_SYSRST_N;
+    end generate;
 
     cm_i : entity work.FPGA_COMMON
     generic map (
@@ -310,21 +332,14 @@ begin
         SYSCLK                  => FPGA_SYSCLK0_100M_P,
         SYSRST                  => '0',
 
-        PCIE_SYSCLK_P           => PCIE1_SYSCLK1_P & PCIE1_SYSCLK0_P & PCIE0_SYSCLK1_P & PCIE0_SYSCLK0_P,
+        PCIE_SYSCLK_P           => pcie_sysclk_p_int,
         PCIE_SYSCLK_N           => (others => '0'),
-        PCIE_SYSRST_N           => PCIE1_SYSRST_N & PCIE0_SYSRST_N,
+        PCIE_SYSRST_N           => pcie_sysrst_n_int,
 
-        PCIE_RX_P(1*PCIE_LANES-1 downto 0*PCIE_LANES) => PCIE0_RX_P,
-        PCIE_RX_P(2*PCIE_LANES-1 downto 1*PCIE_LANES) => PCIE1_RX_P,
-
-        PCIE_RX_N(1*PCIE_LANES-1 downto 0*PCIE_LANES) => PCIE0_RX_N,
-        PCIE_RX_N(2*PCIE_LANES-1 downto 1*PCIE_LANES) => PCIE1_RX_N,
-
-        PCIE_TX_P(1*PCIE_LANES-1 downto 0*PCIE_LANES) => PCIE0_TX_P,
-        PCIE_TX_P(2*PCIE_LANES-1 downto 1*PCIE_LANES) => PCIE1_TX_P,
-
-        PCIE_TX_N(1*PCIE_LANES-1 downto 0*PCIE_LANES) => PCIE0_TX_N,
-        PCIE_TX_N(2*PCIE_LANES-1 downto 1*PCIE_LANES) => PCIE1_TX_N,
+        PCIE_RX_P               => pcie_rx_p_int,
+        PCIE_RX_N               => pcie_rx_n_int,
+        PCIE_TX_P               => pcie_tx_p_int,
+        PCIE_TX_N               => pcie_tx_n_int,
 
         ETH_REFCLK_P            => CLK_156P25M_QSFP1_P & CLK_156P25M_QSFP1_P,
         ETH_REFCLK_N            => (others => '0'),

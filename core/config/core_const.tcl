@@ -159,6 +159,7 @@ VhdlPkgInt  PCIE_ENDPOINTS     $PCIE_ENDPOINTS
 VhdlPkgInt  PCIE_ENDPOINT_MODE $PCIE_ENDPOINT_MODE
 
 VhdlPkgInt  DMA_TYPE              $DMA_TYPE
+VhdlPkgInt  DMA_MODULES           $DMA_MODULES
 VhdlPkgInt  DMA_RX_CHANNELS       $dma_rx_chans_int
 VhdlPkgInt  DMA_TX_CHANNELS       $dma_tx_chans_int
 VhdlPkgInt  DMA_RX_FRAME_SIZE_MAX $DMA_RX_FRAME_SIZE_MAX

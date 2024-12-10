@@ -28,6 +28,10 @@ entity RX_DMA_CALYPTE_ADDR_MANAGER is
         ADDR_WIDTH    : integer := 64;
         -- width of a pointer to the ring buffer log2(NUMBER_OF_ITEMS)
         POINTER_WIDTH : integer := 16;
+        -- pointer output register for better timing
+        PTR_OUT_REG   : boolean := False;
+        -- response output register for better timing
+        RSP_OUT_REG   : boolean := False;
         -- Specified device: "ULTRASCALE", "STRATIX10" or "AGILEX"
         DEVICE        : string  := "ULTRASCALE"
         );
@@ -175,11 +179,39 @@ begin
         & unsigned(hw_pointer_rd_data)
         & (log2(BLOCK_SIZE)-1 downto 0 => '0');
 
-    ADDR     <= std_logic_vector(unsigned(ADDR_BASE) + hw_offset);
-    OFFSET   <= hw_pointer_rd_data;
-    ADDR_VLD <= packet_vld;
+    rsp_out_reg_g: if (RSP_OUT_REG = True) generate
+        process (CLK) is
+        begin
+            if (rising_edge(CLK)) then
+                ADDR     <= std_logic_vector(unsigned(ADDR_BASE) + hw_offset);
+                OFFSET   <= hw_pointer_rd_data;
+                ADDR_VLD <= packet_vld;
+                if (RESET = '1') then
+                    ADDR_VLD <= '0';
+                end if;
+            end if;
+        end process;
+    else generate
+        ADDR     <= std_logic_vector(unsigned(ADDR_BASE) + hw_offset);
+        OFFSET   <= hw_pointer_rd_data;
+        ADDR_VLD <= packet_vld;
+    end generate;
 
-    POINTER_UPDATE_CHAN <= std_logic_vector(channel_act_reg);
-    POINTER_UPDATE_DATA <= std_logic_vector(hw_pointer_new);
-    POINTER_UPDATE_EN   <= packet_vld;
+    ptr_out_reg_g: if (PTR_OUT_REG = True) generate
+        process (CLK) is
+        begin
+            if (rising_edge(CLK)) then
+                POINTER_UPDATE_CHAN <= std_logic_vector(channel_act_reg);
+                POINTER_UPDATE_DATA <= std_logic_vector(hw_pointer_new);
+                POINTER_UPDATE_EN   <= packet_vld;
+                if (RESET = '1') then
+                    POINTER_UPDATE_EN <= '0';
+                end if;
+            end if;
+        end process;
+    else generate
+        POINTER_UPDATE_CHAN <= std_logic_vector(channel_act_reg);
+        POINTER_UPDATE_DATA <= std_logic_vector(hw_pointer_new);
+        POINTER_UPDATE_EN   <= packet_vld;
+    end generate;
 end architecture;

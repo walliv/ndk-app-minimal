@@ -4,23 +4,37 @@ array set PARAMS $IP_PARAMS_L
 source $PARAMS(IP_COMMON_TCL)
 
 proc do_adjust_ptile_pcie_ip_1x16 {} {
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core4_0_enable_rx_buffer_limit_ports_hwtcl} {1}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core4_1_enable_rx_buffer_limit_ports_hwtcl} {1}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_cap_slot_clk_config_hwtcl} {0}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_enable_rx_buffer_limit_ports_hwtcl} {1}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {design_environment} {Unknown}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_enable_cii_hwtcl} {1}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_enable_power_mgnt_intf_hwtcl} {1}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_user_vsec_cap_enable_hwtcl} {1}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_cap_slot_clk_config_hwtcl} {1}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_bar0_address_width_user_hwtcl} {26}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_bar0_type_user_hwtcl} {64-bit non-prefetchable memory}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_bar2_address_width_user_hwtcl} {24}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_bar2_type_user_hwtcl} {64-bit non-prefetchable memory}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_class_code_hwtcl} {131072}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_pasid_cap_max_pasid_width} {20}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_pci_type0_device_id_hwtcl} {49152}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_pci_type0_vendor_id_hwtcl} {6380}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {top_topology_hwtcl} {Gen4x16, Interface - 512 bit}
+
+	set_interface_property p0_power_mgnt EXPORT_OF intel_pcie_ptile_ast_0.p0_power_mgnt
+	set_interface_property p0_cii EXPORT_OF intel_pcie_ptile_ast_0.p0_cii
 }
 
 proc do_adjust_ptile_pcie_ip_2x8 {} {
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_enable_cii_hwtcl} {1}
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_enable_power_mgnt_intf_hwtcl} {1}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_user_vsec_cap_enable_hwtcl} {1}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_cap_slot_clk_config_hwtcl} {1}
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf0_bar0_address_width_user_hwtcl} {26}
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf0_bar0_type_user_hwtcl} {64-bit non-prefetchable memory}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf0_bar2_address_width_user_hwtcl} {24}
+	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf0_bar2_type_user_hwtcl} {64-bit non-prefetchable memory}
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf0_class_code_hwtcl} {131072}
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf0_pasid_cap_max_pasid_width} {20}
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf0_pci_type0_device_id_hwtcl} {49152}
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf0_pci_type0_vendor_id_hwtcl} {6380}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_user_vsec_cap_enable_hwtcl} {1}
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {top_topology_hwtcl} {Gen4 2x8, Interface - 256 bit}
 
 	set_interface_property p1_rx_st EXPORT_OF intel_pcie_ptile_ast_0.p1_rx_st
@@ -36,13 +50,8 @@ proc do_adjust_ptile_pcie_ip_2x8 {} {
 	set_interface_property p1_pin_perst EXPORT_OF intel_pcie_ptile_ast_0.p1_pin_perst
 }
 
-proc do_add_bar2 {} {
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_bar2_address_width_user_hwtcl} {24}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_bar2_type_user_hwtcl} {64-bit non-prefetchable memory}
-}
-
 # adjust parameters in "ptile_pcie_ip" system
-proc do_adjust_ptile_pcie_ip {device family ipname filename adjust_proc dma_type} {
+proc do_adjust_ptile_pcie_ip {device family ipname filename adjust_proc} {
 
 	load_system $filename
 	set_project_property DEVICE $device
@@ -50,36 +59,10 @@ proc do_adjust_ptile_pcie_ip {device family ipname filename adjust_proc dma_type
 	set_project_property HIDE_FROM_IP_CATALOG {true}
 
 	# common IP core parameters
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_enable_cii_hwtcl} {1}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_enable_power_mgnt_intf_hwtcl} {1}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_bar0_address_width_user_hwtcl} {26}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_bar0_type_user_hwtcl} {64-bit non-prefetchable memory}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_class_code_hwtcl} {131072}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_pasid_cap_max_pasid_width} {20}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_pci_type0_device_id_hwtcl} {49152}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf0_pci_type0_vendor_id_hwtcl} {6380}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf4_bar0_address_width_user_hwtcl} {16}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf5_bar0_address_width_user_hwtcl} {16}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf6_bar0_address_width_user_hwtcl} {16}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_pf7_bar0_address_width_user_hwtcl} {16}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core16_user_vsec_cap_enable_hwtcl} {1}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core4_0_cap_slot_clk_config_hwtcl} {0}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core4_1_cap_slot_clk_config_hwtcl} {0}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf4_bar0_address_width_user_hwtcl} {16}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf5_bar0_address_width_user_hwtcl} {16}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf6_bar0_address_width_user_hwtcl} {16}
-	set_instance_parameter_value intel_pcie_ptile_ast_0 {core8_pf7_bar0_address_width_user_hwtcl} {16}
 	set_instance_parameter_value intel_pcie_ptile_ast_0 {standard_interface_selection_hwtcl} {0}
-
-	if {$dma_type == 4} {
-		do_add_bar2
-	}
 
 	# configuration-specific parameters
 	$adjust_proc
-
-	set_interface_property p0_power_mgnt EXPORT_OF intel_pcie_ptile_ast_0.p0_power_mgnt
-	set_interface_property p0_cii EXPORT_OF intel_pcie_ptile_ast_0.p0_cii
 
 	save_system $ipname
 }
@@ -93,5 +76,4 @@ if {$PARAMS(PCIE_ENDPOINT_MODE) == 0} {
 	set cb do_adjust_ptile_pcie_ip_2x8
 }
 
-
-do_adjust_ptile_pcie_ip $PARAMS(IP_DEVICE) $PARAMS(IP_DEVICE_FAMILY) $PARAMS(IP_COMP_NAME) $PARAMS(IP_BUILD_DIR)/[get_ip_filename $PARAMS(IP_COMP_NAME)] $cb $PARAMS(DMA_TYPE)
+do_adjust_ptile_pcie_ip $PARAMS(IP_DEVICE) $PARAMS(IP_DEVICE_FAMILY) $PARAMS(IP_COMP_NAME) $PARAMS(IP_BUILD_DIR)/[get_ip_filename $PARAMS(IP_COMP_NAME)] $cb

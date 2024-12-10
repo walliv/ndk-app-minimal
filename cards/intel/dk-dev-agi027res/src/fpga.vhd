@@ -217,7 +217,6 @@ architecture FULL of FPGA is
     constant MISC_IN_WIDTH          : integer := 8;
     constant MISC_OUT_WIDTH         : integer := 8;
     constant ETH_LANES              : integer := 8;
-    constant DMA_MODULES            : integer := ETH_PORTS;
     constant DMA_ENDPOINTS          : integer := f_dma_endpoints(PCIE_ENDPOINTS,PCIE_ENDPOINT_MODE,PCIE_GEN);
 
     constant MEM_PORTS              : integer := 1;
@@ -328,11 +327,6 @@ begin
         PCIE_LANES              => PCIE_LANES,
         PCIE_CLKS               => PCIE_CLKS,
         PCIE_CONS               => PCIE_CONS,
-
-        PCI_VENDOR_ID           => X"18EC",
-        PCI_DEVICE_ID           => X"C400",
-        PCI_SUBVENDOR_ID        => X"0000",
-        PCI_SUBDEVICE_ID        => X"0000",
 
         ETH_CORE_ARCH           => NET_MOD_ARCH,
         ETH_PORTS               => ETH_PORTS,
