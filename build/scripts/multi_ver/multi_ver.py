@@ -199,12 +199,13 @@ if args.setting is None and args.test_name is None:
 
         comb_name = " ".join(comb)
         print(f"Running combination: {key} ({comb_name})")
-        result = run_modelsim(args.fdo_file, f'{test_name_prefix}{key}', coverage=args.coverage, env=env)
-        if result == 0: # detect failure
-            print(f"Run SUCCEEDED ({test_name_prefix}{key})")
-        else:
-            print(f"Run FAILED ({test_name_prefix}{key})")
-            FAIL = True
+        if (not args.dry_run):
+            result = run_modelsim(args.fdo_file, f'{test_name_prefix}{key}', coverage=args.coverage, env=env)
+            if result == 0: # detect failure
+                print(f"Run SUCCEEDED ({test_name_prefix}{key})")
+            else:
+                print(f"Run FAILED ({test_name_prefix}{key})")
+                FAIL = True
 
         # backup transcript
         # system("cp transcript transcript_"+"_".join(c))
@@ -226,8 +227,8 @@ else:
     SETTING = create_setting_from_combination(SETTINGS, test_setings)
     env = apply_setting(args.test_pkg_file, SETTING, PKG_MOD_SED)
 
+    print("Running combination: " + " ".join(test_setings))
     if (not args.dry_run):
-        print("Running combination: " + " ".join(test_setings))
         result = run_modelsim(args.fdo_file, f'{test_name_prefix}{test_name}', True, (not args.command_line), coverage=args.coverage, env=env)
         if (result == 0): # detect failure
             print("Run SUCCEEDED (" + " ".join(test_setings) + ")")
