@@ -181,7 +181,7 @@ begin
             RX_GEN_EN => RX_GEN_EN,
             TX_GEN_EN => TX_GEN_EN,
 
-            SPEED_METER_EN  => TRUE,
+            SPEED_METER_EN  => False,
             DBG_CNTR_EN     => DBG_CNTR_EN,
             USR_EQ_DMA      => USR_EQ_DMA,
             CROX_EQ_DMA     => CROX_EQ_DMA,
