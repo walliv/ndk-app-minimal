@@ -28,7 +28,7 @@ proc get_ip_mod_files {ip_components_l ip_params_l} {
     }
 
     if {[info exists ip_params(IP_DEVICE_FAMILY)]} {
-        if {[string tolower $ip_params(IP_DEVICE_FAMILY)] eq "agilex"} {
+        if {[string tolower $ip_params(IP_DEVICE_FAMILY)] eq "agilex" || [string tolower $ip_params(IP_DEVICE_FAMILY)] eq "stratix 10"} {
             set use_quartus true
         }
     }
