@@ -100,7 +100,7 @@ module DUT (
         .BOARD              (BOARD)
     ) VHDL_DUT_U (
         .CLK_USER                (CLK_USER),
-        .TX_CLK_CORE             (CLK_CORE),
+        .TX_CLK_CORE             ({ETH_CHANNELS {CLK_CORE}}),
         .RX_CLK_CORE             ({ETH_CHANNELS {CLK_CORE}}),
         .RESET_USER              (RESET_USER),
         .RESET_CORE              (RESET_CORE),

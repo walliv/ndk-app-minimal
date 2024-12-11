@@ -83,8 +83,10 @@ architecture FULL of NETWORK_MOD is
     constant FPC202_INIT_EN : boolean := (BOARD = "DK-DEV-1SDX-P" or BOARD = "DK-DEV-AGI027RES");
     constant RESIZE_BUFFER  : boolean := (ETH_CORE_ARCH = "F_TILE" or (ETH_CORE_ARCH = "E_TILE" and ETH_CHANNELS = 4));
 
+    constant IS_USP_10G4_25G4 : boolean := ETH_CORE_ARCH = "10G4" or ETH_CORE_ARCH = "25G4";
+
     constant TS_TIMEOUT_W : natural := 3; -- last TS is unvalided after 4 cycles
-    constant TS_REPLICAS  : natural := tsel(LL_MODE, ETH_CHANNELS, 1);
+    constant TS_REPLICAS  : natural := tsel(LL_MODE or IS_USP_10G4_25G4, ETH_CHANNELS, 1);
 
     -- =========================================================================
     --                                FUNCTIONS
@@ -152,8 +154,8 @@ architecture FULL of NETWORK_MOD is
     signal rx_usr_mfb_dst_rdy_arr : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_PORT_STREAMS-1 downto 0);
 
     -- Interior signals, Network Module Logic -> Network Module Core
-    signal logic_tx_clk     : std_logic_vector(ETH_PORTS-1 downto 0);
-    signal tx_mfb_clk       : std_logic_vector(ETH_PORTS-1 downto 0);
+    signal logic_tx_clk     : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal tx_mfb_clk       : slv_array_t   (ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
     signal tx_mfb_data_i    : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(MFB_WIDTH_CORE-1 downto 0);
     signal tx_mfb_sof_i     : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(REGIONS_CORE-1 downto 0);
     signal tx_mfb_eof_i     : slv_array_2d_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0)(REGIONS_CORE-1 downto 0);
@@ -167,6 +169,11 @@ architecture FULL of NETWORK_MOD is
     signal sig_activity_tx : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
     signal sig_rx_link_up  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
     signal sig_tx_link_up  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+
+    signal sig_activity_rx_sync : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal sig_activity_tx_sync : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal sig_rx_link_up_sync  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
+    signal sig_tx_link_up_sync  : slv_array_t(ETH_PORTS-1 downto 0)(ETH_CHANNELS-1 downto 0);
 
     -- MI for MAC lites
     signal mi_split_dwr  : slv_array_t     (MI_ADDR_BASES-1 downto 0)(MI_DATA_WIDTH-1 downto 0);
@@ -371,6 +378,7 @@ begin
             MI_ADDR_WIDTH    => MI_ADDR_WIDTH   ,
             -- Other
             LL_MODE          => LL_MODE         ,
+            USE_FULL_MAC     => IS_USP_10G4_25G4,
             RESET_USER_WIDTH => RESET_WIDTH     ,
             RESET_CORE_WIDTH => logic_rst_arr(p)'length,
             RESIZE_BUFFER    => RESIZE_BUFFER   ,
@@ -534,11 +542,11 @@ begin
         -- =====================================================================
         -- MFB clocking based on LL mode generic
         -- =====================================================================
-        mfb_clk_g: if LL_MODE generate
+        mfb_clk_g: if LL_MODE or IS_USP_10G4_25G4 generate
             logic_tx_clk(p) <= tx_mfb_clk(p);
             logic_rx_clk(p) <= rx_mfb_clk(p);
         else generate
-            logic_tx_clk(p) <= CLK_ETH(p);
+            logic_tx_clk(p) <= (others => CLK_ETH(p));
             logic_rx_clk(p) <= (others => CLK_ETH(p));
         end generate;
 
@@ -627,10 +635,71 @@ begin
         end generate;
     end generate;
 
-    ACTIVITY_RX <= slv_array_ser(sig_activity_rx);
-    ACTIVITY_TX <= slv_array_ser(sig_activity_tx);
-    RX_LINK_UP  <= slv_array_ser(sig_rx_link_up);
-    TX_LINK_UP  <= slv_array_ser(sig_tx_link_up);
+    -- =====================================================================
+    -- Synchronize activity and link up signals
+    -- =====================================================================
+    sync_act_link_p_g_en: if LL_MODE or IS_USP_10G4_25G4 generate
+        sync_act_link_p_g : for p in 0 to ETH_PORTS-1 generate
+            sync_act_link_g : for ch in 0 to ETH_CHANNELS-1 generate
+                act_rx_sync_i : entity work.ASYNC_OPEN_LOOP
+                generic map(
+                    IN_REG  => false,
+                    TWO_REG => true
+                )
+                port map(
+                    ADATAIN  => sig_activity_rx(p)(ch),
+                    BCLK => CLK_ETH(p),
+                    BRST => '0',
+                    BDATAOUT => sig_activity_rx_sync(p)(ch)
+                );
+
+                act_tx_sync_i : entity work.ASYNC_OPEN_LOOP
+                generic map(
+                    IN_REG  => false,
+                    TWO_REG => true
+                )
+                port map(
+                    ADATAIN  => sig_activity_tx(p)(ch),
+                    BCLK => CLK_ETH(p),
+                    BRST => '0',
+                    BDATAOUT => sig_activity_tx_sync(p)(ch)
+                );
+
+                rx_link_up_sync_i : entity work.ASYNC_OPEN_LOOP
+                generic map(
+                    IN_REG  => false,
+                    TWO_REG => true
+                )
+                port map(
+                    ADATAIN  => sig_rx_link_up(p)(ch),
+                    BCLK => CLK_ETH(p),
+                    BRST => '0',
+                    BDATAOUT => sig_rx_link_up_sync(p)(ch)
+                );
+                tx_link_up_sync_i : entity work.ASYNC_OPEN_LOOP
+                generic map(
+                    IN_REG  => false,
+                    TWO_REG => true
+                )
+                port map(
+                    ADATAIN  => sig_tx_link_up(p)(ch),
+                    BCLK => CLK_ETH(p),
+                    BRST => '0',
+                    BDATAOUT => sig_tx_link_up_sync(p)(ch)
+                );
+            end generate;
+        end generate;
+    else generate
+        sig_activity_rx_sync <= sig_activity_rx;
+        sig_activity_tx_sync <= sig_activity_tx;
+        sig_rx_link_up_sync  <= sig_rx_link_up;
+        sig_tx_link_up_sync  <= sig_tx_link_up;
+    end generate;
+
+    ACTIVITY_RX <= slv_array_ser(sig_activity_rx_sync);
+    ACTIVITY_TX <= slv_array_ser(sig_activity_tx_sync);
+    RX_LINK_UP  <= slv_array_ser(sig_rx_link_up_sync);
+    TX_LINK_UP  <= slv_array_ser(sig_tx_link_up_sync);
 
     -- =====================================================================
     -- QSFP control

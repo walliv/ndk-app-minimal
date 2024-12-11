@@ -59,6 +59,11 @@ generic(
     -- OTHER configuration:
     -- =====================================================================
     LL_MODE           : boolean := false;
+    -- Use full MAC features:
+    --  - Generate/Check FCS
+    --  - Generate IPG
+    --  - Do not use resize on TX
+    USE_FULL_MAC      : boolean := false;
     RESET_USER_WIDTH  : natural := 8;
     --                             ETH_PORT_CHAN x (TX MAC lite + RX MAC lite)
     RESET_CORE_WIDTH  : natural := ETH_PORT_CHAN * (1           + 1          );
@@ -74,7 +79,7 @@ port(
     -- CLOCK AND RESET
     -- =====================================================================
     CLK_USER        : in std_logic;
-    TX_CLK_CORE     : in std_logic;
+    TX_CLK_CORE     : in std_logic_vector(ETH_PORT_CHAN-1 downto 0);
     RX_CLK_CORE     : in std_logic_vector(ETH_PORT_CHAN-1 downto 0);
 
     RESET_USER      : in std_logic_vector(RESET_USER_WIDTH-1 downto 0);
@@ -359,12 +364,12 @@ begin
                 TX_REGION_SIZE  => CORE_REGION_SIZE,
                 TX_BLOCK_SIZE   => BLOCK_SIZE      ,
                 TX_ITEM_WIDTH   => ITEM_WIDTH      ,
-                RESIZE_ON_TX    => True            ,
+                RESIZE_ON_TX    => not USE_FULL_MAC,
                 PKT_MTU_BYTES   => ETH_PORT_TX_MTU ,
                 RX_INCLUDE_CRC  => false           ,
                 RX_INCLUDE_IPG  => false           ,
-                CRC_INSERT_EN   => false           ,
-                IPG_GENERATE_EN => false           ,
+                CRC_INSERT_EN   => USE_FULL_MAC    ,
+                IPG_GENERATE_EN => USE_FULL_MAC    ,
                 USE_DSP_CNT     => true            ,
                 LL_MODE         => LL_MODE         ,
                 DEVICE          => DEVICE
@@ -392,7 +397,7 @@ begin
                 RX_MFB_SRC_RDY => split_mfb_src_rdy(ch),
                 RX_MFB_DST_RDY => split_mfb_dst_rdy(ch),
 
-                TX_CLK         => TX_CLK_CORE            ,
+                TX_CLK         => TX_CLK_CORE(ch)        ,
                 TX_RESET       => RESET_CORE(ch*2)       ,
                 TX_MFB_DATA    => TX_CORE_MFB_DATA   (ch),
                 TX_MFB_SOF     => TX_CORE_MFB_SOF    (ch),
@@ -449,9 +454,9 @@ begin
                 RESIZE_BUFFER   => RESIZE_BUFFER   ,
                 NETWORK_PORT_ID => ETH_PORT_ID*ETH_PORT_CHAN+ch, -- no support different number of channels for each port
                 PKT_MTU_BYTES   => ETH_PORT_RX_MTU ,
-                CRC_IS_RECEIVED => false           ,
-                CRC_CHECK_EN    => false           ,
-                CRC_REMOVE_EN   => false           ,
+                CRC_IS_RECEIVED => USE_FULL_MAC    ,
+                CRC_CHECK_EN    => USE_FULL_MAC    ,
+                CRC_REMOVE_EN   => USE_FULL_MAC    ,
                 MAC_CHECK_EN    => true            ,
                 MAC_COUNT       => 16              ,
                 TIMESTAMP_EN    => true            ,

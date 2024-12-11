@@ -107,7 +107,7 @@ port(
     -- =====================================================================
     -- RX interface (Packets for transmit to Ethernet, recieved from MFB)
     -- =====================================================================
-    RX_MFB_CLK      : out std_logic := '0';
+    RX_MFB_CLK      : out std_logic_vector(ETH_PORT_CHAN-1 downto 0) := (others => '0');
     RX_MFB_DATA     : in  slv_array_t     (ETH_PORT_CHAN-1 downto 0)(REGIONS*REGION_SIZE*BLOCK_SIZE*ITEM_WIDTH-1 downto 0);
     RX_MFB_SOF_POS  : in  slv_array_t     (ETH_PORT_CHAN-1 downto 0)(REGIONS*max(1,log2(REGION_SIZE))-1 downto 0);
     RX_MFB_EOF_POS  : in  slv_array_t     (ETH_PORT_CHAN-1 downto 0)(REGIONS*max(1,log2(REGION_SIZE*BLOCK_SIZE))-1 downto 0);

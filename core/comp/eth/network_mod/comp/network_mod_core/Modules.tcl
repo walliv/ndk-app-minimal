@@ -15,12 +15,15 @@ set DK_1SDX_IP_BASE     "$CARDS_BASE/dk-dev-1sdx-p/src/ip"
 set DK_AGI_IP_BASE      "$CARDS_BASE/dk-dev-agi027res/src/ip"
 set AGI_FH400G_IP_BASE  "$CARDS_BASE/agi-fh400g/src/ip"
 set CMAC_IP_BASE        "$CARDS_BASE/fb4cgg3/src/ip"
+set PCSPMA_IP_BASE      "$CARDS_BASE/fb2cghh/src/ip"
 set 40GE_BASE           "$OFM_PATH/comp/nic/eth_phy/40ge"
+set USP_PCS_PMA_BASE    "$OFM_PATH/comp/nic/eth_phy/usp_phyx4_10g_25g"
 set LL10GE40GE_BASE     "$OFM_PATH/../extra/hft/comp/net_mod/top"
 set FIFO_BASE           "$OFM_PATH/comp/base/fifo"
 set MI_SPLITTER_BASE    "$OFM_PATH/comp/mi_tools/splitter_plus_gen"
 set BASE_LOGIC_BASE     "$OFM_PATH/comp/base/logic"
 set TSU_BASE            "$OFM_PATH/comp/tsu"
+set MFB_ASFIFOX_BASE    "$OFM_PATH/comp/mfb_tools/storage/asfifox"
 
 # Packages
 lappend PACKAGES "$OFM_PATH/comp/base/pkg/math_pack.vhd"
@@ -148,6 +151,36 @@ if { $ARCHGRP == "40GE" } {
     lappend COMPONENTS [list "40GE PCS PMA"    "$40GE_BASE"                "FULL"]
 
     lappend  MOD "$ENTITY_BASE/network_mod_core_40ge.vhd"
+}
+
+if { $ARCHGRP == "10G4" } {
+    lappend COMPONENTS [list "ASYNC_RESET"         "$ASYNC_BASE/reset"         "FULL"]
+    lappend COMPONENTS [list "ASYNC_OPEN_LOOP"     "$ASYNC_BASE/open_loop"     "FULL"]
+    lappend COMPONENTS [list "RX_MII_ADAPTER"      "$RX_ADAPTER_BASE/umii_dec" "FULL"]
+    lappend COMPONENTS [list "TX_MII_ADAPTER"      "$TX_ADAPTER_BASE/umii_enc" "FULL"]
+    lappend COMPONENTS [list "MFB_ASFIFOX"         "$MFB_ASFIFOX_BASE"         "FULL"]
+    lappend COMPONENTS [list "USP_PCS_PMA_WRAPPER" "$USP_PCS_PMA_BASE"         "FULL"]
+
+    # IP are now in card top-level Modules.tcl
+    # Uncomment for network module synthesis only!
+    #lappend MOD "$PCSPMA_IP_BASE/pcs_pma_4x10g/pcs_pma_4x10g.xci"
+
+    lappend  MOD "$ENTITY_BASE/network_mod_core_usp_10g4.vhd"
+}
+
+if { $ARCHGRP == "25G4" } {
+    lappend COMPONENTS [list "ASYNC_RESET"         "$ASYNC_BASE/reset"         "FULL"]
+    lappend COMPONENTS [list "ASYNC_OPEN_LOOP"     "$ASYNC_BASE/open_loop"     "FULL"]
+    lappend COMPONENTS [list "RX_MII_ADAPTER"      "$RX_ADAPTER_BASE/umii_dec" "FULL"]
+    lappend COMPONENTS [list "TX_MII_ADAPTER"      "$TX_ADAPTER_BASE/umii_enc" "FULL"]
+    lappend COMPONENTS [list "MFB_ASFIFOX"         "$MFB_ASFIFOX_BASE"         "FULL"]
+    lappend COMPONENTS [list "USP_PCS_PMA_WRAPPER" "$USP_PCS_PMA_BASE"         "FULL"]
+
+    # IP are now in card top-level Modules.tcl
+    # Uncomment for network module synthesis only!
+    #lappend MOD "$PCSPMA_IP_BASE/pcs_pma_4x25g/pcs_pma_4x25g.xci"
+
+    lappend  MOD "$ENTITY_BASE/network_mod_core_usp_25g4.vhd"
 }
 
 if { $ARCHGRP == "CESNET_LL10GE" || $ARCHGRP == "CESNET_LL40GE" } {
