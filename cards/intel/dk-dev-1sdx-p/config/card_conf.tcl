@@ -38,7 +38,6 @@ set ETH_PORT_LANES(1) 4
 # Supported combinations for this card:
 # 1x PCIe Gen4 x8x8 -- PCIE_GEN=4, PCIE_ENDPOINTS=2, PCIE_ENDPOINT_MODE=1 (Note: default configuration)
 # 1x PCIe Gen4 x16  -- PCIE_GEN=4, PCIE_ENDPOINTS=1, PCIE_ENDPOINT_MODE=0 (Note: worse DMA performance)
-# 2x PCIe Gen4 x8x8 -- PCIE_GEN=4, PCIE_ENDPOINTS=4, PCIE_ENDPOINT_MODE=1 (Note: only for DMA_400G_DEMO)
 # ------------------------------------------------------------------------------
 
 # Set default PCIe configuration
@@ -55,8 +54,7 @@ set pcie_conf_list [ParsePcieConf $PCIE_CONF]
 set PCIE_GEN           [lindex $pcie_conf_list 1]
 # PCIe endpoints:
 # 1 = 1x PCIe x16 in one slot
-# 2 = 2x PCIe x16 in two slot OR 2x PCIe x8 in one slot (bifurcation x8+x8)
-# 4 = 4x PCIe x8 in two slots (bifurcation x8+x8)
+# 2 = 2x PCIe x8 in one slot (bifurcation x8+x8)
 set PCIE_ENDPOINTS     [lindex $pcie_conf_list 0]
 # PCIe endpoint mode:
 # 0 = 1x16 lanes
@@ -74,8 +72,6 @@ set DMA_TX_CHANNELS      16
 # In blocking mode, packets are dropped only when the RX DMA channel is off.
 # In non-blocking mode, packets are dropped whenever they cannot be sent.
 set DMA_RX_BLOCKING_MODE true
-
-set DMA_400G_DEMO        false
 
 # ------------------------------------------------------------------------------
 # Other parameters:

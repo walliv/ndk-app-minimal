@@ -94,8 +94,7 @@ generic(
     --  Others
     -- =====================================================================
     -- Enable presence of Generator/Loopback Switch
-    GEN_LOOP_EN          : boolean := false;
-    DMA_400G_DEMO        : boolean := false
+    GEN_LOOP_EN          : boolean := false
     -- =====================================================================
 );
 port(

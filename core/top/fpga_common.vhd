@@ -60,8 +60,6 @@ generic (
     -- Number of DMA channels per DMA module
     DMA_RX_CHANNELS         : natural := 4;
     DMA_TX_CHANNELS         : natural := 4;
-    -- DMA debug parameters
-    DMA_400G_DEMO           : boolean := false;
 
     -- Ethernet core architecture: E_TILE, F_TILE, CMAC
     ETH_CORE_ARCH           : string := "F_TILE";
@@ -1139,7 +1137,6 @@ begin
         CROX_DOUBLE_DMA      => DMA_CROX_DOUBLE_DMA       ,
 
         GEN_LOOP_EN          => DMA_GEN_LOOP_EN           ,
-        DMA_400G_DEMO        => DMA_400G_DEMO             ,
 
         PCIE_ENDPOINTS       => PCIE_ENDPOINTS
     )

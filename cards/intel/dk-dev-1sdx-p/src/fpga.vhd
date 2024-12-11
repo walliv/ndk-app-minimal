@@ -34,13 +34,13 @@ port (
     PCIE0_WAKE              : out   std_logic;
 
     -- PCIe1
-    PCIE1_SYSCLK0_P         : in    std_logic;
-    PCIE1_SYSCLK1_P         : in    std_logic;
-    PCIE1_SYSRST_N          : in    std_logic;
-    PCIE1_RX_P              : in    std_logic_vector(15 downto 0);
-    PCIE1_RX_N              : in    std_logic_vector(15 downto 0);
-    PCIE1_TX_P              : out   std_logic_vector(15 downto 0);
-    PCIE1_TX_N              : out   std_logic_vector(15 downto 0);
+    --PCIE1_SYSCLK0_P         : in    std_logic;
+    --PCIE1_SYSCLK1_P         : in    std_logic;
+    --PCIE1_SYSRST_N          : in    std_logic;
+    --PCIE1_RX_P              : in    std_logic_vector(15 downto 0);
+    --PCIE1_RX_N              : in    std_logic_vector(15 downto 0);
+    --PCIE1_TX_P              : out   std_logic_vector(15 downto 0);
+    --PCIE1_TX_N              : out   std_logic_vector(15 downto 0);
     --PCIE1_WAKE              : out   std_logic
 
     -- QSFP
@@ -180,7 +180,7 @@ architecture FULL of FPGA is
 
     constant PCIE_LANES     : integer := 16;
     constant PCIE_CLKS      : integer := 2;
-    constant PCIE_CONS      : integer := tsel(DMA_TYPE = 4, 1, 2);
+    constant PCIE_CONS      : integer := 1;
     constant MISC_IN_WIDTH  : integer := 8;
     constant MISC_OUT_WIDTH : integer := 8;
     constant ETH_LANES      : integer := 4;
@@ -261,21 +261,19 @@ begin
     DDR4_DIMM_CH1_PAR    (0) <= ddr4_par     (1);
     ddr4_alert_n         (1) <= DDR4_DIMM_CH1_ALERT_N(0);
 
-    pcie_conf_reduced_g : if (DMA_TYPE = 4) generate
-        pcie_sysclk_p_int    <= PCIE0_SYSCLK1_P & PCIE0_SYSCLK0_P;
-        pcie_rx_p_int        <= PCIE0_RX_P;
-        pcie_rx_n_int        <= PCIE0_RX_N;
-        PCIE0_TX_P           <= pcie_tx_p_int;
-        PCIE0_TX_N           <= pcie_tx_n_int;
-        pcie_sysrst_n_int(0) <= PCIE0_SYSRST_N;
-    else generate
-        pcie_sysclk_p_int        <= PCIE1_SYSCLK1_P & PCIE1_SYSCLK0_P & PCIE0_SYSCLK1_P & PCIE0_SYSCLK0_P;
-        pcie_rx_p_int            <= PCIE1_RX_P & PCIE0_RX_P;
-        pcie_rx_n_int            <= PCIE1_RX_N & PCIE0_RX_N;
-        (PCIE1_TX_P, PCIE0_TX_P) <= pcie_tx_p_int;
-        (PCIE1_TX_N, PCIE0_TX_N) <= pcie_tx_n_int;
-        pcie_sysrst_n_int        <= PCIE1_SYSRST_N & PCIE0_SYSRST_N;
-    end generate;
+    pcie_sysclk_p_int    <= PCIE0_SYSCLK1_P & PCIE0_SYSCLK0_P;
+    pcie_rx_p_int        <= PCIE0_RX_P;
+    pcie_rx_n_int        <= PCIE0_RX_N;
+    PCIE0_TX_P           <= pcie_tx_p_int;
+    PCIE0_TX_N           <= pcie_tx_n_int;
+    pcie_sysrst_n_int(0) <= PCIE0_SYSRST_N;
+
+    --pcie_sysclk_p_int        <= PCIE1_SYSCLK1_P & PCIE1_SYSCLK0_P & PCIE0_SYSCLK1_P & PCIE0_SYSCLK0_P;
+    --pcie_rx_p_int            <= PCIE1_RX_P & PCIE0_RX_P;
+    --pcie_rx_n_int            <= PCIE1_RX_N & PCIE0_RX_N;
+    --(PCIE1_TX_P, PCIE0_TX_P) <= pcie_tx_p_int;
+    --(PCIE1_TX_N, PCIE0_TX_N) <= pcie_tx_n_int;
+    --pcie_sysrst_n_int        <= PCIE1_SYSRST_N & PCIE0_SYSRST_N;
 
     cm_i : entity work.FPGA_COMMON
     generic map (
@@ -324,9 +322,7 @@ begin
         AMM_FREQ_KHZ            => 266660,
 
         BOARD                   => CARD_NAME,
-        DEVICE                  => "STRATIX10",
-
-        DMA_400G_DEMO           => DMA_400G_DEMO
+        DEVICE                  => "STRATIX10"
     )
     port map(
         SYSCLK                  => FPGA_SYSCLK0_100M_P,

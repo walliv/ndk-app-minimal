@@ -16,8 +16,8 @@ use work.dma_bus_pack.all;
 
 architecture FULL of DMA is
 
-    constant IUSR_MVB_ITEMS    : natural                         := tsel(DMA_400G_DEMO, 4, USR_MVB_ITEMS);
-    constant IUSR_MFB_REGIONS  : natural                         := tsel(DMA_400G_DEMO, 4, USR_MFB_REGIONS);
+    constant IUSR_MVB_ITEMS    : natural                         := USR_MVB_ITEMS;
+    constant IUSR_MFB_REGIONS  : natural                         := USR_MFB_REGIONS;
     constant GLS_MI_OFFSET     : std_logic_vector(32-1 downto 0) := X"0000_0200";
 
     function gls_mi_addr_base_f return slv_array_t is
@@ -295,75 +295,38 @@ begin
 
     -- =====================================================================
 
-    dma_demo_off_g : if (not DMA_400G_DEMO) generate
+    rx_usr_mvb_len_int      <= RX_USR_MVB_LEN;
+    rx_usr_mvb_hdr_meta_int <= RX_USR_MVB_HDR_META;
+    rx_usr_mvb_channel_int  <= RX_USR_MVB_CHANNEL;
+    rx_usr_mvb_discard_int  <= RX_USR_MVB_DISCARD;
+    rx_usr_mvb_vld_int      <= RX_USR_MVB_VLD;
+    rx_usr_mvb_src_rdy_int  <= RX_USR_MVB_SRC_RDY;
+    RX_USR_MVB_DST_RDY      <= rx_usr_mvb_dst_rdy_int;
 
-        rx_usr_mvb_len_int      <= RX_USR_MVB_LEN;
-        rx_usr_mvb_hdr_meta_int <= RX_USR_MVB_HDR_META;
-        rx_usr_mvb_channel_int  <= RX_USR_MVB_CHANNEL;
-        rx_usr_mvb_discard_int  <= RX_USR_MVB_DISCARD;
-        rx_usr_mvb_vld_int      <= RX_USR_MVB_VLD;
-        rx_usr_mvb_src_rdy_int  <= RX_USR_MVB_SRC_RDY;
-        RX_USR_MVB_DST_RDY      <= rx_usr_mvb_dst_rdy_int;
+    rx_usr_mfb_data_int    <= RX_USR_MFB_DATA;
+    rx_usr_mfb_sof_int     <= RX_USR_MFB_SOF;
+    rx_usr_mfb_eof_int     <= RX_USR_MFB_EOF;
+    rx_usr_mfb_sof_pos_int <= RX_USR_MFB_SOF_POS;
+    rx_usr_mfb_eof_pos_int <= RX_USR_MFB_EOF_POS;
+    rx_usr_mfb_src_rdy_int <= RX_USR_MFB_SRC_RDY;
+    RX_USR_MFB_DST_RDY     <= rx_usr_mfb_dst_rdy_int;
 
-        rx_usr_mfb_data_int    <= RX_USR_MFB_DATA;
-        rx_usr_mfb_sof_int     <= RX_USR_MFB_SOF;
-        rx_usr_mfb_eof_int     <= RX_USR_MFB_EOF;
-        rx_usr_mfb_sof_pos_int <= RX_USR_MFB_SOF_POS;
-        rx_usr_mfb_eof_pos_int <= RX_USR_MFB_EOF_POS;
-        rx_usr_mfb_src_rdy_int <= RX_USR_MFB_SRC_RDY;
-        RX_USR_MFB_DST_RDY     <= rx_usr_mfb_dst_rdy_int;
+    TX_USR_MVB_LEN         <= tx_usr_mvb_len_int;
+    TX_USR_MVB_HDR_META    <= tx_usr_mvb_hdr_meta_int;
+    TX_USR_MVB_CHANNEL     <= tx_usr_mvb_channel_int;
+    TX_USR_MVB_VLD         <= tx_usr_mvb_vld_int;
+    TX_USR_MVB_SRC_RDY     <= tx_usr_mvb_src_rdy_int;
+    tx_usr_mvb_dst_rdy_int <= TX_USR_MVB_DST_RDY;
 
-        TX_USR_MVB_LEN         <= tx_usr_mvb_len_int;
-        TX_USR_MVB_HDR_META    <= tx_usr_mvb_hdr_meta_int;
-        TX_USR_MVB_CHANNEL     <= tx_usr_mvb_channel_int;
-        TX_USR_MVB_VLD         <= tx_usr_mvb_vld_int;
-        TX_USR_MVB_SRC_RDY     <= tx_usr_mvb_src_rdy_int;
-        tx_usr_mvb_dst_rdy_int <= TX_USR_MVB_DST_RDY;
+    TX_USR_MFB_DATA        <= tx_usr_mfb_data_int;
+    TX_USR_MFB_SOF         <= tx_usr_mfb_sof_int;
+    TX_USR_MFB_EOF         <= tx_usr_mfb_eof_int;
+    TX_USR_MFB_SOF_POS     <= tx_usr_mfb_sof_pos_int;
+    TX_USR_MFB_EOF_POS     <= tx_usr_mfb_eof_pos_int;
+    TX_USR_MFB_SRC_RDY     <= tx_usr_mfb_src_rdy_int;
+    tx_usr_mfb_dst_rdy_int <= TX_USR_MFB_DST_RDY;
 
-        TX_USR_MFB_DATA        <= tx_usr_mfb_data_int;
-        TX_USR_MFB_SOF         <= tx_usr_mfb_sof_int;
-        TX_USR_MFB_EOF         <= tx_usr_mfb_eof_int;
-        TX_USR_MFB_SOF_POS     <= tx_usr_mfb_sof_pos_int;
-        TX_USR_MFB_EOF_POS     <= tx_usr_mfb_eof_pos_int;
-        TX_USR_MFB_SRC_RDY     <= tx_usr_mfb_src_rdy_int;
-        tx_usr_mfb_dst_rdy_int <= TX_USR_MFB_DST_RDY;
-
-    end generate;
-
-    dma_demo_on_g : if (DMA_400G_DEMO) generate
-        rx_usr_mvb_len_int      <= (others => (others => '0'));
-        rx_usr_mvb_hdr_meta_int <= (others => (others => '0'));
-        rx_usr_mvb_channel_int  <= (others => (others => '0'));
-        rx_usr_mvb_discard_int  <= (others => (others => '0'));
-        rx_usr_mvb_vld_int      <= (others => (others => '0'));
-        rx_usr_mvb_src_rdy_int  <= (others => '0');
-        RX_USR_MVB_DST_RDY      <= (others => '1');
-
-        rx_usr_mfb_data_int    <= (others => (others => '0'));
-        rx_usr_mfb_sof_int     <= (others => (others => '0'));
-        rx_usr_mfb_eof_int     <= (others => (others => '0'));
-        rx_usr_mfb_sof_pos_int <= (others => (others => '0'));
-        rx_usr_mfb_eof_pos_int <= (others => (others => '0'));
-        rx_usr_mfb_src_rdy_int <= (others => '0');
-        RX_USR_MFB_DST_RDY     <= (others => '1');
-
-        TX_USR_MVB_LEN         <= (others => (others => '0'));
-        TX_USR_MVB_HDR_META    <= (others => (others => '0'));
-        TX_USR_MVB_CHANNEL     <= (others => (others => '0'));
-        TX_USR_MVB_VLD         <= (others => (others => '0'));
-        TX_USR_MVB_SRC_RDY     <= (others => '0');
-        tx_usr_mvb_dst_rdy_int <= (others => '1');
-
-        TX_USR_MFB_DATA        <= (others => (others => '0'));
-        TX_USR_MFB_SOF         <= (others => (others => '0'));
-        TX_USR_MFB_EOF         <= (others => (others => '0'));
-        TX_USR_MFB_SOF_POS     <= (others => (others => '0'));
-        TX_USR_MFB_EOF_POS     <= (others => (others => '0'));
-        TX_USR_MFB_SRC_RDY     <= (others => '0');
-        tx_usr_mfb_dst_rdy_int <= (others => '1');
-    end generate;
-
-    gls_mi_split_g: if (GEN_LOOP_EN or DMA_400G_DEMO) generate
+    gls_mi_split_g: if (GEN_LOOP_EN) generate
         mi_splitter_gls_i : entity work.MI_SPLITTER_PLUS_GEN
             generic map(
                 ADDR_WIDTH => 32,
@@ -402,7 +365,7 @@ begin
     end generate;
 
     gls_g : for i in 0 to DMA_STREAMS-1 generate
-        gls_en_g : if (GEN_LOOP_EN or DMA_400G_DEMO) generate
+        gls_en_g : if (GEN_LOOP_EN) generate
             gen_loop_switch_i : entity work.GEN_LOOP_SWITCH
                 generic map(
                     REGIONS         => IUSR_MFB_REGIONS,
