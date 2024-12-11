@@ -14,7 +14,14 @@ source $CORE_BASE/Quartus.inc.tcl
 # Propagating card constants to the Modules.tcl files of the underlying components.
 # The description of usage of this array is provided in the Parametrization section
 # of the NDK-CORE repository.
-set CARD_ARCHGRP(CORE_BASE) $CORE_BASE
+set CARD_ARCHGRP(CORE_BASE)          $CORE_BASE
+set CARD_ARCHGRP(IP_BUILD_DIR)       $CARD_BASE/src/ip
+set CARD_ARCHGRP(PCIE_ENDPOINT_MODE) $PCIE_ENDPOINT_MODE
+set CARD_ARCHGRP(NET_MOD_ARCH)       $NET_MOD_ARCH
+
+# select fpga name
+set CARD_FPGA                        "1SD280PT2F55E1VG"
+set CARD_ARCHGRP(FPGA)               $CARD_FPGA
 
 # make lists from associative arrays
 set CARD_ARCHGRP_L [array get CARD_ARCHGRP]
@@ -29,7 +36,7 @@ lappend HIERARCHY(COMPONENTS) \
 
 # Design parameters
 set SYNTH_FLAGS(MODULE) "FPGA"
-set SYNTH_FLAGS(FPGA)   "1SD280PT2F55E1VG"
+set SYNTH_FLAGS(FPGA)   $CARD_FPGA
 
 # QSF constraints for specific parts of the design
 set SYNTH_FLAGS(CONSTR) ""
