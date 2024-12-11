@@ -36,12 +36,12 @@ set ETH_PORT_LANES(1) 4
 # PCIe parameters (not all combinations work):
 # ------------------------------------------------------------------------------
 # Supported combinations for this card:
-# 1x PCIe Gen4 x8x8 -- PCIE_GEN=4, PCIE_ENDPOINTS=2, PCIE_ENDPOINT_MODE=1 (Note: default configuration)
-# 1x PCIe Gen4 x16  -- PCIE_GEN=4, PCIE_ENDPOINTS=1, PCIE_ENDPOINT_MODE=0 (Note: worse DMA performance)
+# 1x PCIe Gen4 x16  -- PCIE_GEN=4, PCIE_ENDPOINTS=1, PCIE_ENDPOINT_MODE=0 (Note: default configuration)
+# 1x PCIe Gen4 x8x8 -- PCIE_GEN=4, PCIE_ENDPOINTS=2, PCIE_ENDPOINT_MODE=1 (Note: better DMA performance)
 # ------------------------------------------------------------------------------
 
 # Set default PCIe configuration
-set PCIE_CONF "1xGen4x8x8"
+set PCIE_CONF "1xGen4x16"
 if { [info exist env(PCIE_CONF)] } {
     set PCIE_CONF $env(PCIE_CONF)
 }
