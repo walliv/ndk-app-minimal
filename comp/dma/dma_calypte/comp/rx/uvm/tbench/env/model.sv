@@ -245,8 +245,8 @@ class model #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uv
         string dbg_msg;
 
         packet_pointer_start = m_data[channel].data_ptr;
-        pcie_packet = new[packet.size()/4];
-        for (it = 0; it < packet.size()/4; it++) begin
+        pcie_packet = new[(packet.size()+3)/4];
+        for (it = 0; it < (packet.size()+3)/4; it++) begin
             pcie_packet[it] = {<<8{packet[it*4 +: 4]}};
         end
         parts = (packet.size() + 127)/128;
@@ -286,7 +286,7 @@ class model #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) extends uv
         packet_output.part         = parts;
         packet_output.start_time   = start_time;
 
-        get_data(pcie_packet, it*(128/4), packet.size()/4, packet_end);
+        get_data(pcie_packet, it*(128/4), (packet.size()+3)/4, packet_end);
         addr = m_regmodel.channel[channel].data_base.get() + (m_data[channel].data_ptr*128);
         m_data[channel].data_ptr = (m_data[channel].data_ptr + 1) & m_regmodel.channel[channel].data_mask.get();
         get_pcie_header(128, addr, pcie_hdr_tmp, pcie_meta_tmp);
