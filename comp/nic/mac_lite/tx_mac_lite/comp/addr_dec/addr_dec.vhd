@@ -41,7 +41,8 @@ entity TX_MAC_LITE_ADDR_DEC is
         -- CONTROL OUTPUT INTERFACE (CLK)
         CTRL_STROBE_CNT                 : out std_logic;
         CTRL_RESET_CNT                  : out std_logic;
-        CTRL_OBUF_EN                    : out std_logic
+        CTRL_OBUF_EN                    : out std_logic;
+        CTRL_LD_DISCARD_DIS             : out std_logic
     );
 end entity;
 
@@ -96,6 +97,7 @@ architecture FULL of TX_MAC_LITE_ADDR_DEC is
     signal cmd_reset_cnt      : std_logic;
     signal cmd_reset_cnt_reg  : std_logic;
     signal obuf_en_reg        : std_logic;
+    signal ld_discard_dis_reg : std_logic;
     signal obuf_en_reg_32     : std_logic_vector(31 downto 0);
     signal status_disable_crc : std_logic;
     signal status_reg         : std_logic_vector(6 downto 0) := "1010000";
@@ -172,7 +174,7 @@ begin
 
     status_disable_crc <= '1' when (CRC_INSERTION_EN = False) else '0';
 
-    obuf_en_reg_32 <= (31 downto 1 => '0') & obuf_en_reg;
+    obuf_en_reg_32 <= (31 downto 9 => '0') & ld_discard_dis_reg & "0000000" & obuf_en_reg;
     status_reg_32  <= (31 downto 7 => '0') & ETH_SPEED_CODE & "00" & status_disable_crc & obuf_en_reg;
 
     mi_s_drd_mux_p : process(all)
@@ -261,9 +263,11 @@ begin
     begin
         if (rising_edge(CLK)) then
             if (RESET = '1') then
-                obuf_en_reg <= '0';
+                obuf_en_reg        <= '0';
+                ld_discard_dis_reg <= '0'; -- link down discard is enabled by default
             elsif (obuf_en_reg_we = '1') then
-                obuf_en_reg <= mi_s_dwr(0);
+                obuf_en_reg        <= mi_s_dwr(0);
+                ld_discard_dis_reg <= mi_s_dwr(8);
             end if;
         end if;
     end process;
@@ -272,8 +276,9 @@ begin
     --  OUTPUTS ASSIGMENTS
     -- =========================================================================
 
-    CTRL_STROBE_CNT <= cmd_strobe_cnt_reg;
-    CTRL_RESET_CNT  <= cmd_reset_cnt_reg;
-    CTRL_OBUF_EN    <= obuf_en_reg;
+    CTRL_STROBE_CNT     <= cmd_strobe_cnt_reg;
+    CTRL_RESET_CNT      <= cmd_reset_cnt_reg;
+    CTRL_OBUF_EN        <= obuf_en_reg;
+    CTRL_LD_DISCARD_DIS <= ld_discard_dis_reg;
 
 end architecture;
