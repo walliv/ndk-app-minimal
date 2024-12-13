@@ -9,7 +9,7 @@
 // FORMAT:
 //  [ 'name'                     , 'path_to_ver'                      , 'fdo_file.fdo'       , 'test_pkg.sv/.vhd'   , 'settings.py'                    ]
 def COMPONENTS = [\
-    ['Basic Tests'               , 'extra/dma-medusa/ver'             , 'top_level.fdo'      , 'tbench/test_pkg.sv' , 'ver_setings_new.py'        ],\
+    ['Basic Tests'               , 'extra/dma-medusa/ver'             , 'top_level.fdo'      , 'tbench/test_pkg.sv' , 'ver_settings_new.py'        ],\
 ]
 // /////////////////////////////////////////////////////////////////////////////
 
