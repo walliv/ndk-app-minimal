@@ -337,7 +337,9 @@ begin
             MEM_BURST_COUNT_WIDTH   => DDR_BURST_WIDTH      ,
             MEM_FREQ_KHZ            => DDR_FREQ_KHZ         ,
             MI_DATA_WIDTH           => MI_DATA_WIDTH        ,
-            MI_ADDR_WIDTH           => MI_ADDR_WIDTH
+            MI_ADDR_WIDTH           => MI_ADDR_WIDTH        ,
+            MEM_ASYNC               => False                ,
+            DEVICE                  => DEVICE
         )
         port map (
             CLK                     => DDR_CLK                  (i),
