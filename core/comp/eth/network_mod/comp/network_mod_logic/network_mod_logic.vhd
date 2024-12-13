@@ -407,6 +407,7 @@ begin
                 TX_MFB_SRC_RDY => TX_CORE_MFB_SRC_RDY(ch),
                 TX_MFB_DST_RDY => TX_CORE_MFB_DST_RDY(ch),
 
+                ETH_LINK_UP    => RX_LINK_UP(ch),
                 OUTGOING_FRAME => ACTIVITY_TX(ch)
             );
         else generate
