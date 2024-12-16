@@ -155,9 +155,10 @@ entity TX_MAC_LITE is
         TX_MFB_DST_RDY : in  std_logic;
 
         -- =====================================================================
-        -- OUTPUT LINK STATUS INTERFACE (TX_CLK)
+        -- CONTROL/STATUS INTERFACE
         -- =====================================================================
-
+        -- ETH link UP status (ASYNC)
+        ETH_LINK_UP    : in  std_logic := '1';
         -- Links status (TX_CLK): Active during frame transmission
         OUTGOING_FRAME : out std_logic
     );
@@ -200,6 +201,10 @@ architecture FULL of TX_MAC_LITE is
     constant CRC_ASFIFO_RAM_TYPE : string  := "AUTO";
     constant CRC_ASFIFO_AFULL_TH : natural := fce_crcfifo_afull_threshold(MD_REGION_SIZE,MD_BLOCK_SIZE,CRC_END_IMPL);
 
+    signal eth_link_down_sync          : std_logic;
+    signal ctrl_ld_discard_dis         : std_logic;
+    signal ctrl_ld_discard             : std_logic;
+
     signal rx_mfb_sof_pos_fix          : std_logic_vector(RX_REGIONS*max(1,log2(RX_REGION_SIZE))-1 downto 0);
 
     signal rc_mfb_data                 : std_logic_vector(MD_REGIONS*MD_REGION_SIZE*MD_BLOCK_SIZE*MD_ITEM_WIDTH-1 downto 0);
@@ -225,6 +230,7 @@ architecture FULL of TX_MAC_LITE is
     signal fl_mfb_frame_len_arr        : slv_array_t(MD_REGIONS-1 downto 0)(LEN_WIDTH-1 downto 0);
     signal fl_mfb_undersize            : std_logic_vector(MD_REGIONS-1 downto 0);
     signal fl_mfb_discard              : std_logic_vector(MD_REGIONS-1 downto 0);
+    signal fl_mfb_discard_vld          : std_logic_vector(MD_REGIONS-1 downto 0);
 
     signal crc_mfb_src_rdy             : std_logic;
     signal crc_mfb_dst_rdy             : std_logic;
@@ -299,6 +305,21 @@ architecture FULL of TX_MAC_LITE is
     signal ctrl_obuf_en                : std_logic;
 
 begin
+
+    eth_link_up_sync_i : entity work.ASYNC_RESET
+    generic map (
+        TWO_REG  => false,
+        OUT_REG  => true,
+        REPLICAS => 1
+    )
+    port map (
+        CLK        => RX_CLK,
+        ASYNC_RST  => (not ETH_LINK_UP),
+        OUT_RST(0) => eth_link_down_sync
+    );
+
+    -- when ETH link is down, discard all packets by default
+    ctrl_ld_discard <= eth_link_down_sync and not ctrl_ld_discard_dis;
 
     -- =========================================================================
     --  MFB RECONFIGURATOR
@@ -392,8 +413,9 @@ begin
     fl_mfb_frame_len_arr <= slv_array_deser(fl_mfb_frame_len,MD_REGIONS,LEN_WIDTH);
 
     fl_mfb_discard_g : for r in 0 to MD_REGIONS-1 generate
-        fl_mfb_undersize(r) <= '1' when (unsigned(fl_mfb_frame_len_arr(r)) < FRAME_LEN_MIN) else '0';
-        fl_mfb_discard(r)   <= fl_mfb_undersize(r) and fl_mfb_eof(r) and fl_mfb_src_rdy;
+        fl_mfb_undersize(r)   <= '1' when (unsigned(fl_mfb_frame_len_arr(r)) < FRAME_LEN_MIN) else '0';
+        fl_mfb_discard(r)     <= fl_mfb_undersize(r) or ctrl_ld_discard;
+        fl_mfb_discard_vld(r) <= fl_mfb_discard(r) and fl_mfb_eof(r) and fl_mfb_src_rdy;
     end generate;
 
     fl_mfb_dst_rdy <= fd_mfb_dst_rdy and crc_mfb_dst_rdy;
@@ -408,7 +430,7 @@ begin
                 fd_mfb_sof_pos   <= fl_mfb_sof_pos;
                 fd_mfb_eof_pos   <= fl_mfb_eof_pos;
                 fd_mfb_frame_len <= fl_mfb_frame_len;
-                fd_mfb_discard   <= fl_mfb_discard;
+                fd_mfb_discard   <= fl_mfb_discard_vld;
             end if;
         end if;
     end process;
@@ -461,7 +483,7 @@ begin
         -- ---------------------------------------------------------------------
 
         cd_fifo_wr <= (or fl_mfb_eof) and crc_mfb_src_rdy;
-        cd_fifo_di <= fl_mfb_eof and not fl_mfb_undersize;
+        cd_fifo_di <= fl_mfb_eof and not fl_mfb_discard;
 
         process (RX_CLK)
         begin
@@ -872,7 +894,8 @@ begin
 
         CTRL_STROBE_CNT             => ctrl_strobe_cnt,
         CTRL_RESET_CNT              => ctrl_reset_cnt,
-        CTRL_OBUF_EN                => ctrl_obuf_en
+        CTRL_OBUF_EN                => ctrl_obuf_en,
+        CTRL_LD_DISCARD_DIS         => ctrl_ld_discard_dis
     );
 
 end architecture;
