@@ -16,7 +16,7 @@ class coverage #(MFB_REGIONS, MFB_REGION_SIZE, MFB_BLOCK_SIZE, MFB_ITEM_WIDTH, M
         sof_count : coverpoint seq_item.sof iff (seq_item.src_rdy & seq_item.dst_rdy) {
             bins two_packets                 = {2'b11};
             bins one_packet                  = {2'b01};
-            illegal_bins forbidden_pkt_start = {2'b10};
+            ignore_bins forbidden_pkt_start  = {2'b10}; //Design supports more upset of specification combination
         }
 
         eof_count : coverpoint seq_item.eof iff (seq_item.src_rdy & seq_item.dst_rdy) {
