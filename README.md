@@ -13,7 +13,7 @@ Before you get started, there are a few requirements that you need to have.
 ### Requirements and supported FPGA cards
 
 - To build the FPGA firmware, you must have installed the **Intel Quartus Prime Pro 24.1** or **Xilinx Vivado 2022.2** (depending on the target card), including a valid license.
-- We recommend using the **Questa Sim-64 2023.1_2** tool to run HDL verifications (UVM).
+- We recommend using the **Questa Sim-64 2024.1** tool to run HDL verifications (UVM).
 - Supported FPGA cards in the NDK framework available as open-source:
     - ReflexCES XpressSX AGI-FH400G card (BOARD_REV=0 is deprecated)
     - Intel Stratix 10 DX FPGA Development Kit (DK-DEV-1SDX-P)
@@ -21,12 +21,14 @@ Before you get started, there are a few requirements that you need to have.
     - Silicom fb4CGg3@VU9P card (also in variant fb2CGg3@VU9P)
     - Silicom fb2CGhh@KU15P card
     - Silicom N6010 card
-    - Bittware IA-420F card
+    - Bittware IA-420f card
+    - Bittware IA-440i card
     - AMD/Xilinx Alveo U200
     - AMD/Xilinx Alveo U55C
     - AMD/Xilinx Virtex UltraScale+ FPGA VCU118 Evaluation Kit
     - PRO DESIGN FALCON Stratix 10 (only EXPERIMENTAL support)
     - Terasic Mercury A2700 Accelerator Card
+    - iWave G35P Accelerator card
 - Other supported FPGA cards in the NDK framework but not available as open-source:
     - Netcope NFB-200G2QL card
 - To control an FPGA card with an application based on the NDK framework, you also need:
