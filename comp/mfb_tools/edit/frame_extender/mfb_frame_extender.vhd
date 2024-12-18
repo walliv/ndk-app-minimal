@@ -13,7 +13,13 @@ use work.type_pack.all;
 
 -- The MFB_FRAME_EXTENDER component allows an MFB frame to be extended by adding
 -- empty MFB blocks to its beginning. This component can be used, for example,
--- to efficiently insert metadata into the framework.
+-- to efficiently insert metadata into the framework. The component has a pair
+-- of MVB+MFB interfaces on the input and output. For each MFB frame you need to
+-- send one MVB item. Instructions to extend the MFB frame are passed through
+-- the RX MVB interface. User metadata can be sent only through the MVB interface.
+-- In addition, the component also copies this metadata to the TX MFB interface
+-- where it is valid with SOF.
+--
 entity MFB_FRAME_EXTENDER is
 generic (
     -- The number of MFB regions
@@ -68,7 +74,7 @@ port (
     RX_MFB_DST_RDY         : out std_logic;
 
     -- =========================================================================
-    --  TX MFB interface
+    --  TX MFB+MVB interface
     -- =========================================================================
     TX_MVB_USERMETA        : out std_logic_vector(MFB_REGIONS*USERMETA_WIDTH-1 downto 0);
     TX_MVB_VLD             : out std_logic_vector(MFB_REGIONS-1 downto 0);
@@ -76,6 +82,8 @@ port (
     TX_MVB_DST_RDY         : in  std_logic;
 
     TX_MFB_DATA            : out std_logic_vector(MFB_REGIONS*MFB_REGION_SIZE*MFB_BLOCK_SIZE*MFB_ITEM_WIDTH-1 downto 0);
+    -- The TX_MFB_USERMETA signal is valid with SOF and the transmitted items
+    -- are the same as on the TX_MVB_USERMETA signal.
     TX_MFB_USERMETA        : out std_logic_vector(MFB_REGIONS*USERMETA_WIDTH-1 downto 0);
     TX_MFB_SOF             : out std_logic_vector(MFB_REGIONS-1 downto 0);
     TX_MFB_EOF             : out std_logic_vector(MFB_REGIONS-1 downto 0);
