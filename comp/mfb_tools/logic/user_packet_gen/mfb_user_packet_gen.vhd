@@ -12,6 +12,15 @@ use IEEE.numeric_std.all;
 use work.math_pack.all;
 use work.type_pack.all;
 
+-- Component MFB_USER_PACKET_GEN allows you to generate empty MFB frames based
+-- on instructions sent through the MVB interface. One instruction in the form
+-- of an MVB item corresponds to one generated MFB frame. If enough instructions
+-- are available, the component tries to generate MFB frames with minimal gaps
+-- between MFB frames. Each generated MFB frame can be of different size within
+-- the allowed range. Through MVB instructions (items), user metadata can be
+-- inserted into the generated packets. The metadata are then available on the
+-- MFB signal TX_META and are valid with SOF.
+--
 entity MFB_USER_PACKET_GEN is
    generic(
       -- =======================================================================
