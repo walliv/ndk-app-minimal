@@ -18,11 +18,6 @@ SETTINGS = {
         "PCIE_CQ_MFB_BLOCK_SIZE"  : "8",
         "PCIE_CQ_MFB_ITEM_WIDTH"  : "32",
 
-        "PCIE_CC_MFB_REGIONS"     : "1",
-        "PCIE_CC_MFB_REGION_SIZE" : "1",
-        "PCIE_CC_MFB_BLOCK_SIZE"  : "8",
-        "PCIE_CC_MFB_ITEM_WIDTH"  : "32",
-
         "CHANNELS"                : "2",
         "CNTRS_WIDTH"             : "64",
         "HDR_META_WIDTH"          : "24",
@@ -49,7 +44,6 @@ SETTINGS = {
     "2_regions" : {
         "USR_MFB_REGION_SIZE" : "8",
         "PCIE_CQ_MFB_REGIONS" : "2",
-        "PCIE_CC_MFB_REGIONS" : "2",
     },
     "_combinations_" : (
     (                                                            ), # default
