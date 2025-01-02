@@ -99,28 +99,33 @@ class scoreboard #(ITEM_WIDTH, CHANNELS, PKT_SIZE_MAX, META_WIDTH, DEVICE) exten
         return ret;
     endfunction
 
-    function bit pcie_compare(uvm_logic_vector_array::sequence_item#(32) tr_dut, uvm_logic_vector::sequence_item#(META_WIDTH) tr_meta_dut, model_packet packet_model, uvm_logic_vector::sequence_item#(META_WIDTH) tr_meta_model);
+    function bit pcie_compare(
+                              uvm_logic_vector_array::sequence_item#(32) tr_dut,
+                              uvm_logic_vector::sequence_item#(META_WIDTH) tr_meta_dut,
+                              model_packet packet_model,
+                              uvm_logic_vector::sequence_item#(META_WIDTH) tr_meta_model);
         bit ret = 1;
         uvm_logic_vector_array::sequence_item#(32) tr_model;
 
+        // Check the length of the data
+        if (packet_model.data.size() != tr_dut.data.size())
+            return 0;
+
+        // If the currently compared transaction contains data and is the last segment
+        // of the sent packet.
         if (packet_model.data_packet == 1 && packet_model.part == packet_model.part_num) begin
-            if (tr_dut.data.size() != (32 + 4)) begin
-                ret = 0;
-            end else begin
-                ret = 1;
-                for (int unsigned it = 0; it < packet_model.data.size(); it++) begin
-                    if (tr_dut.data[it] != packet_model.data[it]) begin
-                        return 0;
-                    end
+            for (int unsigned it = 0; it < packet_model.data.size(); it++) begin
+                if ((tr_dut.data[it] ==? packet_model.data[it]) !== 1'b1) begin
+                    return 0;
                 end
             end
         end else begin
             tr_model      = uvm_logic_vector_array::sequence_item#(32)::type_id::create("tr_model");
             tr_model.data = packet_model.data;
-            ret           = tr_dut.compare(tr_model);
+            ret           &= tr_dut.compare(tr_model);
         end
 
-        ret = tr_meta_dut.compare(tr_meta_model);
+        ret &= tr_meta_dut.compare(tr_meta_model);
 
         return ret;
     endfunction

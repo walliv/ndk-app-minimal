@@ -294,7 +294,6 @@ begin
                 if (IS_INTEL = FALSE) then
 
                     if (TX_REGIONS = 1) then
-
                         if (high_shift_val_pst = "11") then
                             -- switch the PCIE header on the input to the next one
                             -- DMA_HDR request
@@ -310,13 +309,6 @@ begin
                             end if;
                         end if;
                     else
-
-                        -- switch to the next header because it will be needed by the write of the last word of the
-                        -- transaction when there is also a DMA header transaction to be written at once
-                        if (high_shift_val_pst = "01" and RX_MFB_EOF = '1') then
-                            HDRM_DMA_PCIE_HDR_DST_RDY <= TX_MFB_DST_RDY;
-                        end if;
-
                         if (high_shift_val_pst = "11") then
 
                             RX_MFB_DST_RDY        <= TX_MFB_DST_RDY;
@@ -324,7 +316,8 @@ begin
                             HDRM_DATA_PCIE_HDR_DST_RDY <= TX_MFB_DST_RDY;
 
                             if (RX_MFB_EOF = '1') then
-                                HDRM_DMA_HDR_DST_RDY  <= TX_MFB_DST_RDY;
+                                HDRM_DMA_PCIE_HDR_DST_RDY <= TX_MFB_DST_RDY;
+                                HDRM_DMA_HDR_DST_RDY      <= TX_MFB_DST_RDY;
                             end if;
                         end if;
                     end if;
@@ -468,7 +461,9 @@ begin
                         -- that the initial shift is at its highest value (e.q. "011")
                         high_shift_val_nst <= high_shift_val_pst;
 
-                        if (HDRM_DMA_PCIE_HDR_SIZE = '0') then
+                        -- TODO: It needs to be more generalized. What if DATA header has the length
+                        -- of 0 and the DMA the length of 1
+                        if (HDRM_DATA_PCIE_HDR_SIZE = '0') then
 
                             if (TX_REGIONS = 2 and RX_MFB_EOF = '1') then
 
