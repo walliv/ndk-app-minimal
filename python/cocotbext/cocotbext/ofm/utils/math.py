@@ -1,4 +1,4 @@
-# math.py: OFM Math Math Library
+# math.py: NDK-FPGA Math Library
 # Copyright (C) 2024 CESNET z. s. p. o.
 # Author(s): Ondřej Schwarz <Ondrej.Schwarz@cesnet.cz>
 #

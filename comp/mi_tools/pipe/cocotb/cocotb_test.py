@@ -7,45 +7,48 @@
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, ClockCycles
-from drivers import MIMasterDriverTB as MIMasterDriver
-from drivers import MISlaveDriverTB as MISlaveDriver
-from cocotbext.ofm.mi.monitors import MIMasterMonitor, MISlaveMonitor
+from cocotbext.ofm.mi.drivers import MIRequestDriverAgent, MIResponseDriverAgent
+from cocotbext.ofm.mi.proxymonitor import MIProxyMonitor
+from cocotbext.ofm.mi.monitors import MIMonitor
 from cocotbext.ofm.ver.generators import random_packets
+from cocotbext.ofm.utils.math import ceildiv
 from cocotb_bus.drivers import BitDriver
-from cocotb_bus.scoreboard import Scoreboard
+from scoreboard import Scoreboard
+from cocotbext.ofm.mi.transaction import MiRequestTransaction, MiResponseTransaction, MiTransaction, MiTransactionType
+from cocotb.binary import BinaryValue
+from cocotbext.ofm.utils.signals import filter_bytes_by_bitmask
 
 import itertools
+from random import choice, randint
 
 
 class testbench():
     def __init__(self, dut, debug=False):
         self.dut = dut
-        self.master_stream_in = MIMasterDriver(dut, "IN", dut.CLK)
-        self.master_stream_out = MIMasterMonitor(dut, "OUT", dut.CLK)
-        self.slave_stream_in = MISlaveDriver(dut, "OUT", dut.CLK)
-        self.slave_stream_out = MISlaveMonitor(dut, "IN", dut.CLK)
+        self.request_stream_in = MIRequestDriverAgent(dut, "IN", dut.CLK)
+        self.response_stream_out = MIMonitor(dut, "OUT", dut.CLK)
+        self.response_proxy = MIProxyMonitor(self.response_stream_out, MiTransactionType.Request)
+        self.response_stream_in = MIResponseDriverAgent(dut, "OUT", dut.CLK)
+        self.request_stream_out = MIMonitor(dut, "IN", dut.CLK)
+        self.request_proxy = MIProxyMonitor(self.request_stream_out, MiTransactionType.Response)
 
         self.backpressure = BitDriver(dut.OUT_ARDY, dut.CLK)
 
-        # Create a scoreboard on the master_stream_out bus
+        # Create a scoreboard on the response_stream_out bus
         self.pkts_sent = 0
-        self.expected_output_master = []
-        self.expected_output_slave = []
+        self.expected_output = []
         self.scoreboard = Scoreboard(dut)
-        self.scoreboard.add_interface(self.master_stream_out, self.expected_output_master)
-        self.scoreboard.add_interface(self.slave_stream_out, self.expected_output_slave)
+        self.scoreboard.add_interface(self.response_proxy, self.expected_output)
+        self.scoreboard.add_interface(self.request_proxy, self.expected_output)
 
         if debug:
-            self.master_stream_in.log.setLevel(cocotb.logging.DEBUG)
-            self.master_stream_out.log.setLevel(cocotb.logging.DEBUG)
+            self.request_stream_in.log.setLevel(cocotb.logging.DEBUG)
+            self.response_stream_out.log.setLevel(cocotb.logging.DEBUG)
 
-    def model(self, transaction: bytes, testcase: int):
+    def model(self, test_trans: MiTransaction):
         """Model the DUT based on the input transaction"""
-        if testcase == 0:
-            self.expected_output_slave.append(transaction)
-        else:
-            self.expected_output_master.append(transaction)
 
+        self.expected_output.append(test_trans)
         self.pkts_sent += 1
 
     async def reset(self):
@@ -59,58 +62,72 @@ class testbench():
 async def run_test(dut, pkt_count: int = 1000, item_width_min: int = 1, item_width_max: int = 32):
     # Start clock generator
     cocotb.start_soon(Clock(dut.CLK, 5, units='ns').start())
-    tb = testbench(dut)
+    tb = testbench(dut, debug=False)
     await tb.reset()
 
     tb.backpressure.start((1, i % 5) for i in itertools.count())
 
-    for testcase in range(2):
-        """two test cases - read = 0, write = 1"""
+    item_count = 0
+    trans_cntr = 0
 
-        item_count = 0
+    for transaction in random_packets(item_width_min, item_width_max, pkt_count):
+        trans_cntr += 1
+        request_type = choice([MiTransactionType.Request, MiTransactionType.Response])
+        start_addr = randint(0, 2**(tb.request_stream_in.addr_width*8)-1)
 
-        for transaction in random_packets(item_width_min, item_width_max, pkt_count):
-            left_to_enable = len(transaction)
+        addr = start_addr
+        offset_transaction = transaction
+        byte_enable = BinaryValue(2**len(transaction) - 1)
 
-            cycles = (len(transaction) + (tb.master_stream_in.data_width - 1)) // tb.master_stream_in.data_width
+        start_offset = addr % tb.request_stream_in.data_width
+        end_offset = -(addr + len(offset_transaction)) % tb.request_stream_in.data_width
 
-            item_count += cycles
+        offset_transaction = bytes(start_offset) + offset_transaction + bytes(end_offset)
+        byte_enable = BinaryValue(("0" * start_offset) + byte_enable.binstr + ("0" * end_offset))
+        addr = addr - start_offset
 
-            for i in range(cycles):
-                if left_to_enable > tb.master_stream_in.data_width:
-                    byte_enable = 2**tb.master_stream_in.data_width - 1
-                    """setting all bytes of byte enable to 1"""
+        cycles = ceildiv(bus_width=tb.request_stream_in.data_width, transaction_len=len(offset_transaction))
 
-                    left_to_enable -= tb.master_stream_in.data_width
+        for i in range(cycles):
+            data = offset_transaction[i*tb.request_stream_in.data_width:(i+1)*tb.request_stream_in.data_width]
 
-                else:
-                    byte_enable = 2**left_to_enable - 1
+            be_slice = BinaryValue(byte_enable.binstr[i*tb.request_stream_in.data_width:(i+1)*tb.request_stream_in.data_width][::-1], bigEndian=False).integer
+            enabled_data = filter_bytes_by_bitmask(data, be_slice)
 
-                byte_enable = 15 if testcase == 0 else byte_enable
+            if len(enabled_data) == 0:
+                continue
 
-                tb.model((int.from_bytes(transaction[0:tb.master_stream_in.addr_width], 'little') + i * tb.master_stream_in.addr_width, int.from_bytes(transaction[i * tb.master_stream_in.data_width:(i + 1) * tb.master_stream_in.data_width], 'little'), byte_enable), testcase)
+            test_trans = MiTransaction()
+            test_trans.trans_type = request_type
+            test_trans.addr = addr + i*tb.request_stream_in.addr_width
+            test_trans.data = int.from_bytes(enabled_data, 'little')
+            test_trans.be = be_slice
+            tb.model(test_trans)
+            item_count += 1
 
-            if testcase == 0:
-                """read test"""
-                cocotb.log.debug(f"generated transaction: {transaction.hex()}")
-                tb.master_stream_in.append(("rd", transaction))
-                tb.slave_stream_in.append(("rd", transaction))
+        request_trans = MiRequestTransaction()
+        request_trans.trans_type = request_type
+        request_trans.addr = start_addr
+        request_trans.data = transaction
+        request_trans.data_len = len(transaction)
 
-            else:
-                """write test"""
-                cocotb.log.debug(f"generated transaction: {transaction.hex()}")
-                tb.master_stream_in.append(("wr", transaction))
-                tb.slave_stream_in.append(("wr", transaction))
+        response_trans = MiResponseTransaction()
+        response_trans.trans_type = request_type
+        response_trans.data = offset_transaction
+        response_trans.be = byte_enable.integer
 
-        last_num = 0
+        cocotb.log.debug(f"generated transaction: {transaction.hex()}")
+        tb.request_stream_in.append(request_trans)
+        tb.response_stream_in.append(response_trans)
 
-        stream_out = tb.slave_stream_out if testcase == 0 else tb.master_stream_out
-        transaction_type = "read" if testcase == 0 else "write"
+    last_num = 0
+    stream_out_item_cnt = tb.response_proxy.item_cnt + tb.request_proxy.item_cnt
 
-        while stream_out.item_cnt < item_count:
-            if stream_out.item_cnt // 1000 > last_num:
-                last_num = stream_out.item_cnt // 1000
-                cocotb.log.info(f"Number of {transaction_type} transactions processed: {stream_out.item_cnt}/{item_count}")
-            await ClockCycles(dut.CLK, 100)
+    while stream_out_item_cnt < item_count:
+        if stream_out_item_cnt // 1000 > last_num:
+            last_num = stream_out_item_cnt // 1000
+            cocotb.log.info(f"Number of transactions processed: {stream_out_item_cnt}/{item_count}")
+        await ClockCycles(dut.CLK, 100)
+        stream_out_item_cnt = tb.response_proxy.item_cnt + tb.request_proxy.item_cnt
 
     raise tb.scoreboard.result

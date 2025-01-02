@@ -1,4 +1,4 @@
-# drivers.py: MIDriver
+# drivers.py: MI Drivers
 # Copyright (C) 2024 CESNET z. s. p. o.
 # Author(s): Ondřej Schwarz <Ondrej.Schwarz@cesnet.cz>
 #
@@ -6,90 +6,74 @@
 
 from cocotbext.ofm.base.drivers import BusDriver
 from cocotbext.ofm.utils.math import ceildiv
-from cocotbext.ofm.utils.signals import await_signal_sync
+from cocotbext.ofm.utils.signals import await_signal_sync, align_write_request, align_read_request
+from cocotb.binary import BinaryValue
+from cocotbext.ofm.mi.transaction import MiTransactionType
+from typing import Optional
 
 
-class MIMasterDriver(BusDriver):
-    """Master driver intended for the MI BUS that allows sending data to and recieving from the bus.
-
-    Atributes:
-        _clk_re(cocotb.triggers.RisingEdge): object used for awaiting the rising edge of clock signal.
-        addr_width(int): width of ADDR port in bytes.
-        data_width(int): width of DATA port in bytes.
-        _addr(int), _dwr(bytearray), _be(int), _wr(int), _rd(int): control signals that are then propagated to the MI BUS.
-
-    """
+class MIRequestDriver(BusDriver):
+    """Request driver intended for the MI BUS that allows sending data to and receiving from the bus."""
 
     _signals = ["addr", "dwr", "be", "wr", "rd", "ardy", "drd", "drdy"]
     _optional_signals = ["mwr"]
 
     def __init__(self, entity, name, clock, array_idx=None) -> None:
         super().__init__(entity, name, clock, array_idx=array_idx)
-        self.addr_width = len(self.bus.addr) // 8
-        self.data_width = len(self.bus.dwr) // 8
+        self.__addr_width = len(self.bus.addr) // 8
+        self.__data_width = len(self.bus.dwr) // 8
         self._clear_control_signals()
         self._propagate_control_signals()
+
+    @property
+    def addr_width(self):
+        return self.__addr_width
+
+    @property
+    def data_width(self):
+        return self.__data_width
 
     def _clear_control_signals(self) -> None:
         """Sets control signals to default values without sending them to the MI bus."""
 
-        self._addr = 0
-        self._dwr = bytearray(self.data_width)
-        self._be = 0
-        self._wr = 0
-        self._rd = 0
+        self.__addr = 0
+        self.__dwr = bytearray(self.__data_width)
+        self.__be = 0
+        self.__wr = 0
+        self.__rd = 0
 
     def _propagate_control_signals(self) -> None:
         """Sends value of control signals to the MI bus."""
 
-        self.bus.addr.value = self._addr
-        self.bus.dwr.value = int.from_bytes(self._dwr, 'little')
-        self.bus.be.value = self._be
-        self.bus.wr.value = self._wr
-        self.bus.rd.value = self._rd
+        self.bus.addr.value = self.__addr
+        self.bus.dwr.value = int.from_bytes(self.__dwr, 'little')
+        self.bus.be.value = self.__be
+        self.bus.wr.value = self.__wr
+        self.bus.rd.value = self.__rd
 
-    async def write(self, addr: int, dwr: bytes, byte_enable: int = None, sync: bool = True) -> None:
-        """writes variable-lenght transaction to the write signals of the MI bus.
-
-        Note:
-            In reality, the transaction is divided into one or multiple 4B transactions.
-
-        Args:
-            addr: address, where the data are to be written to.
-            dwr: data to be written to the dwr signal.
-            byte_enable: optional, custom byte enable, if not set, all bytes are considered to be valid.
-            sync: optional, True by default. If True, pause of one clock cycle is added after each 4B transaction.
-
-        """
-
-        cycles = ceildiv(self.data_width, len(dwr))
-
-        for i in range(cycles):
-            await self.write32(addr + i * self.data_width, dwr[i * self.data_width: (i + 1) * self.data_width], byte_enable, sync)
-
-    async def write32(self, addr: int, dwr: bytes, byte_enable: int = None, sync: bool = True) -> None:
+    async def _write_word(self, addr: int, dwr: bytes, byte_enable: Optional[int] = None) -> None:
         """writes two 4B transaction to the write signals of the MI bus.
 
         Args:
             addr: address, where the data are to be written to.
             dwr: data to be written to the dwr signal.
             byte_enable: optional, custom byte enable, if not set, all bytes are considered to be valid.
-            sync: optional, True by default. If True, pause of one clock cycle is added after the transaction.
 
         """
+        assert addr >= 0
 
         await self._clk_re
 
-        self._wr = 1
-        self._addr = addr
-        self._dwr = dwr
+        self.__wr = 1
+        self.__addr = addr
+        self.__dwr = dwr
 
         if byte_enable is None:
             byte_enable = 2**len(dwr) - 1
 
-        self._be = byte_enable
+        self.__be = byte_enable
 
-        self.log.debug(f"Writting {self._dwr.hex()} to {self._addr.to_bytes(self.addr_width, 'little').hex()} with byte_enable: {self._be}")
+        self.log.debug(f"Writting {self.__dwr.hex()} to {self.__addr.to_bytes(self.__addr_width, 'little').hex()} with byte_enable: {self.__be}")
 
         self._propagate_control_signals()
 
@@ -98,70 +82,29 @@ class MIMasterDriver(BusDriver):
         self._clear_control_signals()
         self._propagate_control_signals()
 
-        if sync:
-            await self._clk_re
-
-    async def write64(self, addr: int, dwr: bytes, byte_enable: int = None, sync: bool = True) -> None:
-        """writes two 4B transaction to the write signals of the MI bus.
-
-        Args:
-            addr: address, where the data are to be written to.
-            dwr: data to be written to the dwr signal.
-            byte_enable: optional, custom byte enable, if not set, all bytes are considered to be valid.
-            sync: optional, True by default. If True, pause of one clock cycle is added after each 4B transaction.
-
-        """
-
-        await self.write(addr, dwr, byte_enable, sync)
-
-    async def read(self, addr: int, byte_count: bytes, byte_enable: int = None, sync: bool = True) -> bytes:
-        """Reads variable-lenght transaction from the read signals of the MI bus.
-
-        Note:
-            In reality, the transaction is divided into one or multiple 4B transactions.
-
-        Args:
-            addr: address, where the data are to be written to.
-            byte_count: number of bytes to be returned.
-            sync: optional, True by default. If True, pause of one clock cycle is added after the transaction.
-
-        Returns:
-            Returns data of the requested length.
-
-        """
-
-        drd = bytearray(byte_count)
-
-        cycles = ceildiv(self.data_width, byte_count)
-
-        for i in range(cycles):
-            drd[i * self.data_width: (i + 1) * self.data_width] = await self.read32(addr + i * self.data_width, byte_enable, sync)
-
-        return bytes(drd[0: byte_count])
-
-    async def read32(self, addr: int, byte_enable: int = None, sync: bool = True) -> bytes:
+    async def _read_word(self, addr: int, byte_enable: Optional[int] = None) -> bytes:
         """Reads one 4B transaction from the read signals of the MI bus.
 
         Args:
             addr: address, where the data are to be written to.
-            sync: optional, True by default. If True, pause of one clock cycle is added after the transaction.
 
         Returns:
             Returns 4B of data.
 
         """
-
-        drd = bytearray(self.data_width)
+        assert addr >= 0
 
         await self._clk_re
 
-        self._rd = 1
-        self._addr = addr
+        self.__rd = 1
+        self.__addr = addr
 
         if byte_enable is None:
-            byte_enable = 2**len(drd) - 1
+            byte_enable = BinaryValue(2**self.__data_width - 1)
+        else:
+            byte_enable = BinaryValue(byte_enable, n_bits=4, bigEndian=False)
 
-        self._be = byte_enable
+        self.__be = BinaryValue(byte_enable.binstr[::-1]).integer
 
         self._propagate_control_signals()
 
@@ -176,37 +119,73 @@ class MIMasterDriver(BusDriver):
         rd_data.big_endian = False
         drd = rd_data.buff
 
-        self.log.debug(f"Read {drd.hex()} from {addr.to_bytes(self.addr_width, 'little').hex()}")
-
-        if sync:
-            await self._clk_re
+        self.log.debug(f"Read {drd.hex()} from {addr.to_bytes(self.__addr_width, 'little').hex()}")
 
         return bytes(drd)
 
-    async def read64(self, addr: int, byte_enable: int = None, sync: bool = True) -> bytes:
-        """Reads two 4B transaction from the read signals of the MI bus.
+    async def write(self, addr: int, dwr: bytes, *, byte_enable: Optional[int] = None) -> None:
+        """writes variable-lenght transaction to the write signals of the MI bus.
+
+        Note:
+            In reality, the transaction is divided into one or multiple 4B transactions.
+
+        Args:
+            addr: address to which the data are to be written.
+            dwr: data to be written to the dwr signal.
+            byte_enable: optional, custom byte enable, if not set, all bytes are considered to be valid.
+
+        """
+        assert addr >= 0
+
+        byte_enable = BinaryValue(2**len(dwr) - 1 if byte_enable is None else byte_enable, n_bits=len(dwr), bigEndian=False)
+        _, _, addr, dwr, byte_enable = align_write_request(self.__data_width, addr, dwr, byte_enable=byte_enable)
+
+        cycles = ceildiv(self.__data_width, len(dwr))
+
+        for i in range(cycles):
+            be_slice = byte_enable.binstr[i*self.__data_width : (i+1)*self.__data_width]
+            be_slice_inv = be_slice[::-1]
+            be = BinaryValue(be_slice_inv).integer
+            await self._write_word(addr + i*self.__data_width, dwr[i*self.__data_width : (i+1)*self.__data_width], be)
+
+    async def read(self, addr: int, byte_count: int, byte_enable: Optional[int] = None) -> bytes:
+        """Reads variable-lenght transaction from the read signals of the MI bus.
+
+        Note:
+            In reality, the transaction is divided into one or multiple 4B transactions.
 
         Args:
             addr: address, where the data are to be written to.
-            sync: optional, True by default. If True, pause of one clock cycle is added after the transaction.
+            byte_count: number of bytes to be returned.
 
         Returns:
-            Returns 8B of data.
+            Returns data of the requested length.
 
         """
+        assert addr >= 0
 
-        drd = await self.read(addr, 8, byte_enable, sync)
-        return bytes(drd)
+        byte_enable = BinaryValue(2**byte_count - 1 if byte_enable is None else byte_enable, n_bits=byte_count, bigEndian=False)
+        start_offset, end_offset, addr, byte_count, byte_enable = align_read_request(self.__data_width, addr, byte_count, byte_enable=byte_enable)
+
+        drd = bytearray(byte_count)
+
+        cycles = ceildiv(self.__data_width, byte_count)
+
+        for i in range(cycles):
+            be = BinaryValue(byte_enable.binstr[i*self.__data_width : (i+1)*self.__data_width]).integer
+            drd[i*self.__data_width: (i+1)*self.__data_width] = await self._read_word(addr + i*self.__data_width, be)
+
+        return bytes(drd[start_offset: byte_count-end_offset])
 
 
-class MISlaveDriver(BusDriver):
-    """Slave driver intended for the MI BUS that allows sending data to the read signals of the bus.
+class MIResponseDriver(BusDriver):
+    """Response driver intended for the MI BUS that allows sending data to the read signals of the bus.
 
     Atributes:
         _clk_re(cocotb.triggers.RisingEdge): object used for awaiting the rising edge of clock signal.
-        addr_width(int): width of ADDR port in bytes.
-        data_width(int): width of DATA port in bytes.
-        _addr(int), _dwr(bytearray), _be(int), _wr(int), _rd(int): control signals that are then propagated to the MI BUS.
+        __addr_width(int): width of ADDR port in bytes.
+        __data_width(int): width of DATA port in bytes.
+        __addr(int), __dwr(bytearray), __be(int), __wr(int), __rd(int): control signals that are then propagated to the MI BUS.
 
     """
 
@@ -215,26 +194,46 @@ class MISlaveDriver(BusDriver):
 
     def __init__(self, entity, name, clock, array_idx=None) -> None:
         super().__init__(entity, name, clock, array_idx=array_idx)
-        self.addr_width = len(self.bus.addr) // 8
-        self.data_width = len(self.bus.dwr) // 8
+        self.__addr_width = len(self.bus.addr) // 8
+        self.__data_width = len(self.bus.dwr) // 8
         self._clear_control_signals()
         self._propagate_control_signals()
 
     def _clear_control_signals(self) -> None:
         """Sets control signals to default values without sending them to the MI bus."""
 
-        self._ardy = 0
-        self._drdy = 0
-        self._drd = bytearray(self.data_width)
+        self.__drdy = 0
+        self.__drd = bytearray(self.__data_width)
 
     def _propagate_control_signals(self) -> None:
         """Sends value of control signals to the MI bus."""
 
-        self.bus.ardy.value = self._ardy
-        self.bus.drdy.value = self._drdy
-        self.bus.drd.value = int.from_bytes(self._drd, 'little')
+        self.bus.drdy.value = self.__drdy
+        self.bus.drd.value = int.from_bytes(self.__drd, 'little')
 
-    async def write(self, drd: bytes, sync: bool = True) -> None:
+    async def _write_word(self, drd: bytes) -> None:
+        """writes one 4B transaction to the read signals of the MI bus.
+
+        Args:
+            drd: data to be written to the drd signal.
+
+        """
+
+        while not (self.bus.ardy.value and self.bus.rd.value):
+            await self._clk_re
+
+        self.__drd = drd
+        self.__drdy = 1
+
+        self.log.debug(f"Responding with {self.__drd.hex()} from {hex(self.bus.addr.value)}")
+
+        self._propagate_control_signals()
+
+        await self._clk_re
+        self._clear_control_signals()
+        self._propagate_control_signals()
+
+    async def write(self, drd: bytes) -> None:
         """writes variable-lenght transaction to the read signals MI bus.
 
         Note:
@@ -242,48 +241,62 @@ class MISlaveDriver(BusDriver):
 
         Args:
             drd: data to be written to the drd signal.
-            sync: optional, True by default. If True, pause of one clock cycle is added after each 4B transaction.
 
         """
 
-        cycles = ceildiv(self.data_width, len(drd))
+        cycles = ceildiv(self.__data_width, len(drd))
 
         for i in range(cycles):
-            await self.write32(drd[i * 4: i * 4 + 4], sync)
+            await self._write_word(drd[i * self.__data_width: (i+1) * self.__data_width])
 
-    async def write32(self, drd: bytes, sync: bool = True) -> None:
-        """writes one 4B transaction to the read signals of the MI bus.
 
-        Args:
-            drd: data to be written to the drd signal.
-            sync: optional, True by default. If True, pause of one clock cycle is added after the transaction.
+class MIRequestDriverAgent(MIRequestDriver):
+    """MI Request Driver with _send_thread function."""
 
-        """
+    def __init__(self, entity, name, clock, array_idx=None) -> None:
+        super().__init__(entity, name, clock, array_idx=array_idx)
 
-        await self._clk_re
-        await await_signal_sync(self._clk_re, self.bus.rd)
+    async def _send_thread(self) -> None:
+        while True:
+            while not self._sendQ:
+                self._pending.clear()
+                await self._pending.wait()
 
-        self._ardy = 1
+            while self._sendQ:
+                transaction, callback, event, kwargs = self._sendQ.popleft()
 
-        self._drd = drd
-        self._drdy = 1
+                if transaction.trans_type == MiTransactionType.Request:  # read test
+                    await self.read(transaction.addr, transaction.data_len)
+                else:  # write test
+                    await self.write(transaction.addr, transaction.data)
 
-        self.log.debug(f"Responding with {self._drd.hex()} from {hex(self.bus.addr.value)}")
+                if event:
+                    event.set()
+                if callback:
+                    callback(transaction)
 
-        self._propagate_control_signals()
 
-        if sync:
-            await self._clk_re
-            self._clear_control_signals()
-            self._propagate_control_signals()
+class MIResponseDriverAgent(MIResponseDriver):
+    """MI Response Driver with _send_thread function."""
 
-    async def write64(self, drd: bytes, sync: bool = True) -> None:
-        """writes two 4B transaction to the read signals of the MI bus.
+    def __init__(self, entity, name, clock, array_idx=None):
+        super().__init__(entity, name, clock, array_idx=array_idx)
 
-        Args:
-            drd: data to be written to the dwr signal.
-            sync: optional, True by default. If True, pause of one clock cycle is added after each 4B transaction.
+    async def _send_thread(self) -> None:
+        while True:
+            while not self._sendQ:
+                self._pending.clear()
+                await self._pending.wait()
 
-        """
+            while self._sendQ:
+                transaction, callback, event, kwargs = self._sendQ.popleft()
 
-        await self.write(drd, sync)
+                if transaction.trans_type == MiTransactionType.Request:  # read test
+                    await self.write(transaction.data)
+                else:  # write test
+                    pass
+
+                if event:
+                    event.set()
+                if callback:
+                    callback(transaction)
