@@ -48,15 +48,17 @@ class sequence_item #(int unsigned ITEM_WIDTH) extends uvm_common::sequence_item
     // Properly compare all transaction attributes representing output pins.
     function bit do_compare(uvm_object rhs, uvm_comparer comparer);
         sequence_item #(ITEM_WIDTH) rhs_;
+        bit ret;
 
         if(!$cast(rhs_, rhs)) begin
             `uvm_fatal("do_compare:", "Failed to cast transaction object.")
             return 0;
         end
 
-        // Using simple equivalence operator (faster).
-        return (super.do_compare(rhs, comparer) &&
-            (data == rhs_.data));
+        ret = 1;
+        ret &= super.do_compare(rhs, comparer);
+        ret &= data === rhs_.data;
+        return ret;
     endfunction: do_compare
 
     // Convert transaction into human readable form.

@@ -18,11 +18,6 @@ SETTINGS = {
         "PCIE_CQ_MFB_BLOCK_SIZE"  : "8",
         "PCIE_CQ_MFB_ITEM_WIDTH"  : "32",
 
-        "PCIE_CC_MFB_REGIONS"     : "1",
-        "PCIE_CC_MFB_REGION_SIZE" : "1",
-        "PCIE_CC_MFB_BLOCK_SIZE"  : "8",
-        "PCIE_CC_MFB_ITEM_WIDTH"  : "32",
-
         "CHANNELS"                : "2",
         "CNTRS_WIDTH"             : "64",
         "HDR_META_WIDTH"          : "24",
@@ -32,6 +27,11 @@ SETTINGS = {
         "DMA_HDR_POINTER_WIDTH"   : "10",
 
         "PCIE_LEN_MAX"            : "256",
+
+        "__core_params__": {
+            "UVM_TEST"     : "test::base",
+        },
+
     },
     "intel_dev" : {
         "DEVICE"                  : "\\\"AGILEX\\\""
@@ -49,10 +49,18 @@ SETTINGS = {
     "2_regions" : {
         "USR_MFB_REGION_SIZE" : "8",
         "PCIE_CQ_MFB_REGIONS" : "2",
-        "PCIE_CC_MFB_REGIONS" : "2",
     },
+
+
+    "test_speed" : {
+        "__core_params__": {
+            "UVM_TEST": "test::speed",
+        },
+    },
+
     "_combinations_" : (
     (                                                            ), # default
+    (             "test_speed" ,                                 ), # default
     (             "8_channels" ,                                 ),
     # (             "8_channels" , "buff_size_small",              ),
     (                                               "2_regions", ),
@@ -60,6 +68,7 @@ SETTINGS = {
     # (             "16_channels", "buff_size_small", "2_regions", ),
 
     ("intel_dev",                                   "2_regions", ),
+    ("intel_dev",                                   "2_regions", "test_speed"),
     ("intel_dev", "16_channels",                    "2_regions", ),
     # ("intel_dev", "16_channels", "buff_size_small", "2_regions", ),
     ),
