@@ -240,6 +240,10 @@ class MPLS(base_node):
             config.mpls -= 1
         if (config.mpls == 0):
             proto["MPLS"] = 0
+            # This ensures that at least the weight of IP protocols
+            # is always non-zero after the last MPLS.
+            proto["IPv4"] += 1
+            proto["IPv6"] += 1
 
         return proto
 
