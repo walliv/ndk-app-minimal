@@ -1,3 +1,4 @@
-from .servicer import Servicer
+from .server import NfbDmaThreadedGrpcServer
+from .dma import RAM
 
-__all__ = ['Servicer']
+__all__ = ["NfbDmaThreadedGrpcServer", "RAM"]
