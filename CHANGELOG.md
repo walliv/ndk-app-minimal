@@ -15,33 +15,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cards: Introduced support for iWave G35P card.
 - core: Introduced implementation of 4x10G and 4x25G network_mod_core for UltraScale+ FPGAs (requires closed-source submodules).
 - core: Add support for dropping in TX_MAC_LITE when the link is down.
+- comp: Introduced new components: AXIS_ASFIFOX.
 
 ### Changed
+- cocotb: Reworked MI driver for cocotb.
 - build: Unify IP tcl scripts on UltraScale+ cards and Intel FPGA cards with P-Tile.
 - build: Pass DMA_DEBUG_ENABLE parameter upon make call.
 - build: Make DMA_MODULES parameter part of the generated VHDL package.
-- comp: Replace /dev/nfb0 by real default device (selected by libnfb).
+- comp: Replaced /dev/nfb0 by real default device (selected by libnfb).
 - card: Enabled support for DMA Calypte on DK-DEV-1SDX-P card.
-- card: Change default PCIe configuration on DK-DEV-1SDX-P card to 1xGen4x16.
-- dma: Disable unused speed meters in DMA Medusa (saving FPGA resources).
+- card: Changed default PCIe configuration on DK-DEV-1SDX-P card to 1xGen4x16.
+- docs: Improved the documentation of MFB_FRAME_EXTENDER, MFB_USER_PACKET_GEN.
+- dma: Disabled unused speed meters in DMA Medusa (saving FPGA resources).
 - uvm: Improved sequence_main in APP CORE verification.
 - uvm: Improved DMA Calypte verification.
 - ver: Improved DMA Medusa verification (especially removed PTC and PCIe adapters).
 
 ### Removed
-- core: Remove obsolete PCI generics from FPGA_COMMON.
-- core: Remove obsolete parameter DMA_400G_DEMO.
+- core: Removed obsolete PCI generics from FPGA_COMMON.
+- core: Removed obsolete parameter DMA_400G_DEMO.
+- comp: Remove old unused components (MI_REGISTER_ARRAY, MULTI_FIFO, FIFO_N1, INSPECTOR).
+- uvm: Removed obsolete revision of UVM packet generator.
 
 ### Fixed
-- card: Fix assign constant when DDR_PORTS <=1 on fb2cghh card.
-- dma: Deactivate danger relaxed ordering in RX DMA Calypte.
+- card: Fixed assign constant when DDR_PORTS <=1 on fb2cghh card.
+- dma: Deactivated danger relaxed ordering in RX DMA Calypte.
 - dma: Allow only one in-progress update per channel in RX DMA Medusa.
 - dma: Allow the channel to be turned off only when update in RX DMA Medusa is not in progress.
-- dma: Use DBG_CNTR_EN parameter also for DMA_CTRL module in RX DMA Medusa (saving FPGA resources).
-- dma: Fix size of FIFO for PCIe response address in TX DMA Medusa.
-- dma: Fix of rounding integer division in DMA Medusa.
-- app: Add important missing generics for the MEM_LOGGER instance in Minimal app.
-- uvm: Fix deprecated KeysView import in FlowTest Python generator.
+- dma: Used DBG_CNTR_EN parameter also for DMA_CTRL module in RX DMA Medusa (saving FPGA resources).
+- dma: Fixed size of FIFO for PCIe response address in TX DMA Medusa.
+- dma: Fixed of rounding integer division in DMA Medusa.
+- dma: Fixed counting buffers size in DMA Medusa.
+- dma: Fixed early PCIe header drop in RX DMA Calypte.
+- app: Fixed important missing generics for the MEM_LOGGER instance in Minimal app.
+- uvm: Fixed deprecated KeysView import in FlowTest Python generator.
+- uvm: Fixed correction of protocol weights after the last MPLS in UVM packet generator.
 
 ## [0.8.0] - 2024-11-19
 
