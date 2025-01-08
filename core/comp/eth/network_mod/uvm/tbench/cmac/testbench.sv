@@ -23,7 +23,7 @@ module testbench;
     // ------ //
 
     logic CLK_USR            = 0;
-    logic CLK_ETH[ETH_PORTS] = '{ETH_PORTS{1'b0}};
+    logic CLK_ETH[ETH_PORTS];
     logic CLK_MI             = 0;
     logic CLK_MI_PHY         = 0;
     logic CLK_MI_PMD         = 0;
@@ -168,7 +168,8 @@ module testbench;
         .LANE_TX_POLARITY (LANE_TX_POLARITY ),
         .RESET_WIDTH      (RESET_WIDTH      ),
         .DEVICE           (DEVICE           ),
-        .BOARD            (BOARD            )
+        .BOARD            (BOARD            ),
+        .CLK_ETH_PERIOD   (CLK_ETH_PERIOD   )
     ) DUT_U (
         .CLK_ETH    (CLK_ETH   ),
         .CLK_USR    (CLK_USR   ),

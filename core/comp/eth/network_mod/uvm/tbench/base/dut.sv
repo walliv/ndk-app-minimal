@@ -42,6 +42,7 @@ module DUT_BASE #(
     string DEVICE,
     string BOARD
 )(
+    output wire logic CLK_ETH[ETH_PORTS],
     input wire logic CLK_USR,
     input wire logic CLK_MI,
     input wire logic CLK_MI_PHY,
@@ -158,7 +159,7 @@ module DUT_BASE #(
     )
     VHDL_DUT_U (
         .CLK_USER       (CLK_USR),
-        .CLK_ETH        (),
+        .CLK_ETH        (CLK_ETH),
 
         .RESET_USER     (reset_user),
         .RESET_ETH      (reset_eth),

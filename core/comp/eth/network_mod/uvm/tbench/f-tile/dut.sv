@@ -40,9 +40,10 @@ module DUT #(
     int unsigned RESET_WIDTH,
 
     string DEVICE,
-    string BOARD
+    string BOARD,
+    time CLK_ETH_PERIOD[ETH_PORTS]
 )(
-    input wire logic CLK_ETH[ETH_PORTS],
+    output wire logic CLK_ETH[ETH_PORTS],
     input wire logic CLK_USR,
     input wire logic CLK_MI,
     input wire logic CLK_MI_PHY,
@@ -97,6 +98,7 @@ module DUT #(
         .DEVICE           (DEVICE           ),
         .BOARD            (BOARD            )
     ) DUT_BASE_U (
+        .CLK_ETH    (CLK_ETH),
         .CLK_USR    (CLK_USR   ),
         .CLK_MI     (CLK_MI    ),
         .CLK_MI_PHY (CLK_MI_PHY),

@@ -40,9 +40,10 @@ module DUT #(
     int unsigned RESET_WIDTH,
 
     string DEVICE,
-    string BOARD
+    string BOARD,
+    time CLK_ETH_PERIOD[ETH_PORTS]
 )(
-    input wire logic CLK_ETH[ETH_PORTS],
+    output wire logic CLK_ETH[ETH_PORTS],
     input wire logic CLK_USR,
     input wire logic CLK_MI,
     input wire logic CLK_MI_PHY,
@@ -99,6 +100,7 @@ module DUT #(
         .DEVICE           (DEVICE           ),
         .BOARD            (BOARD            )
     ) DUT_BASE_U (
+        .CLK_ETH    (CLK_ETH   ),
         .CLK_USR    (CLK_USR   ),
         .CLK_MI     (CLK_MI    ),
         .CLK_MI_PHY (CLK_MI_PHY),
@@ -126,7 +128,9 @@ module DUT #(
     generate;
         for (genvar eth_it = 0; eth_it < ETH_PORTS; eth_it++) begin
             logic [AVST_WIDTH*ITEM_WIDTH-1 : 0] avst_data;
+            logic CLK_ETH_GEN = 1'b0;
 
+            always #(CLK_ETH_PERIOD[eth_it]/2) CLK_ETH_GEN = ~CLK_ETH_GEN;
             // RX
             for (genvar data_it = 0; data_it < AVST_WIDTH; data_it++) begin
                 assign avst_data[(AVST_WIDTH -data_it)*ITEM_WIDTH-1 -: ITEM_WIDTH] = eth_rx[eth_it].DATA[(data_it+1)*ITEM_WIDTH-1 -: ITEM_WIDTH];
@@ -152,7 +156,7 @@ module DUT #(
             assign DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.tx_avst_ready[0] = eth_tx[eth_it].READY;
 
             // CLK
-            assign DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.etile_clk_out_vec[0] = CLK_ETH[eth_it];
+            assign DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.etile_clk_out_vec[0] = CLK_ETH_GEN;
         end
     endgenerate
 
