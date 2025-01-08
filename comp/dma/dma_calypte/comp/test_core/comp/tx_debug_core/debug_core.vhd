@@ -1098,12 +1098,14 @@ begin
 
             when S_COMP_MIDDLE_PKT =>
 
-                pattern_match_cntr_incr    <= (not (or comp_res_reg_diff)) and aux_sig_mfb_dst_rdy;
-                pattern_mismatch_cntr_incr <= (or comp_res_reg_diff) and aux_sig_mfb_dst_rdy;
+                if (aux_sig_mfb_src_rdy = '1') then
+                    pattern_match_cntr_incr    <= (not (or comp_res_reg_diff)) and aux_sig_mfb_dst_rdy;
+                    pattern_mismatch_cntr_incr <= (or comp_res_reg_diff) and aux_sig_mfb_dst_rdy;
 
-                comp_res_diff_v            := (or comp_res_reg_diff);
-                if (aux_sig_mfb_eof = "1" or comp_res_diff_v = '1') then
-                    pattern_comp_nst <= S_IDLE;
+                    comp_res_diff_v            := (or comp_res_reg_diff);
+                    if (aux_sig_mfb_eof = "1" or comp_res_diff_v = '1') then
+                        pattern_comp_nst <= S_IDLE;
+                    end if;
                 end if;
         end case;
     end process;
