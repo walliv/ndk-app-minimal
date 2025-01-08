@@ -51,8 +51,8 @@ module testbench;
     intel_mac_seg_if #(SEGMENTS) eth_tx[ETH_PORTS] (CLK_ETH);
 
     mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, ETH_TX_HDR_WIDTH) usr_rx     [ETH_PORTS](CLK_USR);
-    mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, 0)                              usr_tx_data[ETH_PORTS](CLK_USR);
-    mvb_if #(REGIONS, ETH_RX_HDR_WIDTH)                                                                                usr_tx_hdr [ETH_PORTS](CLK_USR);
+    mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, 0)                usr_tx_data[ETH_PORTS](CLK_USR);
+    mvb_if #(REGIONS, ETH_RX_HDR_WIDTH)                                      usr_tx_hdr [ETH_PORTS](CLK_USR);
 
     mi_if #(MI_DATA_WIDTH, MI_ADDR_WIDTH) mi(CLK_MI);
     mi_if #(MI_DATA_WIDTH, MI_ADDR_WIDTH) mi_phy(CLK_MI_PHY);
@@ -79,10 +79,10 @@ module testbench;
         automatic uvm_root m_root;
         automatic virtual reset_if vif_rst_eth[ETH_PORTS] = rst_eth;
         automatic virtual mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, ETH_TX_HDR_WIDTH) vif_usr_rx     [ETH_PORTS] = usr_rx;
-        automatic virtual mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, 0)                              vif_usr_tx_data[ETH_PORTS] = usr_tx_data;
-        automatic virtual mvb_if #(REGIONS, ETH_RX_HDR_WIDTH)                                                                                vif_usr_tx_hdr [ETH_PORTS] = usr_tx_hdr;
-        automatic virtual intel_mac_seg_if #(SEGMENTS)                                                                                             vif_eth_rx     [ETH_PORTS] = eth_rx;
-        automatic virtual intel_mac_seg_if #(SEGMENTS)                                                                                             vif_eth_tx     [ETH_PORTS] = eth_tx;
+        automatic virtual mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, 0)                vif_usr_tx_data[ETH_PORTS] = usr_tx_data;
+        automatic virtual mvb_if #(REGIONS, ETH_RX_HDR_WIDTH)                                      vif_usr_tx_hdr [ETH_PORTS] = usr_tx_hdr;
+        automatic virtual intel_mac_seg_if #(SEGMENTS)                                             vif_eth_rx     [ETH_PORTS] = eth_rx;
+        automatic virtual intel_mac_seg_if #(SEGMENTS)                                             vif_eth_tx     [ETH_PORTS] = eth_tx;
 
         // SET INTERFACE
         uvm_config_db#(virtual reset_if)::set(null, "", "vif_rst_usr", rst_usr);
