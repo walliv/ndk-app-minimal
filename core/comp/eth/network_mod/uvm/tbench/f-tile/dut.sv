@@ -125,45 +125,56 @@ module DUT #(
 
     generate;
         for (genvar eth_it = 0; eth_it < ETH_PORTS; eth_it++) begin
-            localparam int unsigned ETH_PORT_CHAN_LOCAL = ETH_PORT_CHAN[eth_it];
-            initial assert(ETH_PORT_CHAN_LOCAL == 1); // TODO
+            initial assert(ETH_PORT_CHAN[eth_it] == 1); // TODO
 
-            localparam int unsigned SEGMENTS = ((ETH_PORT_SPEED[0] == 400) ? 16 :
-                                                (ETH_PORT_SPEED[0] == 200) ? 8  :
-                                                (ETH_PORT_SPEED[0] == 100) ? 4  :
-                                                (ETH_PORT_SPEED[0] == 50 ) ? 2  :
-                                                (ETH_PORT_SPEED[0] == 40 ) ? 2  :
-                                                (ETH_PORT_SPEED[0] == 25 ) ? 1  :
-                                                (ETH_PORT_SPEED[0] == 10 ) ? 1  :
+            localparam int unsigned SEGMENTS = ((ETH_PORT_SPEED[eth_it] == 400) ? 16 :
+                                                (ETH_PORT_SPEED[eth_it] == 200) ? 8  :
+                                                (ETH_PORT_SPEED[eth_it] == 100) ? 4  :
+                                                (ETH_PORT_SPEED[eth_it] == 50 ) ? 2  :
+                                                (ETH_PORT_SPEED[eth_it] == 40 ) ? 2  :
+                                                (ETH_PORT_SPEED[eth_it] == 25 ) ? 1  :
+                                                (ETH_PORT_SPEED[eth_it] == 10 ) ? 1  :
                                                                              0  );
-            logic [SEGMENTS*64-1:0]           mac_data     [ETH_PORT_CHAN[eth_it]-1:0];
-            logic [SEGMENTS-1:0]              mac_inframe  [ETH_PORT_CHAN[eth_it]-1:0];
-            logic [SEGMENTS*3-1:0]            mac_eop_empty[ETH_PORT_CHAN[eth_it]-1:0];
-            logic [SEGMENTS-1:0]              mac_fcs_error[ETH_PORT_CHAN[eth_it]-1:0];
-            logic [SEGMENTS*2-1:0]            mac_error    [ETH_PORT_CHAN[eth_it]-1:0];
-            logic [SEGMENTS*3-1:0]            mac_status   [ETH_PORT_CHAN[eth_it]-1:0];
-            logic [ETH_PORT_CHAN[eth_it]-1:0] mac_valid;
 
-            assign eth_tx[eth_it].DATA      = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_data}};
-            assign eth_tx[eth_it].INFRAME   = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_inframe}};
-            assign eth_tx[eth_it].EOP_EMPTY = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_eop_empty}};
-            assign eth_tx[eth_it].FCS_ERROR = {>>{DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_error}}; // Both have the same width
-            assign eth_tx[eth_it].VALID     = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_valid;
+            //logic CLK_ETH_GEN = 1'b1; // TRY 1'b1
+            logic CLK_ETH_GEN = 1'b0;
+            wire logic [SEGMENTS*64-1:0]           mac_data     [ETH_PORT_CHAN[eth_it]-1:0];
+            wire logic [SEGMENTS-1:0]              mac_inframe  [ETH_PORT_CHAN[eth_it]-1:0];
+            wire logic [SEGMENTS*3-1:0]            mac_eop_empty[ETH_PORT_CHAN[eth_it]-1:0];
+            wire logic [SEGMENTS-1:0]              mac_fcs_error[ETH_PORT_CHAN[eth_it]-1:0];
+            wire logic [SEGMENTS*2-1:0]            mac_error    [ETH_PORT_CHAN[eth_it]-1:0];
+            wire logic [SEGMENTS*3-1:0]            mac_status   [ETH_PORT_CHAN[eth_it]-1:0];
+            wire logic [ETH_PORT_CHAN[eth_it]-1:0] mac_valid;
+            wire logic [ETH_PORT_CHAN[eth_it]-1:0] mac_ready;
 
+
+            //Generate internal clock
+            always #(CLK_ETH_PERIOD[eth_it]/2) CLK_ETH_GEN = ~CLK_ETH_GEN;
+
+            //Channel
+            for (genvar chan_it = 0; chan_it < ETH_PORT_CHAN[eth_it]; chan_it++) begin
                 // TX connections
-            //for (genvar chan_it = 0; chan_it < ETH_PORT_CHAN[eth_it]; chan_it++) begin
+                assign eth_tx[eth_it].DATA      = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_data[chan_it];
+                assign eth_tx[eth_it].INFRAME   = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_inframe[chan_it];
+                assign eth_tx[eth_it].EOP_EMPTY = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_eop_empty[chan_it];
+                assign eth_tx[eth_it].FCS_ERROR = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_error[chan_it]; // Both have the same width
+                assign eth_tx[eth_it].VALID     = DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_adapt_valid[chan_it];
+                assign mac_ready[chan_it] = eth_tx[eth_it].READY;
 
-            assign mac_data[0]      = eth_rx[eth_it].DATA;
-            assign mac_inframe[0]   = eth_rx[eth_it].INFRAME;
-            assign mac_eop_empty[0] = eth_rx[eth_it].EOP_EMPTY;
-            assign mac_fcs_error[0] = eth_rx[eth_it].FCS_ERROR;
-            assign mac_error[0]     = eth_rx[eth_it].ERROR;
-            assign mac_status[0]    = eth_rx[eth_it].STATUS_DATA;
-            assign mac_valid[0]     = eth_rx[eth_it].VALID;
-            //end
+                //for (genvar chan_it = 0; chan_it < ETH_PORT_CHAN[eth_it]; chan_it++) begin
+                assign mac_data[chan_it]      = eth_rx[eth_it].DATA;
+                assign mac_inframe[chan_it]   = eth_rx[eth_it].INFRAME;
+                assign mac_eop_empty[chan_it] = eth_rx[eth_it].EOP_EMPTY;
+                assign mac_fcs_error[chan_it] = eth_rx[eth_it].FCS_ERROR;
+                assign mac_error[chan_it]     = eth_rx[eth_it].ERROR;
+                assign mac_status[chan_it]    = eth_rx[eth_it].STATUS_DATA;
+                assign mac_valid[chan_it]     = eth_rx[eth_it].VALID;
+
+                //CLK generator
+                initial force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_clk_out_vec[chan_it] = CLK_ETH_GEN; 
+            end
 
             initial begin
-
                 // RX connections
                 force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_rx_mac_data      = mac_data;
                 force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_rx_mac_inframe   = mac_inframe;
@@ -173,11 +184,8 @@ module DUT #(
                 force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_rx_mac_status    = mac_status;
                 force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_rx_mac_valid     = mac_valid;
 
-
                 // TX READY connection
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_mac_ready[0] = eth_tx[eth_it].READY;
-                // CLK connection
-                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_clk_out_vec[0] = CLK_ETH[eth_it];
+                force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_tx_mac_ready     = mac_ready;
             end
         end
     endgenerate
