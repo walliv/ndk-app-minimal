@@ -1,6 +1,6 @@
-import sys
+#import sys
+import logging
 import cocotb
-#import logging
 from cocotb.triggers import Timer
 
 from ndk_core import NFBDevice
@@ -11,15 +11,20 @@ import cocotb.utils
 from cocotbext.ofm.utils.sim.bus import MfbBus, MiBus, DmaUpMvbBus, DmaDownMvbBus
 
 
+#logging.basicConfig(stream=sys.stderr, force=True)
+#logging.getLogger().setLevel(logging.INFO)
+
+logger = logging.getLogger(__name__)
+
+# Shortcuts
 e = cocotb.external
 st = cocotb.utils.get_sim_time
 
 
-async def get_dev(dut, init=True):
-    dev = NFBDevice(dut)
+async def get_dev(dut, init=True, **kwargs):
+    dev = NFBDevice(dut, **kwargs)
     if init:
         await dev.init()
-    # dev._servicer._log.setLevel(logging.DEBUG)
     return dev, dev.nfb
 
 
@@ -89,11 +94,10 @@ async def _test_ndp_sendmsg(dut, dev=None, nfb=None):
 
     pkt = bytes([i for i in range(72)])
 
-    def eth_tx_monitor_cb(p):
-        print(len(p), bytes(p).hex())
-        #assert bytes(p) == pkt
-
-    dev._eth_tx_monitor[0].add_callback(eth_tx_monitor_cb)
+    for i, tx in enumerate(dev._eth_tx_monitor):
+        def eth_tx_monitor_cb(p):
+            logger.debug(f"tx_eth{i} packet transmitted: len={len(p)}, data={bytes(p).hex()}")
+        tx.add_callback(eth_tx_monitor_cb)
 
     count = 1
     for i in range(count):
@@ -113,11 +117,10 @@ async def _test_ndp_sendmsg_burst(dut, dev=None, nfb=None):
         await e(eth.txmac.reset_stats)()
         await e(eth.txmac.enable)()
 
-    def eth_tx_monitor_cb(p):
-        print(len(p), bytes(p).hex())
-        sys.stdout.flush()
-
-    dev._eth_tx_monitor[0].add_callback(eth_tx_monitor_cb)
+    for i, tx in enumerate(dev._eth_tx_monitor):
+        def eth_tx_monitor_cb(p):
+            logger.debug(f"tx_eth{i} packet transmitted: len={len(p)}, data={bytes(p).hex()}")
+        tx.add_callback(eth_tx_monitor_cb)
 
     pkts = range(20, 28)
     for i in pkts:
