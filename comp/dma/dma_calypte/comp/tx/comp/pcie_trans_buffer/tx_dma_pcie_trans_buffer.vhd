@@ -75,8 +75,11 @@ architecture FULL of TX_DMA_PCIE_TRANS_BUFFER is
     constant BRAM_REG_NUM    : natural := 2;
     -- Number of registers between BRAMs and barrel shifter
     constant INP_REG_NUM     : natural := 1;
+    constant IS_INTEL_DEV    : boolean := (DEVICE = "STRATIX10" or DEVICE = "AGILEX");
+    -- a maximum depth of a BRAM block (in 1B items) depends on a vendor
+    constant MAX_BRAM_DEPTH  : natural := tsel(IS_INTEL_DEV, 2048, 4096);
     -- The amount of channels that fits to one array
-    constant CHANS_PER_ARRAY : natural := minimum(CHANNELS, 4096/BUFFER_DEPTH);
+    constant CHANS_PER_ARRAY : natural := minimum(CHANNELS, MAX_BRAM_DEPTH/BUFFER_DEPTH);
     -- Number of memory arrays since one array can contain multiple channels
     constant MEM_ARRAYS      : natural := CHANNELS/CHANS_PER_ARRAY;
 
