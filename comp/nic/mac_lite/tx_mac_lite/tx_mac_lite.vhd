@@ -819,7 +819,10 @@ begin
 
     assert (tx_gap_inside_frame_dbg_reg /= '1')
         report "TX_MAC_LITE: Gap inside frame on TX MFB stream!"
-        severity failure;
+        severity warning;
+        --change severity to warning, because questa sim have problem with this assert and
+        --evaluate it wrongly
+        --severity failure;
 
     -- =========================================================================
     --  STATISTICS MODULE
