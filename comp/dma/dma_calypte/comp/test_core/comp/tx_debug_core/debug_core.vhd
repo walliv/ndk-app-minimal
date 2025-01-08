@@ -1042,6 +1042,11 @@ begin
     aux_sig_mfb_meta_hdr_meta     <= aux_sig_mfb_meta(log2(CHANNELS) + DMA_META_WIDTH-1 downto log2(CHANNELS));
     aux_sig_mfb_meta_pkt_size     <= aux_sig_mfb_meta(log2(PKT_SIZE_MAX+1) + log2(CHANNELS) + DMA_META_WIDTH-1 downto log2(CHANNELS) + DMA_META_WIDTH);
 
+    -- This copies the pattern over whole word
+    patter_copy_val_g : for i in 0 to (aux_sig_mfb_data'length/32 -1) generate
+        pattern_copy_val(i*32 + 31 downto i*32) <= aux_sig_mfb_data(31 downto 0);
+    end generate;
+
     pattern_comp_state_reg_p : process (CLK) is
     begin
         if (rising_edge(CLK)) then
@@ -1063,11 +1068,6 @@ begin
 
     -- Tells which comparison results are valid and keeps their value. The reason for validaton is
     -- because the comparators funcion also in part of a word, where no packet is located.
-
-    -- This copies the pattern over whole word
-    patter_copy_val_g : for i in 0 to (aux_sig_mfb_data'length/32 -1) generate
-        pattern_copy_val(i*32 + 31 downto i*32) <= aux_sig_mfb_data(31 downto 0);
-    end generate;
     comp_res_imm_diff <= (not comp_res_imm) and aux_sig_mfb_item_vld;
     comp_res_reg_diff <= (not comp_res_reg) and aux_sig_mfb_item_vld;
 
