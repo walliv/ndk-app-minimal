@@ -13,6 +13,7 @@ set NETWORK_MOD_CORE_BASE     "$NETWORK_MOD_COMP_BASE/network_mod_core"
 set NETWORK_MOD_LOG_BASE      "$NETWORK_MOD_COMP_BASE/network_mod_logic"
 set I2C_BASE                  "$OFM_PATH/comp/ctrls/i2c_hw"
 set ASFIFOX_BASE              "$OFM_PATH/comp/base/fifo/asfifox"
+set TSU_ASYNC_BASE            "$OFM_PATH/comp/tsu/tsu_async"
 set NM_LOGIC_ARCHGRP          "NO_CRC"
 
 # uncomment only for local synthesis
@@ -39,10 +40,10 @@ if {$ARCHGRP == "EMPTY"} {
     lappend COMPONENTS [list "NETWORK_MOD_LOGIC"    $NETWORK_MOD_LOG_BASE  $NM_LOGIC_ARCHGRP]
     lappend COMPONENTS [list "I2C_CTRL"             $I2C_BASE              "FULL"           ]
     lappend COMPONENTS [list "ASFIFOX"              $ASFIFOX_BASE          "FULL"           ]
+    lappend COMPONENTS [list "TSU_ASYNC"            $TSU_ASYNC_BASE        "FULL"           ]
 
     # Source files for implemented component
     lappend MOD "$ENTITY_BASE/qsfp_ctrl.vhd"
-    lappend MOD "$ENTITY_BASE/ts_sync.vhd"
     lappend MOD "$ENTITY_BASE/network_mod.vhd"
     lappend MOD "$ENTITY_BASE/DevTree.tcl"
 }

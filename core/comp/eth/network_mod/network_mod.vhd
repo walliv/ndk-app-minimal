@@ -555,21 +555,21 @@ begin
         -- =====================================================================
         ts_chan_sync_g: for ch in 0 to TS_REPLICAS-1 generate
 
-            ts_sync_i: entity work.TS_SYNC
+            ts_sync_i: entity work.TSU_ASYNC
             generic map (
-                DEVICE       => DEVICE,
-                TS_TIMEOUT_W => TS_TIMEOUT_W
+                TIMEOUT_W => TS_TIMEOUT_W,
+                DEVICE    => DEVICE
             )
             port map (
-                TSU_RST      => repl_rst_arr(0)(1),
-                TSU_CLK      => CLK_ETH     (0)   ,
-                TSU_TS_NS    => TSU_TS_NS         ,
-                TSU_TS_DV    => TSU_TS_DV         ,
-                --
-                SYNC_RST     => logic_rst_arr(p)(ch*2),
-                SYNC_CLK     => logic_rx_clk(p)(ch)   ,
-                SYNCED_TS_NS => synced_ts_ns(p)(ch)   ,
-                SYNCED_TS_DV => synced_ts_dv(p)(ch)
+                IN_CLK    => CLK_ETH     (0)   ,
+                IN_RESET  => repl_rst_arr(0)(1),
+                IN_TS_NS  => TSU_TS_NS         ,
+                IN_TS_DV  => TSU_TS_DV         ,
+
+                OUT_RESET => logic_rst_arr(p)(ch*2),
+                OUT_CLK   => logic_rx_clk (p)(ch)  ,
+                OUT_TS_NS => synced_ts_ns (p)(ch)  ,
+                OUT_TS_DV => synced_ts_dv (p)(ch)
             );
         end generate;
 
