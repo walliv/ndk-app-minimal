@@ -40,9 +40,10 @@ module DUT #(
     int unsigned RESET_WIDTH,
 
     string DEVICE,
-    string BOARD
+    string BOARD,
+    time CLK_ETH_PERIOD[ETH_PORTS]
 )(
-    input wire logic CLK_ETH[ETH_PORTS],
+    output wire logic CLK_ETH[ETH_PORTS],
     input wire logic CLK_USR,
     input wire logic CLK_MI,
     input wire logic CLK_MI_PHY,
@@ -97,6 +98,7 @@ module DUT #(
         .DEVICE           (DEVICE           ),
         .BOARD            (BOARD            )
     ) DUT_BASE_U (
+        .CLK_ETH    (CLK_ETH   ),
         .CLK_USR    (CLK_USR   ),
         .CLK_MI     (CLK_MI    ),
         .CLK_MI_PHY (CLK_MI_PHY),
@@ -127,6 +129,9 @@ module DUT #(
             initial assert(ETH_PORT_CHAN_LOCAL == 1);
 
             wire logic [4*128-1 : 0] eth_rx_data;
+            logic CLK_ETH_GEN = 1'b0;
+
+            always #(CLK_ETH_PERIOD[eth_it]/2) CLK_ETH_GEN = ~CLK_ETH_GEN;
 
             // ------- //
             // TX side //
@@ -173,7 +178,7 @@ module DUT #(
             // ----- //
 
             // CLK connection
-            initial force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_gt_tx_clk_322m = CLK_ETH[eth_it];
+            initial force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.cmac_gt_tx_clk_322m = CLK_ETH_GEN;
         end
     endgenerate
 

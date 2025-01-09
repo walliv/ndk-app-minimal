@@ -30,7 +30,7 @@ module testbench;
     // -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     // CLOCK
     logic CLK_USR    = 0;
-    logic CLK_ETH[ETH_PORTS] = '{ETH_PORTS{1'b0}};
+    logic CLK_ETH[ETH_PORTS];
     logic CLK_MI     = 0;
     logic CLK_MI_PHY = 0;
     logic CLK_MI_PMD = 0;
@@ -38,10 +38,7 @@ module testbench;
     // -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     // INTERFACES
     reset_if rst_usr           (CLK_USR);
-    for (genvar eth_it = 0; eth_it < ETH_PORTS; eth_it++) begin : rst_gen
-        reset_if rst_eth(CLK_ETH[eth_it]);
-    end
-    reset_if rst_eth[ETH_PORTS](CLK_ETH[0]);
+    reset_if rst_eth[ETH_PORTS](CLK_ETH);
     reset_if rst_mi            (CLK_MI);
     reset_if rst_mi_phy        (CLK_MI_PHY);
     reset_if rst_mi_pmd        (CLK_MI_PMD);
@@ -51,8 +48,8 @@ module testbench;
     intel_mac_seg_if #(SEGMENTS) eth_tx[ETH_PORTS] (CLK_ETH);
 
     mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, ETH_TX_HDR_WIDTH) usr_rx     [ETH_PORTS](CLK_USR);
-    mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, 0)                              usr_tx_data[ETH_PORTS](CLK_USR);
-    mvb_if #(REGIONS, ETH_RX_HDR_WIDTH)                                                                                usr_tx_hdr [ETH_PORTS](CLK_USR);
+    mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, 0)                usr_tx_data[ETH_PORTS](CLK_USR);
+    mvb_if #(REGIONS, ETH_RX_HDR_WIDTH)                                      usr_tx_hdr [ETH_PORTS](CLK_USR);
 
     mi_if #(MI_DATA_WIDTH, MI_ADDR_WIDTH) mi(CLK_MI);
     mi_if #(MI_DATA_WIDTH, MI_ADDR_WIDTH) mi_phy(CLK_MI_PHY);
@@ -67,10 +64,7 @@ module testbench;
 
     // -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Define clock ticking
-    always #(CLK_USR_PERIOD/2) CLK_USR = ~CLK_USR;
-    for (genvar eth_it = 0; eth_it < ETH_PORTS; eth_it++) begin
-        always #(CLK_ETH_PERIOD[eth_it]/2) CLK_ETH[eth_it] = ~CLK_ETH[eth_it];
-    end
+    always #(CLK_USR_PERIOD/2)    CLK_USR = ~CLK_USR;
     always #(CLK_MI_PERIOD/2)     CLK_MI     = ~CLK_MI    ;
     always #(CLK_MI_PHY_PERIOD/2) CLK_MI_PHY = ~CLK_MI_PHY;
     always #(CLK_MI_PMD_PERIOD/2) CLK_MI_PMD = ~CLK_MI_PMD;
@@ -82,10 +76,10 @@ module testbench;
         automatic uvm_root m_root;
         automatic virtual reset_if vif_rst_eth[ETH_PORTS] = rst_eth;
         automatic virtual mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, ETH_TX_HDR_WIDTH) vif_usr_rx     [ETH_PORTS] = usr_rx;
-        automatic virtual mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, 0)                              vif_usr_tx_data[ETH_PORTS] = usr_tx_data;
-        automatic virtual mvb_if #(REGIONS, ETH_RX_HDR_WIDTH)                                                                                vif_usr_tx_hdr [ETH_PORTS] = usr_tx_hdr;
-        automatic virtual intel_mac_seg_if #(SEGMENTS)                                                                                             vif_eth_rx     [ETH_PORTS] = eth_rx;
-        automatic virtual intel_mac_seg_if #(SEGMENTS)                                                                                             vif_eth_tx     [ETH_PORTS] = eth_tx;
+        automatic virtual mfb_if #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, 0)                vif_usr_tx_data[ETH_PORTS] = usr_tx_data;
+        automatic virtual mvb_if #(REGIONS, ETH_RX_HDR_WIDTH)                                      vif_usr_tx_hdr [ETH_PORTS] = usr_tx_hdr;
+        automatic virtual intel_mac_seg_if #(SEGMENTS)                                             vif_eth_rx     [ETH_PORTS] = eth_rx;
+        automatic virtual intel_mac_seg_if #(SEGMENTS)                                             vif_eth_tx     [ETH_PORTS] = eth_tx;
 
         // SET INTERFACE
         uvm_config_db#(virtual reset_if)::set(null, "", "vif_rst_usr", rst_usr);
@@ -154,7 +148,8 @@ module testbench;
         .LANE_TX_POLARITY (LANE_TX_POLARITY ),
         .RESET_WIDTH      (RESET_WIDTH      ),
         .DEVICE           (DEVICE           ),
-        .BOARD            (BOARD            )
+        .BOARD            (BOARD            ),
+        .CLK_ETH_PERIOD   (CLK_ETH_PERIOD   )
     ) DUT_U (
         .CLK_ETH    (CLK_ETH   ),
         .CLK_USR    (CLK_USR   ),
