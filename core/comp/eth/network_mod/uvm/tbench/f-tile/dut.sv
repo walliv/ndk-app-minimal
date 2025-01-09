@@ -171,7 +171,7 @@ module DUT #(
                 assign mac_valid[chan_it]     = eth_rx[eth_it].VALID;
 
                 //CLK generator
-                initial force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_clk_out_vec[chan_it] = CLK_ETH_GEN; 
+                initial force DUT_BASE_U.VHDL_DUT_U.eth_core_g[eth_it].network_mod_core_i.ftile_clk_out_vec[chan_it] = CLK_ETH_GEN;
             end
 
             initial begin
