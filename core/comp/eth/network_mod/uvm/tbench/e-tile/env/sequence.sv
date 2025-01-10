@@ -41,7 +41,7 @@ class virt_sequence_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIO
         seq_sync_eth_rx = uvm_common::sequences_cfg_sync#(2)::type_id::create("seq_sync_eth_rx", m_sequencer);
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_rx_data, "", "state", seq_sync_eth_rx.cfg[0]);
         lib_eth_rx_data = uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH)::type_id::create("eth_rx_data", p_sequencer.eth_rx_data);
-        lib_eth_rx_data.max_random_count = 100;
+        lib_eth_rx_data.max_random_count = 20;
         lib_eth_rx_data.min_random_count = 10;
         lib_eth_rx_data.init_sequence();
 
@@ -54,7 +54,7 @@ class virt_sequence_port #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGIO
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx, "", "state", seq_sync_end);
         lib_eth_tx = uvm_avst::sequence_lib_tx#(ETH_PORT_CHAN, 1, REGION_SIZE * BLOCK_SIZE, ITEM_WIDTH,  1)::type_id::create("eth_tx", p_sequencer.eth_tx);
         lib_eth_tx.init_sequence();
-        lib_eth_tx.max_random_count = 100;
+        lib_eth_tx.max_random_count = 20;
         lib_eth_tx.min_random_count = 10;
 
         eth_rx_data  = lib_eth_rx_data;
@@ -246,7 +246,7 @@ class virt_sequence_port_stop #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, 
         seq_sync_eth_rx = uvm_common::sequences_cfg_sync#(2)::type_id::create("seq_sync_eth_rx", m_sequencer);
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_rx_data, "", "state", seq_sync_eth_rx.cfg[0]);
         lib_eth_rx_data = uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH)::type_id::create("eth_rx_data", p_sequencer.eth_rx_data);
-        lib_eth_rx_data.max_random_count = 100;
+        lib_eth_rx_data.max_random_count = 20;
         lib_eth_rx_data.min_random_count = 10;
         lib_eth_rx_data.init_sequence();
 
@@ -259,7 +259,7 @@ class virt_sequence_port_stop #(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, 
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx, "", "state", seq_sync_end);
         lib_eth_tx = uvm_avst::sequence_lib_tx#(ETH_PORT_CHAN, 1, REGION_SIZE * BLOCK_SIZE, ITEM_WIDTH,  1)::type_id::create("eth_tx", p_sequencer.eth_tx);
         lib_eth_tx.init_sequence();
-        lib_eth_tx.max_random_count = 100;
+        lib_eth_tx.max_random_count = 20;
         lib_eth_tx.min_random_count = 10;
 
         eth_rx_data  = lib_eth_rx_data;

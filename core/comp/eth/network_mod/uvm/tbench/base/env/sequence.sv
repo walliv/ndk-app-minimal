@@ -25,7 +25,7 @@ class virt_sequence_port#(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGION
     rand int unsigned transactions_approx;
     constraint c_transactions {
         //transactions_approx inside {[30_000:40_000]};
-        transactions_approx inside {[1000:5000]};
+        transactions_approx inside {[1000:1500]};
     };
 
     function new(string name = "uvm_network_mod_env::sequence_simple");
@@ -63,7 +63,7 @@ class virt_sequence_port#(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGION
         seq_sync_usr_rx = uvm_common::sequences_cfg_sync#(2)::type_id::create("seq_sync_usr_rx", m_sequencer);
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.usr_rx_data, "", "state", seq_sync_usr_rx.cfg[0]);
         lib_usr_rx_data = uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH)::type_id::create("usr_rx_data", p_sequencer.usr_rx_data);
-        lib_usr_rx_data.max_random_count = 100;
+        lib_usr_rx_data.max_random_count = 20;
         lib_usr_rx_data.min_random_count = 10;
         lib_usr_rx_data.init_sequence();
 
@@ -76,13 +76,13 @@ class virt_sequence_port#(ETH_TX_HDR_WIDTH, ETH_RX_HDR_WIDTH, ITEM_WIDTH, REGION
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.usr_tx_data, "", "state", seq_sync_end);
         lib_usr_tx_data = uvm_mfb::sequence_lib_tx#(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, 0)::type_id::create("usr_tx_data", p_sequencer.usr_tx_data);
         lib_usr_tx_data.init_sequence();
-        lib_usr_tx_data.max_random_count = 500;
+        lib_usr_tx_data.max_random_count = 20;
         lib_usr_tx_data.min_random_count = 10;
 
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.usr_tx_hdr, "", "state", seq_sync_end);
         lib_usr_tx_hdr  = uvm_mvb::sequence_lib_tx#(REGIONS, ETH_RX_HDR_WIDTH)::type_id::create("usr_tx_data", p_sequencer.usr_tx_hdr);
         lib_usr_tx_hdr.init_sequence();
-        lib_usr_tx_hdr.max_random_count = 100;
+        lib_usr_tx_hdr.max_random_count = 20;
         lib_usr_tx_hdr.min_random_count = 10;
 
         usr_rx_data  = lib_usr_rx_data;

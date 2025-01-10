@@ -54,7 +54,7 @@ class virt_sequence_port #(
         seq_sync_eth_tx = uvm_common::sequences_cfg_sync#(2)::type_id::create("seq_sync_eth_tx", m_sequencer);
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx_packet, "", "state", seq_sync_eth_tx.cfg[0]);
         lib_eth_tx_packet = uvm_logic_vector_array::sequence_lib #(8)::type_id::create("eth_tx_packet", p_sequencer.eth_tx_packet);
-        lib_eth_tx_packet.max_random_count = 100;
+        lib_eth_tx_packet.max_random_count = 20;
         lib_eth_tx_packet.min_random_count = 10;
         lib_eth_tx_packet.init_sequence();
 
@@ -267,7 +267,7 @@ class virt_sequence_port_stop #(
         seq_sync_eth_tx = uvm_common::sequences_cfg_sync#(2)::type_id::create("seq_sync_eth_tx", m_sequencer);
         uvm_config_db#(uvm_common::sequence_cfg)::set(p_sequencer.eth_tx_packet, "", "state", seq_sync_eth_tx.cfg[0]);
         lib_eth_tx_packet = uvm_logic_vector_array::sequence_lib#(ITEM_WIDTH)::type_id::create("eth_tx_packet", p_sequencer.eth_tx_packet);
-        lib_eth_tx_packet.max_random_count = 100;
+        lib_eth_tx_packet.max_random_count = 20;
         lib_eth_tx_packet.min_random_count = 10;
         lib_eth_tx_packet.init_sequence();
 

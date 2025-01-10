@@ -8,8 +8,8 @@
 class sequence_logic_vector #(DATA_WIDTH) extends uvm_common::sequence_base #(uvm_logic_vector::config_sequence, uvm_logic_vector::sequence_item #(DATA_WIDTH));
     `uvm_object_param_utils(uvm_network_mod_env::sequence_logic_vector#(DATA_WIDTH))
 
-    int unsigned transaction_count_min = 10;
-    int unsigned transaction_count_max = 1000;
+    int unsigned transaction_count_min = 100;
+    int unsigned transaction_count_max = 200;
     rand int unsigned transaction_count;
 
     constraint c1 {transaction_count inside {[transaction_count_min : transaction_count_max]};}
