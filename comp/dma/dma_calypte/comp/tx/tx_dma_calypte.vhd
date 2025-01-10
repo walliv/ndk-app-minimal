@@ -470,7 +470,7 @@ begin
         ITEMS           => (2**(DATA_POINTER_WIDTH-3)) * CHANNELS,
         WRITE_PORTS     => PCIE_CQ_MFB_REGIONS,
         READ_PORTS      => 1,
-        RAM_TYPE        => "URAM",
+        RAM_TYPE        => "AUTO",
         DEVICE          => DEVICE,
         SAFE_READ_MODE  => false)
     port map (
