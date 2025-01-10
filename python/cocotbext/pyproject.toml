@@ -13,6 +13,13 @@ nfb = [
 	"libnfb-ext-python @ ${NDK_SW_PYTHON_URL}ext/libnfb_ext_python",
 ]
 
+nfb_grpcio = [
+	"grpcio",
+	"pylibfdt",
+	"nfb @ ${NDK_SW_PYTHON_URL}pynfb",
+	"libnfb-ext-grpc @ ${NDK_SW_PYTHON_URL}ext/libnfb_ext_grpc/python",
+]
+
 [build-system]
 requires = [
 	"pdm-backend",
