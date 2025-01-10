@@ -451,7 +451,7 @@ begin
             else
                 -- Higher takes
                 for i in 0 to PCIE_MFB_REGIONS - 1 loop
-                    if (aux_mfb_sof(i) = '1' and aux_mfb_eof(i) = '0') then
+                    if (aux_mfb_src_rdy = '1' and aux_mfb_sof(i) = '1' and aux_mfb_eof(i) = '0') then
                         usr_mfb_lbe_reg <= aux_mfb_meta_arr(i)(META_LBE);
                     end if;
                 end  loop;
