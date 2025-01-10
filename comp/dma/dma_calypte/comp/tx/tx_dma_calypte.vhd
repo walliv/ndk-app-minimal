@@ -118,8 +118,9 @@ architecture FULL of TX_DMA_CALYPTE is
     -- =============================================================================================
     -- Constants and range definitions
     -- =============================================================================================
-    constant PCIE_CQ_MFB_WIDTH : natural := PCIE_CQ_MFB_REGIONS*PCIE_CQ_MFB_REGION_SIZE*PCIE_CQ_MFB_BLOCK_SIZE*PCIE_CQ_MFB_ITEM_WIDTH;
-    constant USR_TX_MFB_WIDTH  : natural := USR_TX_MFB_REGIONS*USR_TX_MFB_REGION_SIZE*USR_TX_MFB_BLOCK_SIZE*USR_TX_MFB_ITEM_WIDTH;
+    constant PCIE_CQ_MFB_WIDTH     : natural := PCIE_CQ_MFB_REGIONS*PCIE_CQ_MFB_REGION_SIZE*PCIE_CQ_MFB_BLOCK_SIZE*PCIE_CQ_MFB_ITEM_WIDTH;
+    constant USR_TX_MFB_WIDTH      : natural := USR_TX_MFB_REGIONS*USR_TX_MFB_REGION_SIZE*USR_TX_MFB_BLOCK_SIZE*USR_TX_MFB_ITEM_WIDTH;
+    constant USR_TX_MFB_META_WIDTH : natural := log2(PKT_SIZE_MAX+1) + HDR_META_WIDTH + log2(CHANNELS);
 
     constant META_IS_DMA_HDR_W : natural := 1;
     constant META_PCIE_ADDR_W  : natural := 62;
@@ -201,8 +202,10 @@ architecture FULL of TX_DMA_CALYPTE is
     signal pkt_disp_mfb_sof_pos : std_logic_vector(USR_TX_MFB_REGIONS*max(1, log2(USR_TX_MFB_REGION_SIZE)) -1 downto 0);
     signal pkt_disp_mfb_eof_pos : std_logic_vector(USR_TX_MFB_REGIONS*max(1, log2(USR_TX_MFB_REGION_SIZE*USR_TX_MFB_BLOCK_SIZE)) -1 downto 0);
     signal pkt_disp_mfb_src_rdy : std_logic;
+    signal pkt_disp_mfb_dst_rdy : std_logic;
 
     signal enabled_chans : std_logic_vector(CHANNELS -1 downto 0);
+    signal usr_tx_mfb_meta_int : std_logic_vector(USR_TX_MFB_META_WIDTH -1 downto 0);
 
     -- attribute mark_debug : string;
 
@@ -521,7 +524,7 @@ begin
             USR_MFB_SOF_POS => pkt_disp_mfb_sof_pos,
             USR_MFB_EOF_POS => pkt_disp_mfb_eof_pos,
             USR_MFB_SRC_RDY => pkt_disp_mfb_src_rdy,
-            USR_MFB_DST_RDY => USR_TX_MFB_DST_RDY,
+            USR_MFB_DST_RDY => pkt_disp_mfb_dst_rdy,
 
             HDR_BUFF_ADDR    => hdr_fifo_tx_data(62+log2(CHANNELS)+64 -1 downto log2(CHANNELS)+64),
             HDR_BUFF_CHAN    => hdr_fifo_tx_data(log2(CHANNELS)+64 -1 downto 64),
@@ -549,23 +552,39 @@ begin
             UPD_HHP_DATA => upd_hhp_data,
             UPD_HHP_EN   => upd_hhp_en);
 
-    out_reg_p : process (CLK) is
-    begin
-        if (rising_edge(CLK)) then
-            if (RESET = '1') then
-                USR_TX_MFB_SRC_RDY <= '0';
-            elsif (USR_TX_MFB_DST_RDY = '1') then
-                USR_TX_MFB_META_HDR_META <= pkt_disp_mfb_meta_hdr_meta;
-                USR_TX_MFB_META_CHAN     <= pkt_disp_mfb_meta_chan;
-                USR_TX_MFB_META_PKT_SIZE <= pkt_disp_mfb_meta_pkt_size;
+    out_pipe_i : entity work.MFB_PIPE
+        generic map (
+            REGIONS     => USR_TX_MFB_REGIONS,
+            REGION_SIZE => USR_TX_MFB_REGION_SIZE,
+            BLOCK_SIZE  => USR_TX_MFB_BLOCK_SIZE,
+            ITEM_WIDTH  => USR_TX_MFB_ITEM_WIDTH,
+            META_WIDTH  => USR_TX_MFB_META_WIDTH,
 
-                USR_TX_MFB_DATA          <= pkt_disp_mfb_data;
-                USR_TX_MFB_SOF           <= pkt_disp_mfb_sof;
-                USR_TX_MFB_EOF           <= pkt_disp_mfb_eof;
-                USR_TX_MFB_SOF_POS       <= pkt_disp_mfb_sof_pos;
-                USR_TX_MFB_EOF_POS       <= pkt_disp_mfb_eof_pos;
-                USR_TX_MFB_SRC_RDY       <= pkt_disp_mfb_src_rdy;
-            end if;
-        end if;
-    end process;
+            FAKE_PIPE   => FALSE,
+            USE_DST_RDY => TRUE,
+            PIPE_TYPE   => "REG",
+            DEVICE      => DEVICE)
+        port map (
+            CLK        => CLK,
+            RESET      => RESET,
+
+            RX_DATA    => pkt_disp_mfb_data,
+            RX_META    => pkt_disp_mfb_meta_pkt_size & pkt_disp_mfb_meta_hdr_meta & pkt_disp_mfb_meta_chan,
+            RX_SOF_POS => pkt_disp_mfb_sof_pos,
+            RX_EOF_POS => pkt_disp_mfb_eof_pos,
+            RX_SOF     => pkt_disp_mfb_sof,
+            RX_EOF     => pkt_disp_mfb_eof,
+            RX_SRC_RDY => pkt_disp_mfb_src_rdy,
+            RX_DST_RDY => pkt_disp_mfb_dst_rdy,
+
+            TX_DATA    => USR_TX_MFB_DATA,
+            TX_META    => usr_tx_mfb_meta_int,
+            TX_SOF_POS => USR_TX_MFB_SOF_POS,
+            TX_EOF_POS => USR_TX_MFB_EOF_POS,
+            TX_SOF     => USR_TX_MFB_SOF,
+            TX_EOF     => USR_TX_MFB_EOF,
+            TX_SRC_RDY => USR_TX_MFB_SRC_RDY,
+            TX_DST_RDY => USR_TX_MFB_DST_RDY);
+
+    (USR_TX_MFB_META_PKT_SIZE, USR_TX_MFB_META_HDR_META, USR_TX_MFB_META_CHAN) <= usr_tx_mfb_meta_int;
 end architecture;

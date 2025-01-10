@@ -549,11 +549,16 @@ begin
         end generate;
     end generate;
 
-    ST_SP_DBG_CHAN    <= PCIE_MFB_META(META_CHAN_NUM);
-    ST_SP_DBG_META(0) <= (or dma_hdr_out_of_order_chan);
-    ST_SP_DBG_META(1) <= (or meta_is_dma_hdr_int) and PCIE_MFB_DST_RDY;
-    ST_SP_DBG_META(2) <= (or dma_frame_lng_correct) and PCIE_MFB_DST_RDY;
-    ST_SP_DBG_META(3) <= (or dma_frame_lng_incorrect) and PCIE_MFB_DST_RDY;
+    dbg_signal_reg_p: process (CLK) is
+    begin
+        if (rising_edge(CLK)) then
+            ST_SP_DBG_CHAN    <= PCIE_MFB_META(META_CHAN_NUM);
+            ST_SP_DBG_META(0) <= (or dma_hdr_out_of_order_chan);
+            ST_SP_DBG_META(1) <= (or meta_is_dma_hdr_int) and PCIE_MFB_DST_RDY;
+            ST_SP_DBG_META(2) <= (or dma_frame_lng_correct) and PCIE_MFB_DST_RDY;
+            ST_SP_DBG_META(3) <= (or dma_frame_lng_incorrect) and PCIE_MFB_DST_RDY;
+        end if;
+    end process;
 
     -- One region debug (The "PCIE_MFB_SOF = "1"" is not that compatible)
     pkt_statistics_g: if PCIE_MFB_REGIONS = 1 generate
