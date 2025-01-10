@@ -134,7 +134,7 @@ class speed extends base;
     endfunction
 
     function void build_phase(uvm_phase phase);
-        uvm_logic_vector_array_mfb::sequence_lib_pcie_rx #(
+        uvm_logic_vector_array_mfb::sequence_lib_rx #(
             PCIE_CQ_MFB_REGIONS,
             PCIE_CQ_MFB_REGION_SIZE,
             PCIE_CQ_MFB_BLOCK_SIZE,
