@@ -17,19 +17,17 @@ class data_comparer #(int unsigned ITEM_WIDTH) extends uvm_common::comparer_orde
         int unsigned newline_break_cntr = 0;
         int unsigned last_wrong_byte_idx = 0;
 
-        msg = $sformatf("%s\n\tDUT PACKET %s\n\n", msg, tr_dut.convert2string());
-        msg = $sformatf("%s\n\tMODEL PACKET%s\n",  msg, tr_model.convert2string());
-
-        msg = $sformatf("%s\n\tWRONG_BYTES:\n",  msg);
+        msg = $sformatf("%s\nByte comparison:\n", msg);
 
         if (tr_model.data.size() != tr_dut.data.size()) begin
-            msg = $sformatf("%s\tTransaction lengths match: NO (MODEL: %0d, DUT: %0d)\n. \tUnable to compare!\n", msg, tr_model.data.size(), tr_dut.data.size());
+            msg = $sformatf("%s\n\tTransaction lengths match: NO (MODEL: %0d, DUT: %0d)\n. \tUnable to compare!\n", msg, tr_model.data.size(), tr_dut.data.size());
         end else begin
-            msg = $sformatf("%s\tTransaction lengths match: YES\n", msg);
-            msg = $sformatf("%s\t", msg);
+            msg = $sformatf("%s\n\tTransaction lengths match: YES\n", msg);
+            msg = $sformatf("%s\n\tWRONG_BYTES:\n",  msg);
 
             foreach (tr_dut.data[it]) begin
-                if (tr_dut.data[it] != tr_model.data[it]) begin
+                // msg = $sformatf("%s%0d: (%2h, %2h), \n", msg, it, tr_dut.data[it], tr_model.data[it]);
+                if (tr_dut.data[it] !== tr_model.data[it]) begin
                     if (last_wrong_byte_idx != (it -1))
                         msg = $sformatf("%s\n\n\t", msg);
 
@@ -41,12 +39,23 @@ class data_comparer #(int unsigned ITEM_WIDTH) extends uvm_common::comparer_orde
                         msg = $sformatf("%s\n\t", msg);
                         newline_break_cntr = 0;
                     end
-
                 end
             end
+            msg = $sformatf("%s\n", msg);
         end
 
         return msg;
+    endfunction
+
+    virtual function int unsigned compare(uvm_logic_vector_array::sequence_item #(ITEM_WIDTH) tr_model, uvm_logic_vector_array::sequence_item #(ITEM_WIDTH) tr_dut);
+
+        int unsigned comp_res = tr_model.compare(tr_dut);
+
+        if (comp_res == 0) begin
+            `uvm_info(this.get_full_name(), this.message(tr_model, tr_dut), UVM_LOW);
+        end
+
+        return comp_res;
     endfunction
 endclass
 
