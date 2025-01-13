@@ -466,8 +466,6 @@ architecture FULL of TX_DMA_DEBUG_CORE is
     signal comp_val_curr     : std_logic_vector(TX_MFB_DATA'range);
     signal comp_res_imm      : std_logic_vector(TX_MFB_DATA'length/8 -1 downto 0);
     signal comp_res_reg      : std_logic_vector(TX_MFB_DATA'length/8 -1 downto 0);
-    signal comp_res_imm_vld  : std_logic_vector(TX_MFB_DATA'length/8 -1 downto 0);
-    signal comp_res_reg_vld  : std_logic_vector(TX_MFB_DATA'length/8 -1 downto 0);
     signal comp_res_imm_diff : std_logic_vector(TX_MFB_DATA'length/8 -1 downto 0);
     signal comp_res_reg_diff : std_logic_vector(TX_MFB_DATA'length/8 -1 downto 0);
 
@@ -1044,6 +1042,11 @@ begin
     aux_sig_mfb_meta_hdr_meta     <= aux_sig_mfb_meta(log2(CHANNELS) + DMA_META_WIDTH-1 downto log2(CHANNELS));
     aux_sig_mfb_meta_pkt_size     <= aux_sig_mfb_meta(log2(PKT_SIZE_MAX+1) + log2(CHANNELS) + DMA_META_WIDTH-1 downto log2(CHANNELS) + DMA_META_WIDTH);
 
+    -- This copies the pattern over whole word
+    patter_copy_val_g : for i in 0 to (aux_sig_mfb_data'length/32 -1) generate
+        pattern_copy_val(i*32 + 31 downto i*32) <= aux_sig_mfb_data(31 downto 0);
+    end generate;
+
     pattern_comp_state_reg_p : process (CLK) is
     begin
         if (rising_edge(CLK)) then
@@ -1065,17 +1068,8 @@ begin
 
     -- Tells which comparison results are valid and keeps their value. The reason for validaton is
     -- because the comparators funcion also in part of a word, where no packet is located.
-    comp_res_imm_vld <= comp_res_imm and aux_sig_mfb_item_vld;
-    comp_res_reg_vld <= comp_res_reg and aux_sig_mfb_item_vld;
-
-    -- Tells which bytes differ in the comparison vector
-    comp_res_imm_diff <= comp_res_imm_vld xor aux_sig_mfb_item_vld;
-    comp_res_reg_diff <= comp_res_reg_vld xor aux_sig_mfb_item_vld;
-
-    -- This copies the pattern over whole word
-    patter_copy_val_g : for i in 0 to (aux_sig_mfb_data'length/32 -1) generate
-        pattern_copy_val(i*32 + 31 downto i*32) <= aux_sig_mfb_data(31 downto 0);
-    end generate;
+    comp_res_imm_diff <= (not comp_res_imm) and aux_sig_mfb_item_vld;
+    comp_res_reg_diff <= (not comp_res_reg) and aux_sig_mfb_item_vld;
 
     pattern_comp_nst_logic_p : process (all) is
         variable comp_res_diff_v : std_logic;
@@ -1104,12 +1098,14 @@ begin
 
             when S_COMP_MIDDLE_PKT =>
 
-                pattern_match_cntr_incr    <= (not (or comp_res_reg_diff)) and aux_sig_mfb_dst_rdy;
-                pattern_mismatch_cntr_incr <= (or comp_res_reg_diff) and aux_sig_mfb_dst_rdy;
+                if (aux_sig_mfb_src_rdy = '1') then
+                    pattern_match_cntr_incr    <= (not (or comp_res_reg_diff)) and aux_sig_mfb_dst_rdy;
+                    pattern_mismatch_cntr_incr <= (or comp_res_reg_diff) and aux_sig_mfb_dst_rdy;
 
-                comp_res_diff_v            := (or comp_res_reg_diff);
-                if (aux_sig_mfb_eof = "1" or comp_res_diff_v = '1') then
-                    pattern_comp_nst <= S_IDLE;
+                    comp_res_diff_v            := (or comp_res_reg_diff);
+                    if (aux_sig_mfb_eof = "1" or comp_res_diff_v = '1') then
+                        pattern_comp_nst <= S_IDLE;
+                    end if;
                 end if;
         end case;
     end process;

@@ -346,7 +346,14 @@ begin
                 FBE_OUT => fbe_decoded(i),
                 LBE_OUT => lbe_decoded(i));
 
-        pcie_mfb_meta_int(i) <= lbe_decoded(i) & fbe_decoded(i) & pcie_tr_byte_cnt(i) & (META_BE_W -1 downto 0 => '0') & chan_num_int(i) & pcie_addr_masked(i)(63 downto 2) & is_dma_hdr(i);
+        pcie_mfb_meta_int(i) <=
+            lbe_decoded(i) &
+            fbe_decoded(i) &
+            pcie_tr_byte_cnt(i) &
+            (META_BE_W -1 downto 0 => '0') &
+            chan_num_int(i) &
+            pcie_addr_masked(i)(63 downto 2) &
+            is_dma_hdr(i);
     end generate;
 
     -- Cutter is used only for Xilinx devices
@@ -444,7 +451,7 @@ begin
             else
                 -- Higher takes
                 for i in 0 to PCIE_MFB_REGIONS - 1 loop
-                    if (aux_mfb_sof(i) = '1' and aux_mfb_eof(i) = '0') then
+                    if (aux_mfb_src_rdy = '1' and aux_mfb_sof(i) = '1' and aux_mfb_eof(i) = '0') then
                         usr_mfb_lbe_reg <= aux_mfb_meta_arr(i)(META_LBE);
                     end if;
                 end  loop;
@@ -471,23 +478,23 @@ begin
         mfb_aux_item_be <= (others => (others => (others => '0')));
 
         if (aux_mfb_src_rdy = '1') then
-            for i in 0 to PCIE_MFB_REGIONS - 1 loop
-                for j in 0 to (PCIE_MFB_REGION_SIZE*PCIE_MFB_BLOCK_SIZE -1) loop
-                    mfb_aux_item_be(i)(j) <= (others => mfb_aux_item_vld_int_arr(i)(j));
+            for reg_idx in 0 to PCIE_MFB_REGIONS - 1 loop
+                for item_idx in 0 to (PCIE_MFB_REGION_SIZE*PCIE_MFB_BLOCK_SIZE -1) loop
+                    mfb_aux_item_be(reg_idx)(item_idx) <= (others => mfb_aux_item_vld_int_arr(reg_idx)(item_idx));
                 end loop;
             end loop;
 
             -- apply FBE to the BE vector
-            for i in 0 to PCIE_MFB_REGIONS - 1 loop
-                if (aux_mfb_sof(i) = '1') then
-                    mfb_aux_item_be(i)(0) <= aux_mfb_meta_arr(i)(META_FBE);
+            for reg_idx in 0 to PCIE_MFB_REGIONS - 1 loop
+                if (aux_mfb_sof(reg_idx) = '1') then
+                    mfb_aux_item_be(reg_idx)(0) <= aux_mfb_meta_arr(reg_idx)(META_FBE);
                 end if;
 
                 -- apply LBE to the BE vector
-                if (aux_mfb_eof(i) = '1' and aux_mfb_sof(i) = '0') then
-                    mfb_aux_item_be(i)(to_integer(unsigned(aux_mfb_eof_pos_arr(i)))) <= usr_mfb_lbe_sel;
-                elsif (aux_mfb_eof(i) = '1' and aux_mfb_sof(i) = '1' and unsigned(aux_mfb_eof_pos_arr(i)) > 0) then
-                    mfb_aux_item_be(i)(to_integer(unsigned(aux_mfb_eof_pos_arr(i)))) <= aux_mfb_meta_arr(i)(META_LBE);
+                if (aux_mfb_eof(reg_idx) = '1' and aux_mfb_sof(reg_idx) = '0') then
+                    mfb_aux_item_be(reg_idx)(to_integer(unsigned(aux_mfb_eof_pos_arr(reg_idx)))) <= usr_mfb_lbe_sel;
+                elsif (aux_mfb_eof(reg_idx) = '1' and aux_mfb_sof(reg_idx) = '1' and unsigned(aux_mfb_eof_pos_arr(reg_idx)) > 0) then
+                    mfb_aux_item_be(reg_idx)(to_integer(unsigned(aux_mfb_eof_pos_arr(reg_idx)))) <= aux_mfb_meta_arr(reg_idx)(META_LBE);
                 end if;
             end loop;
         end if;

@@ -127,6 +127,8 @@ architecture FULL of RX_DMA_CALYPTE is
     constant BUFFERED_DATA_SIZE : natural := 128;
     --=============================================================================================================
 
+    constant IS_INTEL_DEV    : boolean := (DEVICE = "STRATIX10" or DEVICE = "AGILEX");
+
     constant MI_SPLIT_PORTS : natural := 2;
     constant MI_SPLIT_BASES : slv_array_t(MI_SPLIT_PORTS -1 downto 0)(MI_WIDTH-1 downto 0) := (
         0 => x"00000000",
@@ -675,7 +677,7 @@ begin
 
             META_WIDTH  => 0,
             LNG_WIDTH   => log2(PKT_SIZE_MAX+1),
-            REG_BITMAP  => "0000")
+            REG_BITMAP  => tsel(IS_INTEL_DEV, "1111", "0000"))
         port map (
             CLK            => CLK,
             RESET          => RESET,

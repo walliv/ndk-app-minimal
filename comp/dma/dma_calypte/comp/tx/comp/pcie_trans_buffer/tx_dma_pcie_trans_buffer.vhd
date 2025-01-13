@@ -75,8 +75,11 @@ architecture FULL of TX_DMA_PCIE_TRANS_BUFFER is
     constant BRAM_REG_NUM    : natural := 2;
     -- Number of registers between BRAMs and barrel shifter
     constant INP_REG_NUM     : natural := 1;
+    constant IS_INTEL_DEV    : boolean := (DEVICE = "STRATIX10" or DEVICE = "AGILEX");
+    -- a maximum depth of a BRAM block (in 1B items) depends on a vendor
+    constant MAX_BRAM_DEPTH  : natural := tsel(IS_INTEL_DEV, 2048, 4096);
     -- The amount of channels that fits to one array
-    constant CHANS_PER_ARRAY : natural := minimum(CHANNELS, 4096/BUFFER_DEPTH);
+    constant CHANS_PER_ARRAY : natural := minimum(CHANNELS, MAX_BRAM_DEPTH/BUFFER_DEPTH);
     -- Number of memory arrays since one array can contain multiple channels
     constant MEM_ARRAYS      : natural := CHANNELS/CHANS_PER_ARRAY;
 
@@ -154,6 +157,12 @@ architecture FULL of TX_DMA_PCIE_TRANS_BUFFER is
     signal wr_data_bram_shifter_reg  : slv_array_2d_t(BRAM_REG_NUM downto 0)(MFB_REGIONS - 1 downto 0)(MFB_LENGTH -1 downto 0);
 
     signal addr_sel                 : slv_array_t(MEM_ARRAYS -1 downto 0)(MFB_REGIONS - 1 downto 0);
+
+    -- =============================================================================================
+    -- DEBUG signals (verification or ILA)
+    -- =============================================================================================
+    signal wr_addr_collision_detected : slv_array_t(MEM_ARRAYS -1 downto 0)(MFB_BYTES -1 downto 0);
+    signal rdwr_collision_detected    : slv_array_2d_t(MEM_ARRAYS -1 downto 0)(MFB_REGIONS -1 downto 0)(MFB_BYTES -1 downto 0);
 
 begin
     -- =============================================================================================
@@ -657,6 +666,37 @@ begin
                         DIB      => wr_data_bram_shifter_reg(BRAM_REG_NUM)(1)(wbyte*8 +7 downto wbyte*8),
                         DOB      => rd_data_bram(mem_arr_idx)(1)(wbyte*8 +7 downto wbyte*8),
                         DOB_DV   => open);
+
+                -- DEBUG process for simulation
+                wr_addr_collision_detection_p: process (all) is
+                begin
+
+                    wr_addr_collision_detected(mem_arr_idx)(wbyte) <= '0';
+                    rdwr_collision_detected(mem_arr_idx)(0)(wbyte) <= '0';
+                    rdwr_collision_detected(mem_arr_idx)(1)(wbyte) <= '0';
+
+                    -- dual concurrent write on the same address
+                    if (wr_be_bram_demux_reg(BRAM_REG_NUM)(mem_arr_idx)(0)(wbyte) = '1' and
+                        wr_be_bram_demux_reg(BRAM_REG_NUM)(mem_arr_idx)(1)(wbyte) = '1' and
+                        rw_addr_bram_by_mux(mem_arr_idx)(0)(wbyte) = rw_addr_bram_by_mux(mem_arr_idx)(1)(wbyte)
+                        ) then
+                        wr_addr_collision_detected(mem_arr_idx)(wbyte) <= '1';
+                    end if;
+
+                    -- concurrent read and write on port A
+                    if (wr_be_bram_demux_reg(BRAM_REG_NUM)(mem_arr_idx)(0)(wbyte) = '1' and
+                        rd_en_pch(mem_arr_idx)(0) = '1'
+                        ) then
+                        rdwr_collision_detected(mem_arr_idx)(0)(wbyte) <= '1';
+                    end if;
+
+                    -- concurrent read and write on port B
+                    if (wr_be_bram_demux_reg(BRAM_REG_NUM)(mem_arr_idx)(1)(wbyte) = '1' and
+                        rd_en_pch(mem_arr_idx)(1) = '1'
+                        ) then
+                        rdwr_collision_detected(mem_arr_idx)(1)(wbyte) <= '1';
+                    end if;
+                end process;
             end generate;
         end generate;
 

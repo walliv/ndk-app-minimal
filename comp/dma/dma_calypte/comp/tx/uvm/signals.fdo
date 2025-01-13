@@ -468,6 +468,10 @@ proc trans_buffer {PATH META_IS_DMA_HDR_W META_PCIE_ADDR_W META_CHAN_NUM_W META_
     add_wave "-noupdate -group \"$grp_name\"" $PATH/rd_data_bram_mux
     add_wave "-noupdate -group \"$grp_name\"" $PATH/rd_data_bram
     add_wave "-noupdate -group \"$grp_name\"" $PATH/rd_addr_bram_by_shift
+
+    add wave -noupdate -group "$grp_name" -divider "Debug_signals"
+    add_wave "-noupdate -group \"$grp_name\"" $PATH/wr_addr_collision_detected
+    add_wave "-noupdate -group \"$grp_name\"" $PATH/rdwr_collision_detected
 }
 
 proc pkt_dispatcher {PATH} {

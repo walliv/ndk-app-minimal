@@ -14,6 +14,7 @@ set PACKET_DISPATCHER_BASE    "$ENTITY_BASE/comp/packet_dispatcher"
 set PCIE_TRANS_BUFFER_BASE    "$ENTITY_BASE/comp/pcie_trans_buffer"
 set MVB_FIFOX_BASE            "$OFM_PATH/comp/mvb_tools/storage/fifox"
 set FIFOX_MULTI_BASE          "$OFM_PATH/comp/base/fifo/fifox_multi"
+set MFB_PIPE_BASE             "$OFM_PATH/comp/mfb_tools/flow/pipe"
 
 lappend COMPONENTS [ list "TX_DMA_METADATA_EXTRACTOR"   $META_EXTRACTOR_BASE       "FULL"]
 lappend COMPONENTS [ list "TX_DMA_CHAN_START_STOP_CTRL" $CHAN_START_STOP_CTRL_BASE "FULL"]
@@ -22,5 +23,6 @@ lappend COMPONENTS [ list "TX_DMA_PKT_DISPATCHER"       $PACKET_DISPATCHER_BASE 
 lappend COMPONENTS [ list "TX_DMA_PCIE_TRANS_BUFFER"    $PCIE_TRANS_BUFFER_BASE    "FULL"]
 lappend COMPONENTS [ list "MVB_FIFOX"                   $MVB_FIFOX_BASE            "FULL"]
 lappend COMPONENTS [ list "FIFOX_MULTI"                 $FIFOX_MULTI_BASE          "FULL"]
+lappend COMPONENTS [ list "MFB_PIPE"                    $MFB_PIPE_BASE             "FULL"]
 
 lappend MOD "$ENTITY_BASE/tx_dma_calypte.vhd"

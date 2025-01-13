@@ -53,7 +53,6 @@ class env #(
         // LOW level agent
         m_rx_mfb_env_cfg                = new;
         m_rx_mfb_env_cfg.active         = m_config.active;
-        m_rx_mfb_env_cfg.seq_type       = "PCIE";
         m_rx_mfb_env_cfg.interface_name = m_config.interface_name;
         m_rx_mfb_env_cfg.meta_behav     = uvm_logic_vector_array_mfb::config_item::META_SOF;
 

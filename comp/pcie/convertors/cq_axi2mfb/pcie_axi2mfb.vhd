@@ -332,12 +332,18 @@ begin
             CQ_FBE <= (others => '0');
             CQ_LBE <= (others => '0');
 
-            for i in 0 to MFB_REGIONS-1 loop
-                if (cq_axi_user_sop(i) = '1') then
-                    CQ_FBE <= CQ_AXI_USER(8-1 downto 0);
-                    CQ_LBE <= CQ_AXI_USER(16-1 downto 8);
+            if (cq_axi_user_sop = "11") then
+                CQ_FBE <= CQ_AXI_USER(8-1 downto 0);
+                CQ_LBE <= CQ_AXI_USER(16-1 downto 8);
+            elsif (cq_axi_user_sop = "01") then
+                if (cq_axi_user_sop_ptr(0) = "10") then
+                    CQ_FBE <= CQ_AXI_USER(4-1 downto 0) & "0000";
+                    CQ_LBE <= CQ_AXI_USER(12-1 downto 8) & "0000";
+                else
+                    CQ_FBE <= "0000" & CQ_AXI_USER(4-1 downto 0);
+                    CQ_LBE <= "0000" & CQ_AXI_USER(12-1 downto 8);
                 end if;
-            end loop;
+            end if;
         end process;
     else generate
         CQ_FBE <= cq_axi_user_fbe when cq_axi_user_sop(0) = '1' else (others => '0');

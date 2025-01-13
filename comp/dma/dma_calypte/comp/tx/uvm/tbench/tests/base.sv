@@ -29,11 +29,7 @@ class base extends uvm_test;
         PCIE_LEN_MAX
     ) m_env;
 
-    uvm_reg_data_t pkt_cnt          [CHANNELS];
-    uvm_reg_data_t byte_cnt         [CHANNELS];
-    uvm_reg_data_t discard_pkt_cnt  [CHANNELS];
-    uvm_reg_data_t discard_byte_cnt [CHANNELS];
-    uvm_status_e   status_r;
+    localparam USR_MFB_META_WIDTH = HDR_META_WIDTH + $clog2(PKT_SIZE_MAX+1) + $clog2(CHANNELS);
 
     // ------------------------------------------------------------------------
     // Functions
@@ -57,6 +53,11 @@ class base extends uvm_test;
     endfunction
 
     virtual task run_phase(uvm_phase phase);
+        uvm_reg_data_t pkt_cnt          [CHANNELS];
+        uvm_reg_data_t byte_cnt         [CHANNELS];
+        uvm_reg_data_t discard_pkt_cnt  [CHANNELS];
+        uvm_reg_data_t discard_byte_cnt [CHANNELS];
+        uvm_status_e   status_r;
         time end_time;
         virt_seq #(USR_MFB_REGIONS, USR_MFB_REGION_SIZE, USR_MFB_BLOCK_SIZE, USR_MFB_ITEM_WIDTH,
                    CHANNELS, HDR_META_WIDTH, PKT_SIZE_MAX) m_virt_seq;
