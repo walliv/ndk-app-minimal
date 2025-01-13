@@ -6,50 +6,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format is required for commit messages.
 
-## [Unreleased]
+## [0.9.0] - 2025-01-13
 
 ### Added
+- cocotb: Introduced gRPC servicer and server including an example for external process interaction.
 - build: Introduced support for IP generation using TCL on Stratix 10 FPGAs.
-- cards: Add PCI BAR2 to UltraScale+ cards and Intel FPGA cards with P-Tile (required for DMA Calypte).
+- cards: Added PCI BAR2 to UltraScale+ cards and Intel FPGA cards with P-Tile (required for DMA Calypte).
 - cards: Introduced support for Bittware IA-440i card.
 - cards: Introduced support for iWave G35P card.
 - core: Introduced implementation of 4x10G and 4x25G network_mod_core for UltraScale+ FPGAs (requires closed-source submodules).
-- core: Add support for dropping in TX_MAC_LITE when the link is down.
+- core: Added option (on by default) to drop frames in TX_MAC_LITE when the link is down.
 - comp: Introduced new components: AXIS_ASFIFOX.
 
 ### Changed
-- cocotb: Reworked MI driver for cocotb.
-- build: Unify IP tcl scripts on UltraScale+ cards and Intel FPGA cards with P-Tile.
-- build: Pass DMA_DEBUG_ENABLE parameter upon make call.
-- build: Make DMA_MODULES parameter part of the generated VHDL package.
-- comp: Replaced /dev/nfb0 by real default device (selected by libnfb).
-- card: Enabled support for DMA Calypte on DK-DEV-1SDX-P card.
-- card: Changed default PCIe configuration on DK-DEV-1SDX-P card to 1xGen4x16.
+- cocotb: Reworked Cocotb MI driver.
+- build: Unified tcl scripts for IP generation on UltraScale+ cards and Intel FPGA cards with P-Tile.
+- build: DMA_DEBUG_ENABLE parameter is passed upon the `make` command.
+- build: Made the DMA_MODULES parameter part of the generated VHDL package.
+- comp: Replaced /dev/nfb0 by real default device (selected by libnfb) in all pynfb tools.
+- comp: Reworked TSU_ASYNC component supporting a timeout.
+- card: Enabled support for DMA Calypte on the DK-DEV-1SDX-P card.
+- card: Changed the default PCIe configuration on DK-DEV-1SDX-P card to 1xGen4x16.
 - docs: Improved the documentation of MFB_FRAME_EXTENDER, MFB_USER_PACKET_GEN.
 - dma: Disabled unused speed meters in DMA Medusa (saving FPGA resources).
+- dma: Added several optimizations in DMA Calypte (especially timing optimization).
 - uvm: Improved sequence_main in APP CORE verification.
+- uvm: Improved Network Module verification.
 - uvm: Improved DMA Calypte verification.
 - ver: Improved DMA Medusa verification (especially removed PTC and PCIe adapters).
 
 ### Removed
 - core: Removed obsolete PCI generics from FPGA_COMMON.
 - core: Removed obsolete parameter DMA_400G_DEMO.
-- comp: Remove old unused components (MI_REGISTER_ARRAY, MULTI_FIFO, FIFO_N1, INSPECTOR).
+- comp: Removed old unused components (MI_REGISTER_ARRAY, MULTI_FIFO, FIFO_N1, INSPECTOR, TS_SYNC).
 - uvm: Removed obsolete revision of UVM packet generator.
 
 ### Fixed
 - card: Fixed assign constant when DDR_PORTS <=1 on fb2cghh card.
-- dma: Deactivated danger relaxed ordering in RX DMA Calypte.
-- dma: Allow only one in-progress update per channel in RX DMA Medusa.
-- dma: Allow the channel to be turned off only when update in RX DMA Medusa is not in progress.
-- dma: Used DBG_CNTR_EN parameter also for DMA_CTRL module in RX DMA Medusa (saving FPGA resources).
+- comp: Fixed assignment of FBE and LBE in PCIE_CQ_AXI2MFB module.
+- dma: Deactivated relaxed ordering (considered unsafe) in RX DMA Calypte.
+- dma: Allowed only one in-progress update per channel in RX DMA Medusa.
+- dma: Allowed a channel to be turned off only when an update in RX DMA Medusa is not in progress.
+- dma: Propagated the DBG_CNTR_EN parameter to the DMA_CTRL module in RX DMA Medusa (option to save FPGA resources).
 - dma: Fixed size of FIFO for PCIe response address in TX DMA Medusa.
-- dma: Fixed of rounding integer division in DMA Medusa.
-- dma: Fixed counting buffers size in DMA Medusa.
+- dma: Fixed the calculation of buffers size in DMA Medusa.
 - dma: Fixed early PCIe header drop in RX DMA Calypte.
+- dma: Fixed enable of LBE register when generating BE vector in TX DMA Calypte.
+- dma: Fixed FIFOX_MULTI memory type in TX DMA Calypte for better compatibilty with Altera FPGAs.
 - app: Fixed important missing generics for the MEM_LOGGER instance in Minimal app.
 - uvm: Fixed deprecated KeysView import in FlowTest Python generator.
-- uvm: Fixed correction of protocol weights after the last MPLS in UVM packet generator.
+- uvm: Fixed correction of protocol weights after the last MPLS in the UVM packet generator.
 
 ## [0.8.0] - 2024-11-19
 
