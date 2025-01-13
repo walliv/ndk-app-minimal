@@ -32,8 +32,3 @@ puts "Std Arith Warnings - Disabled"
 set StdArithNoWarnings 1
 nb_sim_run
 
-if {$SIM_FLAGS(CODE_COVERAGE)} {
-    coverage save  -code bcefst -verbose actual.ucdb
-}
-quit
-
