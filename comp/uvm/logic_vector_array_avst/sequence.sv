@@ -88,6 +88,8 @@ class sequence_simple_rx_base #(int unsigned REGIONS, int unsigned REGION_SIZE, 
             gen.valid = '0;
             state_packet = state_packet_space_new;
             get_response(rsp);
+
+            simple_reg.latency_cnt = READY_LATENCY;
         end else begin
             // get next item
             create_sequence_item();
