@@ -1243,7 +1243,7 @@ begin
             pma_mode_set(6 downto 3) <= "0101";
             pma_mode_set(2 downto 0) <= pma_mode(2 downto 0);  -- Do not change the PMA mode by default
             if pm_req(2) = '1' then -- 100GBASE modes with RS-FEC
-               if RSFEC_ABLE = '1' and fec_en_r = '1' then
+               if RSFEC_ABLE = '1' then
                   pma_mode_set(2 downto 0) <= pm_req;
                end if;
             elsif pm_req(1) = '1' then
@@ -1417,7 +1417,12 @@ begin
                when "00011" => -- r1.7: PMA  control 2 & devices in package (high word)
                   if (MI_BE(2) = '1') then
                      pma_mode  <= pma_mode_set;
-                     fec_en_r  <= MI_DWR(18);
+                     -- 100GBASE-SR4/CR4/KR4/KP4 mode requested -> enable the RS-FEC
+                     if pma_mode_set(6 downto 2) = "01011" then
+                        fec_en_r  <= '1';
+                     else
+                        fec_en_r  <= '0';
+                     end if;
                   end if;
                when "00100" => -- PMA transmit disable
                   if (MI_BE(2) = '1') then
