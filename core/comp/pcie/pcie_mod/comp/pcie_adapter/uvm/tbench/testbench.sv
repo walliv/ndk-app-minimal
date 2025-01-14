@@ -95,4 +95,38 @@ module testbench;
         .cc_mfb    (cc_mfb)
     );
 
+
+    PROPERTY #(
+       .RC_MFB_REGIONS    (RC_MFB_REGIONS    ),
+       .RC_MFB_REGION_SIZE(RC_MFB_REGION_SIZE),
+       .RC_MFB_BLOCK_SIZE (RC_MFB_BLOCK_SIZE ),
+       .RC_MFB_ITEM_WIDTH (RC_MFB_ITEM_WIDTH ),
+       .RC_MFB_META_W     (RC_MFB_META_W     ),
+
+       .CQ_MFB_REGIONS    (CQ_MFB_REGIONS    ),
+       .CQ_MFB_REGION_SIZE(CQ_MFB_REGION_SIZE),
+       .CQ_MFB_BLOCK_SIZE (CQ_MFB_BLOCK_SIZE ),
+       .CQ_MFB_ITEM_WIDTH (CQ_MFB_ITEM_WIDTH ),
+       .CQ_MFB_META_W     (CQ_MFB_META_W     )
+    )
+    PROPERTY_U (
+        .RST      (reset.RESET),
+        // For Intel
+        .avst_up   (avst_up),
+        .avst_down (avst_down),
+        // For Credit control
+        .crdt_down (crdt_down),
+        .crdt_up   (crdt_up),
+        // For Xilinx
+        .cq_axi    (cq_axi),
+        .cc_axi    (cc_axi),
+        .rc_axi    (rc_axi),
+        .rq_axi    (rq_axi),
+        // For MFB
+        .rq_mfb    (rq_mfb),
+        .rc_mfb    (rc_mfb),
+        .cq_mfb    (cq_mfb),
+        .cc_mfb    (cc_mfb)
+    );
+
 endmodule

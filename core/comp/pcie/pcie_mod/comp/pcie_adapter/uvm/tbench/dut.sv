@@ -42,16 +42,23 @@ module DUT (
     logic [CQ_MFB_REGIONS*128-1 : 0] down_hdr      ;
     logic [CQ_MFB_REGIONS*32-1  : 0] down_prefix   ;
     logic [CQ_MFB_REGIONS*3-1   : 0] down_bar_range;
+    logic [CQ_MFB_REGIONS-1:0]       down_valid;
 
     logic [CC_MFB_REGIONS*128-1 : 0] up_hdr;
     logic [CC_MFB_REGIONS*32-1  : 0] up_prefix;
     logic [CC_MFB_REGIONS-1     : 0] up_error;
+    logic down_ready;
 
+
+    assign avst_down.READY = down_ready;
     generate
         for (genvar r = 0; r < CQ_MFB_REGIONS; r++) begin
             assign down_bar_range [(r+1)*BAR_RANGE_WIDTH-1 : r*BAR_RANGE_WIDTH] = avst_down.META[(r+1)*(AVST_DOWN_META_W)-1                                : (r+1)*AVST_DOWN_META_W - BAR_RANGE_WIDTH];
             assign down_prefix    [(r+1)*PREFIX_WIDTH-1    : r*PREFIX_WIDTH]    = avst_down.META[(r+1)*AVST_DOWN_META_W - BAR_RANGE_WIDTH-1                : (r+1)*AVST_DOWN_META_W - PREFIX_WIDTH - BAR_RANGE_WIDTH];
             assign down_hdr       [(r+1)*HDR_WIDTH-1       : r*HDR_WIDTH]       = avst_down.META[(r+1)*AVST_DOWN_META_W - PREFIX_WIDTH - BAR_RANGE_WIDTH-1 : (r+1)*AVST_DOWN_META_W - HDR_WIDTH - PREFIX_WIDTH - BAR_RANGE_WIDTH];
+
+            //assign down_valid[r] = avst_down.VALID[r];
+            assign down_valid[r] = avst_down.VALID[r] & down_ready;
         end
 
         for (genvar r = 0; r < CC_MFB_REGIONS; r++) begin
@@ -139,8 +146,8 @@ module DUT (
         .AVST_DOWN_EOP       (avst_down.EOP),
         .AVST_DOWN_EMPTY     (avst_down.EMPTY),
         .AVST_DOWN_BAR_RANGE (down_bar_range),
-        .AVST_DOWN_VALID     (avst_down.VALID),
-        .AVST_DOWN_READY     (avst_down.READY),
+        .AVST_DOWN_VALID     (down_valid),
+        .AVST_DOWN_READY     (down_ready),
 
         // =====================================================================
         // Avalon-ST UP (CC+RQ) Interface - Intel FPGA Only

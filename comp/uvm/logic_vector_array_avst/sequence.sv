@@ -18,7 +18,6 @@ class sequence_simple_rx_base #(int unsigned REGIONS, int unsigned REGION_SIZE, 
     uvm_avst::sequence_item #(REGIONS, REGION_SIZE, BLOCK_SIZE, ITEM_WIDTH, META_WIDTH) gen;
 
     typedef enum {state_last, state_next, state_reset, state_overflow, state_latency} state_t;
-    state_t state = state_next;
 
     sequencer_rx #(ITEM_WIDTH, META_WIDTH)                                              hl_sqr;
 
@@ -88,42 +87,45 @@ class sequence_simple_rx_base #(int unsigned REGIONS, int unsigned REGION_SIZE, 
             gen.randomize();
             gen.valid = '0;
             state_packet = state_packet_space_new;
-            state = state_next;
             get_response(rsp);
+
+            simple_reg.latency_cnt = READY_LATENCY;
         end else begin
             // get next item
-            if (state == state_next) begin
-                create_sequence_item();
-            end
+            create_sequence_item();
 
             //GET response
             get_response(rsp);
 
             // Solution of Ready Latency
-            if (rsp.ready == 0 && rsp.valid != 0) begin
+            if (rsp.ready == 0 && req.valid != 0) begin
                 simple_reg.latency_cnt++;
                 if (simple_reg.latency_cnt >= READY_LATENCY) begin
                     do begin
-                        send_empty_frame();
+                        if (READY_LATENCY == 0) begin
+                            start_item(req);
+                            finish_item(req);
+                        end else begin
+                            send_empty_frame();
+                        end
                         get_response(rsp);
                     end while(rsp.ready != 1);
-                    assert(std::randomize(simple_reg.latency_cnt) with {simple_reg.latency_cnt inside {[0 : (READY_LATENCY - 1)]}; }) else `uvm_fatal(this.get_full_name(), "\n\tCannot randomize latency");
-                    for (int unsigned it = 0; it < simple_reg.latency_cnt; it++) begin
-                        send_empty_frame();
-                        get_response(rsp);
-                    end
+                    //assert(std::randomize(simple_reg.latency_cnt) with {simple_reg.latency_cnt inside {[0 : (READY_LATENCY - 1)]}; }) else `uvm_fatal(this.get_full_name(), "\n\tCannot randomize latency");
+                    //for (int unsigned it = 0; it < simple_reg.latency_cnt; it++) begin
+                    //    send_empty_frame();
+                    //    get_response(rsp);
+                    //end
                     simple_reg.latency_cnt = 0;
                 end
-            end else if(rsp.ready == 1)
+            end else if(rsp.ready == 1) begin
                 simple_reg.latency_cnt = 0;
+            end
 
         end
 
         //SEND FRAME
         start_item(req);
-        if (state != state_last) begin
-            req.copy(gen);
-        end
+        req.copy(gen);
         finish_item(req);
     endtask
 
@@ -151,7 +153,7 @@ class sequence_simple_rx_base #(int unsigned REGIONS, int unsigned REGION_SIZE, 
         req.valid = '0;
         gen.valid = '0;
 
-        while (hl_transactions > 0 || data != null || state == state_last || |gen.valid) begin
+        while (hl_transactions > 0 || data != null || |gen.valid) begin
             send_frame();
         end
         //Get last response
