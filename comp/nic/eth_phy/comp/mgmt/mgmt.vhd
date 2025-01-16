@@ -821,15 +821,18 @@ begin
              mi_drd_i(16+15 downto 16+7) <= "000000000"; -- r1.7.15:7
              mi_drd_i(16+ 6 downto 16+0) <= pma_mode;     -- r1.7.6:0
           when "0000100" => -- PMA transmit disable & status 2 -- 0x...C
-             mi_drd_i(15 downto 0)  <= "1011" & tx_fault & rx_fault & "0100000001"; -- Status 2 - r1.8
-             if SPEED_CAP_10G = '1' then
-                -- Add 10G abilities: -SR, -LR, -ER
-                mi_drd_i(7 downto 5) <= "111";
-             else
-                -- Other speeds -> enable extended abilities in r1.11
-                mi_drd_i(9) <= '1';
-             end if;
-             mi_drd_i(31 downto 16) <= "00000" & tx_dis & tx_dis_g; -- PMD transmit disable - r1.9
+             -- Status 2 - r1.8
+             mi_drd_i(15 downto 14)  <= "10"; -- Device present
+             mi_drd_i(13 downto 12)  <= "11"; -- Transmit and receive fault ability
+             mi_drd_i(11)  <= tx_fault;
+             mi_drd_i(10)  <= rx_fault;
+             mi_drd_i(9)   <= not SPEED_CAP_10G; -- Extended abilities in 1.11 (for speed above 10G)
+             mi_drd_i(8)   <= '0'; -- TX disable ability
+             mi_drd_i(7 downto 5) <= (others => SPEED_CAP_10G); -- 10GBASE-SR+LR+ER abilities
+             mi_drd_i(4 downto 1) <= (others => '0'); -- 10GBASE-LX4/SW/LW/EW abilities
+             mi_drd_i(0)   <= '1'; -- PMA local loopback ability
+             -- PMD transmit disable - r1.9
+             mi_drd_i(31 downto 16) <= "00000" & tx_dis & tx_dis_g;
           when "0000101" => -- PMA/PMD extended ability registers & receive signal detect
              mi_drd_i(15 downto 0)  <= "00000" & rx_sig_det & rx_sig_det_g; -- Receive signal detect r1.10
              mi_drd_i(31 downto 16) <= "0000000000000000"; -- Extended ability register r1.11
