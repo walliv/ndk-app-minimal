@@ -181,6 +181,7 @@ entity mgmt is
       -- PMA RX link ok
       PMA_RX_OK     : in  std_logic_vector(PMA_LANES-1 downto 0);
       PMD_SIG_DET   : in  std_logic_vector(PMA_LANES-1 downto 0);
+      PMA_TX_FAULT  : in  std_logic := '0';
       -- TX driver precursor for preemphasis control
       PMA_PRECURSOR : out std_logic_vector(31 downto 0);
       -- TX driver postcursor for preemphasis control
@@ -437,6 +438,18 @@ port map(
    BCLK     => MI_CLK,
    BRST     => '0',
    BDATAOUT => pcs_rxl_stat
+);
+
+CROSS_TXFAULT: entity work.ASYNC_OPEN_LOOP
+generic map(IN_REG  => false, TWO_REG => true)
+port map(
+   ACLK     => '0',
+   ARST     => '0',
+   ADATAIN  => PMA_TX_FAULT,
+   --
+   BCLK     => MI_CLK,
+   BRST     => '0',
+   BDATAOUT => tx_fault
 );
 
 GEN_BER_CROSS: for i in 0 to BER_COUNT'high generate
@@ -746,7 +759,6 @@ rx_sig_det(PMD_SIG_DET'high downto 0) <= sync_pmd_sig_det;
 pma_rxl_stat <= AND_REDUCE(sync_pma_rx_ok);
 rx_sig_det_g <= AND_REDUCE(sync_pmd_sig_det);
 pma_fault    <= tx_fault or rx_fault;
-tx_fault     <= '0';
 rx_fault     <= (not pma_rxl_stat) or (not rx_sig_det_g);
 
 UNUSED_FLAGS: if NUM_LANES < 20 generate
