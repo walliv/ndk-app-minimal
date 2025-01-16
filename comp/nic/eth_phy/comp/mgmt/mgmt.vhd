@@ -181,6 +181,7 @@ entity mgmt is
       -- PMA RX link ok
       PMA_RX_OK     : in  std_logic_vector(PMA_LANES-1 downto 0);
       PMD_SIG_DET   : in  std_logic_vector(PMA_LANES-1 downto 0);
+      PMA_TX_FAULT  : in  std_logic := '0';
       -- TX driver precursor for preemphasis control
       PMA_PRECURSOR : out std_logic_vector(31 downto 0);
       -- TX driver postcursor for preemphasis control
@@ -437,6 +438,18 @@ port map(
    BCLK     => MI_CLK,
    BRST     => '0',
    BDATAOUT => pcs_rxl_stat
+);
+
+CROSS_TXFAULT: entity work.ASYNC_OPEN_LOOP
+generic map(IN_REG  => false, TWO_REG => true)
+port map(
+   ACLK     => '0',
+   ARST     => '0',
+   ADATAIN  => PMA_TX_FAULT,
+   --
+   BCLK     => MI_CLK,
+   BRST     => '0',
+   BDATAOUT => tx_fault
 );
 
 GEN_BER_CROSS: for i in 0 to BER_COUNT'high generate
@@ -746,7 +759,6 @@ rx_sig_det(PMD_SIG_DET'high downto 0) <= sync_pmd_sig_det;
 pma_rxl_stat <= AND_REDUCE(sync_pma_rx_ok);
 rx_sig_det_g <= AND_REDUCE(sync_pmd_sig_det);
 pma_fault    <= tx_fault or rx_fault;
-tx_fault     <= '0';
 rx_fault     <= (not pma_rxl_stat) or (not rx_sig_det_g);
 
 UNUSED_FLAGS: if NUM_LANES < 20 generate
@@ -809,15 +821,18 @@ begin
              mi_drd_i(16+15 downto 16+7) <= "000000000"; -- r1.7.15:7
              mi_drd_i(16+ 6 downto 16+0) <= pma_mode;     -- r1.7.6:0
           when "0000100" => -- PMA transmit disable & status 2 -- 0x...C
-             mi_drd_i(15 downto 0)  <= "1011" & tx_fault & rx_fault & "0100000001"; -- Status 2 - r1.8
-             if SPEED_CAP_10G = '1' then
-                -- Add 10G abilities: -SR, -LR, -ER
-                mi_drd_i(7 downto 5) <= "111";
-             else
-                -- Other speeds -> enable extended abilities in r1.11
-                mi_drd_i(9) <= '1';
-             end if;
-             mi_drd_i(31 downto 16) <= "00000" & tx_dis & tx_dis_g; -- PMD transmit disable - r1.9
+             -- Status 2 - r1.8
+             mi_drd_i(15 downto 14)  <= "10"; -- Device present
+             mi_drd_i(13 downto 12)  <= "11"; -- Transmit and receive fault ability
+             mi_drd_i(11)  <= tx_fault;
+             mi_drd_i(10)  <= rx_fault;
+             mi_drd_i(9)   <= not SPEED_CAP_10G; -- Extended abilities in 1.11 (for speed above 10G)
+             mi_drd_i(8)   <= '0'; -- TX disable ability
+             mi_drd_i(7 downto 5) <= (others => SPEED_CAP_10G); -- 10GBASE-SR+LR+ER abilities
+             mi_drd_i(4 downto 1) <= (others => '0'); -- 10GBASE-LX4/SW/LW/EW abilities
+             mi_drd_i(0)   <= '1'; -- PMA local loopback ability
+             -- PMD transmit disable - r1.9
+             mi_drd_i(31 downto 16) <= "00000" & tx_dis & tx_dis_g;
           when "0000101" => -- PMA/PMD extended ability registers & receive signal detect
              mi_drd_i(15 downto 0)  <= "00000" & rx_sig_det & rx_sig_det_g; -- Receive signal detect r1.10
              mi_drd_i(31 downto 16) <= "0000000000000000"; -- Extended ability register r1.11
@@ -1243,7 +1258,7 @@ begin
             pma_mode_set(6 downto 3) <= "0101";
             pma_mode_set(2 downto 0) <= pma_mode(2 downto 0);  -- Do not change the PMA mode by default
             if pm_req(2) = '1' then -- 100GBASE modes with RS-FEC
-               if RSFEC_ABLE = '1' and fec_en_r = '1' then
+               if RSFEC_ABLE = '1' then
                   pma_mode_set(2 downto 0) <= pm_req;
                end if;
             elsif pm_req(1) = '1' then
@@ -1417,7 +1432,12 @@ begin
                when "00011" => -- r1.7: PMA  control 2 & devices in package (high word)
                   if (MI_BE(2) = '1') then
                      pma_mode  <= pma_mode_set;
-                     fec_en_r  <= MI_DWR(18);
+                     -- 100GBASE-SR4/CR4/KR4/KP4 mode requested -> enable the RS-FEC
+                     if pma_mode_set(6 downto 2) = "01011" then
+                        fec_en_r  <= '1';
+                     else
+                        fec_en_r  <= '0';
+                     end if;
                   end if;
                when "00100" => -- PMA transmit disable
                   if (MI_BE(2) = '1') then
