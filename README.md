@@ -10,7 +10,7 @@ This repository contains a demonstration project for the DMA Calypte engine
 which other projects can be built to benefit from the DMA engine. This allows
 the acceleration cards to communicate with the host system. The platform has
 been founded on the
-[NDK-APP-Minimal](https://github.com/CESNET/ndk-app-minimal/) framework that has
+[NDK-FPGA](https://github.com/CESNET/ndk-fpga/) framework that has
 been simplified for the ease of use and development.
 
 ## TL;DR
@@ -43,7 +43,7 @@ Some more optional steps:
   - `ndp-loopback-hw` using RX and TX queues in the Host -> FPGA -> Host 
     loopback (It has to be ensured that the data will be looped in the
     FPGA firmware back towards the host. The data need to remain unchanged.).
-- Look in the `sw/` folder for a usefull programs to use to interact with the
+- Look in the `/sw/` folder for a usefull programs to use to interact with the
   design and the guid of how to build your custom communication tool. 
 
 ## Project documentation
@@ -93,9 +93,7 @@ git submodule update --init src/ofm
 git submodule update --init src/app/BarrelRISCV
 ```
 
-The [OFM (Open FPGA Modules)](https://github.com/walliv/ofm/) submodule contains
-open-source VHDL components developed by [CESNET](https://github.com/CESNET).
-This submodule also contains an elaborated build system to compose FPGA designs
+This repository contains an elaborated build system to compose FPGA designs
 from various VHDL files in modular fashion with a great degree of variability
 and configurability. The documentation of various components within the OFM
 repository as well as a thorough description of the features of the build system
@@ -151,7 +149,7 @@ the design build. For path description, see [next
 section](#description-of-a-build-of-a-fpga-firmware).
 
 ### `/cards/<card_name>/build/Vivado.tcl`
-
+	
 This is the main script called by both `tclsh` and by Vivado. It sets the build
 parameters, like synthesis/implementation directives for each step, type of the
 FPGA chip, top-module name and adding to the hierarchy of components with its
@@ -221,13 +219,13 @@ these lists, see
 The build of a design works with multiple path types during the initial steps of
 the design compilation:
 
-| Path name     | Description                                                                          |
-|:-------------:|:-------------------------------------------------------------------------------------|
-| COMBO_BASE    | Root of a repository, e.g. the location of this `README.md` file.                    |
-| FIRMWARE_BASE | (Discontinued) Same as COMBO_BASE, left for compatibility reasons.                   |
-| OFM_PATH      | Path to the OFM library of open-source VHDL components. Currently set to `/src/ofm/` |
-| CARD_BASE     | Path to the subfolder of the built card. Currently set to `/cards/<card_name>/`      |
-| CORE_BASE     | Path to card-independent sources. Currently se to `/src/`                            |
+| Path name     | Description                                                                                      |
+|:-------------:|:-------------------------------------------------------------------------------------------------|
+| COMBO_BASE    | Root of a repository, e.g. the location of this `README.md` file.                                |
+| FIRMWARE_BASE | (Discontinued) Same as COMBO_BASE, left for compatibility reasons.                               |
+| OFM_PATH      | (Discontiuned) Path to the OFM library of open-source VHDL components. Currently set to `/comp/` |
+| CARD_BASE     | Path to the subfolder of a card being built. Currently set to `/cards/<card_name>/`              |
+| CORE_BASE     | Path to card-independent sources. Currently se to `/src/`                                        |
 
 Various other constants/parameters for VHDL design configuration (like the PCIe
 module setting, the DMA module type or the amount of DMA channels) are passed
@@ -256,7 +254,7 @@ instruction for a package can be found on the repository page. The supported
 platforms are, mainly, RHEL and Ubuntu; experimentally, there is a support for
 ArchLinux-based distributions.
 
-The `/sw/` directory contains basic C programs to send/receive data in using the DMA
+The `/sw/` directory contains basic C programs to send/receive data using the DMA
 Calypte engine with the provided software stack. The code has been throughly
 commented to provide detailed knowledge about the intialization as well as about
 the data transport. During the data transport the order of bytes is retained
